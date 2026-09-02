@@ -5536,11 +5536,7 @@ window.startSelectedTest = function() {
     origStartSelected.call(this);
   }
 };
-  if(PRETEST.skill === 'nghe'){ startPaperNghe(); return; }
-  if(PRETEST.skill === 'doc'){ startPaperDoc(); return; }
-  if(PRETEST.skill === 'noi'){ startPaperNoi(); return; }
-  if(PRETEST.skill === 'viet'){ startPaperViet(); return; }
-  // Fallback
+  
   if (typeof origStartSelected === 'function') origStartSelected.call(this);
 };
   if(PRETEST.skill === 'nghe'){ startPaperNghe(); return; }
