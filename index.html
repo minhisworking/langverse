@@ -4922,23 +4922,8 @@ window.startNoiRecord = function(btn, key){
         return;
     }
     const SR = window.SpeechRecognition || window.webkitSpeechRecognition;
-    navigator.mediaDevices.getUserMedia({audio:true}).then(function(stream){
-        const mediaRec = new MediaRecorder(stream);
-        const chunks = [];
-        mediaRec.ondataavailable = function(e){ if(e.data.size>0) chunks.push(e.data); };
-        mediaRec.onstop = function(){
-            const blob = new Blob(chunks, {type:'audio/webm'});
-            const url = URL.createObjectURL(blob);
-            if(!t.noiRecords[key]) t.noiRecords[key] = {};
-            t.noiRecords[key].audioUrl = url;
-            t.noiRecords[key].blob = blob;
-            t.noiRecords[key].done = true;
-            stream.getTracks().forEach(tr=>tr.stop());
-        };
-        mediaRec.start();
-        
-        // Thêm SpeechRecognition để lấy transcript
-let rec = null;
+    
+	let rec = null;
 if(SR){
 rec = new SR();
 // === SỬA LỖI Ở ĐÂY ===
@@ -4954,7 +4939,7 @@ rawLang = 'ja';
 let langCode = (typeof ttsLang === 'function') ? ttsLang(rawLang, '') : rawLang;
 rec.lang = langCode;
 // === FIX CHO CHROME MOBILE ===
-rec.continuous = false; // Chỉ ghi âm 1 lần rồi dừng
+rec.continuous = true; // Chỉ ghi âm 1 lần rồi dừng
 rec.interimResults = true; // Bật interim results để nhận kết quả sớm hơn trên mobile
 // ========================================
 rec.onresult = function(e){
@@ -4990,9 +4975,28 @@ const noteEl = document.getElementById('noi-note-'+key);
 if(noteEl) noteEl.textContent = '⚠️ Không hỗ trợ ghi âm';
 }
 }
+	
+	navigator.mediaDevices.getUserMedia({audio:true}).then(function(stream){
+        const mediaRec = new MediaRecorder(stream);
+        const chunks = [];
+        mediaRec.ondataavailable = function(e){ if(e.data.size>0) chunks.push(e.data); };
+        mediaRec.onstop = function(){
+            const blob = new Blob(chunks, {type:'audio/webm'});
+            const url = URL.createObjectURL(blob);
+            if(!t.noiRecords[key]) t.noiRecords[key] = {};
+            t.noiRecords[key].audioUrl = url;
+            t.noiRecords[key].blob = blob;
+            t.noiRecords[key].done = true;
+            stream.getTracks().forEach(tr=>tr.stop());
+        };
+        mediaRec.start();
+        
+        // Thêm SpeechRecognition để lấy transcript
+
         if(!t.noiRecords[key]) t.noiRecords[key] = {};
         t.noiRecords[key].mediaRec = mediaRec;
         t.noiRecords[key].rec = rec;
+		t.noiRecords[key].stream = stream;
         t.noiRecords[key].recording = true;
         btn.textContent = '⏹️ Dừng';
         btn.dataset.recording = '1';
@@ -5004,6 +5008,7 @@ if(noteEl) noteEl.textContent = '⚠️ Không hỗ trợ ghi âm';
             }
         }, 15000);
     }).catch(function(err){
+		 if(rec) try { rec.stop(); } catch(e){}
         alert('⚠️ Không thể truy cập microphone: ' + err.message);
     });
 };;
