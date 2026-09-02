@@ -835,7 +835,55 @@ button, .btn-primary, .btn-success, .btn-warning, .btn-danger, .nav-btn, .close 
   to { opacity: 1; transform: translateY(0); }
 }
 
-
+.dup-del-confirm {
+  position: fixed;
+  z-index: 99999;
+  background: var(--card-bg);
+  border: 1px solid var(--accent);
+  border-radius: 10px;
+  padding: 12px 14px;
+  min-width: 240px;
+  max-width: 300px;
+  box-shadow: 0 10px 30px rgba(0,0,0,.6);
+  animation: popIn .15s ease;
+}
+.dup-del-confirm.hidden { display: none !important; }
+.dup-del-confirm-text {
+  font-size: 13px;
+  color: #cbd5e1;
+  line-height: 1.5;
+  margin-bottom: 10px;
+}
+.dup-del-confirm-actions {
+  display: flex;
+  gap: 8px;
+  justify-content: flex-end;
+}
+.dup-del-ok {
+  background: var(--accent);
+  color: #0f172a;
+  border: none;
+  border-radius: 8px;
+  padding: 6px 16px;
+  font-size: 13px;
+  cursor: pointer;
+  font-weight: bold;
+}
+.dup-del-ok:hover { opacity: .85; }
+.dup-del-cancel {
+  background: transparent;
+  color: #94a3b8;
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  padding: 6px 16px;
+  font-size: 13px;
+  cursor: pointer;
+}
+.dup-del-cancel:hover { color: var(--text); border-color: var(--accent); }
+@keyframes popIn {
+  from { opacity: 0; transform: translateY(6px); }
+  to { opacity: 1; transform: translateY(0); }
+}
 	
 </style>
 </head>
@@ -6698,6 +6746,44 @@ window.closeTest = function(){
   if(typeof origCloseTest === 'function') origCloseTest();
 };
 </script>
+function deleteSelectedDups() {
+  const checks = document.querySelectorAll('.dup-del-check:checked');
+  if (checks.length === 0) {
+    alert('🚨 Bạn chưa chọn từ nào để xóa!');
+    return;
+  }
+  const popup = $('dup-del-confirm');
+  const txt = $('dup-del-confirm-text');
+  txt.innerHTML = 'Bạn có chắc muốn xóa <b>' + checks.length + '</b> từ trùng lặp đã chọn không? Hành động này không thể hoàn tác.';
+  
+  const btn = event.target;
+  const rect = btn.getBoundingClientRect();
+  popup.classList.remove('hidden');
+  
+  requestAnimationFrame(() => {
+    const pw = popup.offsetWidth, ph = popup.offsetHeight;
+    let left = rect.left + rect.width / 2 - pw / 2;
+    let top = rect.top - ph - 8;
+    if (left < 8) left = 8;
+    if (left + pw > window.innerWidth - 8) left = window.innerWidth - pw - 8;
+    if (top < 8) top = rect.bottom + 8;
+    popup.style.left = left + 'px';
+    popup.style.top = top + 'px';
+  });
+  
+  dupDelCallback = () => {
+    const indicesToDelete = Array.from(checks).map(cb => parseInt(cb.dataset.idx, 10));
+    indicesToDelete.sort((a, b) => b - a);
+    indicesToDelete.forEach(idx => { vocab.splice(idx, 1); });
+    const newSelected = new Set();
+    vocab.forEach(v => { if (selected.has(keyOf(v))) newSelected.add(keyOf(v)); });
+    selected = newSelected;
+    localStorage.setItem('langverse_data', JSON.stringify(vocab));
+    closeDupModal();
+    init();
+  };
+}
+	
 <div class="modal" id="dup-modal" onclick="if(event.target===this)closeDupModal()">
   <div class="modal-content wide" style="max-width:900px;">
     <span class="close" onclick="closeDupModal()">&times;</span>
@@ -6812,46 +6898,24 @@ function closeDupModal() {
 
 let dupDelCallback = null;
 
-function deleteSelectedDups() {
-  const checks = document.querySelectorAll('.dup-del-check:checked');
-  if (checks.length === 0) {
-    alert('🚨 Bạn chưa chọn từ nào để xóa!');
-    return;
-  }
-
+function closeDupDelConfirm() {
   const popup = $('dup-del-confirm');
-  const txt = $('dup-del-confirm-text');
-  txt.innerHTML = 'Bạn có chắc muốn xóa <b>' + checks.length + '</b> từ trùng lặp đã chọn không? Hành động này không thể hoàn tác.';
-
-  // Định vị popup ngay trên nút bấm
-  const btn = event.target;
-  const rect = btn.getBoundingClientRect();
-  popup.classList.remove('hidden');
-
-  requestAnimationFrame(() => {
-    const pw = popup.offsetWidth, ph = popup.offsetHeight;
-    let left = rect.left + rect.width / 2 - pw / 2;
-    let top = rect.top - ph - 8; // 8px gap trên nút
-    if (left < 8) left = 8;
-    if (left + pw > window.innerWidth - 8) left = window.innerWidth - pw - 8;
-    if (top < 8) top = rect.bottom + 8; // nếu không đủ chỗ trên → hiện dưới nút
-    popup.style.left = left + 'px';
-    popup.style.top = top + 'px';
-  });
-
-  // Gán callback xóa
-  dupDelCallback = () => {
-    const indicesToDelete = Array.from(checks).map(cb => parseInt(cb.dataset.idx, 10));
-    indicesToDelete.sort((a, b) => b - a);
-    indicesToDelete.forEach(idx => { vocab.splice(idx, 1); });
-    const newSelected = new Set();
-    vocab.forEach(v => { if (selected.has(keyOf(v))) newSelected.add(keyOf(v)); });
-    selected = newSelected;
-    localStorage.setItem('langverse_data', JSON.stringify(vocab));
-    closeDupModal();
-    init();
-  };
+  if (popup) popup.classList.add('hidden');
+  dupDelCallback = null;
 }
+
+document.addEventListener('click', e => {
+  const popup = $('dup-del-confirm');
+  if (!popup) return;
+  if (e.target.classList.contains('dup-del-ok')) {
+    if (dupDelCallback) dupDelCallback();
+    closeDupDelConfirm();
+  } else if (e.target.classList.contains('dup-del-cancel')) {
+    closeDupDelConfirm();
+  } else if (!popup.classList.contains('hidden') && !e.target.closest('#dup-del-confirm')) {
+    closeDupDelConfirm();
+  }
+});
 
 function closeDupDelConfirm() {
   $('dup-del-confirm').classList.add('hidden');
@@ -6886,6 +6950,12 @@ window.renderList = function() {
     <button class="dup-del-ok">OK</button>
   </div>
 </div>
-	
+<div id="dup-del-confirm" class="dup-del-confirm hidden">
+  <div class="dup-del-confirm-text" id="dup-del-confirm-text"></div>
+  <div class="dup-del-confirm-actions">
+    <button class="dup-del-cancel">Huỷ</button>
+    <button class="dup-del-ok">OK</button>
+  </div>
+</div>	
 </body>
 </html>
