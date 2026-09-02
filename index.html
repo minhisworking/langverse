@@ -6773,12 +6773,14 @@ window.closeTest = function(){
 
 
 <script>
-// Cập nhật trạng thái nút Trùng lặp mỗi khi danh sách thay đổi
+// ============================================================
+// 🎯 TÍNH NĂNG PHÁT HIỆN TRÙNG LẶP
+// ============================================================
+let dupDelCallback = null;
+
 function updateDupButton() {
-  const btn = $('dup-btn');
+  const btn = document.getElementById('dup-btn');
   if (!btn) return;
-  
-  // Đảm bảo viewList và vocab đã sẵn sàng
   if (typeof viewList === 'undefined' || typeof vocab === 'undefined') return;
   if (!Array.isArray(viewList) || !Array.isArray(vocab)) return;
   
@@ -6805,7 +6807,6 @@ function updateDupButton() {
   }
 }
 
-// Mở Modal và render danh sách trùng lặp
 function openDupModal() {
   const counts = {};
   viewList.forEach(idx => {
@@ -6815,103 +6816,58 @@ function openDupModal() {
       counts[w].push(idx);
     }
   });
-  
-  const body = $('dup-modal-body');
+  const body = document.getElementById('dup-modal-body');
   body.innerHTML = '';
   let hasDups = false;
-  
   for (let w in counts) {
     if (counts[w].length > 1) {
       hasDups = true;
       const groupDiv = document.createElement('div');
       groupDiv.className = 'dup-group';
-      groupDiv.innerHTML = `<div class="dup-group-title">🔤 Từ: "<b>${esc(w)}</b>" (${counts[w].length} bản sao)</div>`;
-      
+      groupDiv.innerHTML = '<div class="dup-group-title">🔤 Từ: "<b>' + esc(w) + '</b>" (' + counts[w].length + ' bản sao)</div>';
       const cardsDiv = document.createElement('div');
       cardsDiv.className = 'dup-cards';
-      
       counts[w].forEach((idx, i) => {
         const v = vocab[idx];
         const card = document.createElement('div');
         card.className = 'dup-card';
-        
-        // Mặc định giữ từ đầu tiên (vị trí nhỏ nhất = thêm sớm nhất), tick xóa các từ còn lại
         const isChecked = i > 0 ? 'checked' : '';
         const isKeepBadge = i === 0 ? '<span style="color:#10b981; font-size:11px; font-weight:bold; margin-left:6px;">(Giữ mặc định)</span>' : '';
-        
-        card.innerHTML = `
-          <label class="dup-check-label">
-            <input type="checkbox" class="dup-del-check" data-idx="${idx}" ${isChecked}>
-            <span>Xóa bản sao này</span>
-            ${isKeepBadge}
-          </label>
-          <div class="dup-card-content">
-            <div><b>Nghĩa:</b> ${esc(v.definition || '...')}</div>
-            <div><b>IPA:</b> ${esc(v.ipa || '')}</div>
-            <div><b>Loại từ:</b> ${esc(v.pos || '')}</div>
-            <div><b>Ví dụ:</b> ${esc(v.example || '')}</div>
-            <div style="font-size:11px; color:#94a3b8; margin-top:6px; border-top:1px solid var(--border); padding-top:4px;">
-              📍 Vị trí trong danh sách: <b>#${idx + 1}</b> <i>(càng nhỏ càng được thêm sớm)</i>
-            </div>
-          </div>
-        `;
+        card.innerHTML = '<label class="dup-check-label"><input type="checkbox" class="dup-del-check" data-idx="' + idx + '" ' + isChecked + '><span>Xóa bản sao này</span>' + isKeepBadge + '</label><div class="dup-card-content"><div><b>Nghĩa:</b> ' + esc(v.definition || '...') + '</div><div><b>IPA:</b> ' + esc(v.ipa || '') + '</div><div><b>Loại từ:</b> ' + esc(v.pos || '') + '</div><div><b>Ví dụ:</b> ' + esc(v.example || '') + '</div><div style="font-size:11px; color:#94a3b8; margin-top:6px; border-top:1px solid var(--border); padding-top:4px;">📍 Vị trí trong danh sách: <b>#' + (idx + 1) + '</b> <i>(càng nhỏ càng được thêm sớm)</i></div></div>';
         cardsDiv.appendChild(card);
       });
-      
       groupDiv.appendChild(cardsDiv);
       body.appendChild(groupDiv);
     }
   }
-  
   if (!hasDups) {
-    body.innerHTML = '<div style="text-align:center; color:#94a3b8; padding:30px; font-size:15px;"> Tuyệt vời! Không có trùng lặp nào.</div>';
+    body.innerHTML = '<div style="text-align:center; color:#94a3b8; padding:30px; font-size:15px;">✨ Tuyệt vời! Không có trùng lặp nào.</div>';
   }
-  
-  $('dup-modal').classList.add('active');
+  document.getElementById('dup-modal').classList.add('active');
 }
 
 function closeDupModal() {
-  $('dup-modal').classList.remove('active');
+  document.getElementById('dup-modal').classList.remove('active');
 }
 
-let dupDelCallback = null;
-
-);
-
 function closeDupDelConfirm() {
-  $('dup-del-confirm').classList.add('hidden');
+  const popup = document.getElementById('dup-del-confirm');
+  if (popup) popup.classList.add('hidden');
   dupDelCallback = null;
 }
 
-// Gán sự kiện cho 2 nút OK / Huỷ
-document.addEventListener('click', e => {
-  const popup = $('dup-del-confirm');
-  if (!popup) return;
-  if (e.target.classList.contains('dup-del-ok')) {
-    if (dupDelCallback) dupDelCallback();
-    closeDupDelConfirm();
-  } else if (e.target.classList.contains('dup-del-cancel')) {
-    closeDupDelConfirm();
-  } else if (!popup.classList.contains('hidden') && !e.target.closest('#dup-del-confirm')) {
-    closeDupDelConfirm();
-  }
-});
-
-let dupDelCallback = null;
 function deleteSelectedDups() {
   const checks = document.querySelectorAll('.dup-del-check:checked');
   if (checks.length === 0) {
     alert('🚨 Bạn chưa chọn từ nào để xóa!');
     return;
   }
-  const popup = $('dup-del-confirm');
-  const txt = $('dup-del-confirm-text');
+  const popup = document.getElementById('dup-del-confirm');
+  const txt = document.getElementById('dup-del-confirm-text');
   txt.innerHTML = 'Bạn có chắc muốn xóa <b>' + checks.length + '</b> từ trùng lặp đã chọn không? Hành động này không thể hoàn tác.';
-  
   const btn = event.target;
   const rect = btn.getBoundingClientRect();
   popup.classList.remove('hidden');
-  
   requestAnimationFrame(() => {
     const pw = popup.offsetWidth, ph = popup.offsetHeight;
     let left = rect.left + rect.width / 2 - pw / 2;
@@ -6922,7 +6878,6 @@ function deleteSelectedDups() {
     popup.style.left = left + 'px';
     popup.style.top = top + 'px';
   });
-  
   dupDelCallback = () => {
     const indicesToDelete = Array.from(checks).map(cb => parseInt(cb.dataset.idx, 10));
     indicesToDelete.sort((a, b) => b - a);
@@ -6936,32 +6891,40 @@ function deleteSelectedDups() {
   };
 }
 
-	
-// Hook vào applyView để cập nhật nút trùng lặp MỌI LÚC danh sách thay đổi
-const origApplyView = window.applyView;
+// Event listener cho popup xác nhận xóa
+document.addEventListener('click', e => {
+  const popup = document.getElementById('dup-del-confirm');
+  if (!popup) return;
+  if (e.target.classList.contains('dup-del-ok')) {
+    if (dupDelCallback) dupDelCallback();
+    closeDupDelConfirm();
+  } else if (e.target.classList.contains('dup-del-cancel')) {
+    closeDupDelConfirm();
+  } else if (!popup.classList.contains('hidden') && !e.target.closest('#dup-del-confirm')) {
+    closeDupDelConfirm();
+  }
+});
+
+// Hook vào applyView để cập nhật nút MỌI LÚC danh sách thay đổi
+const __origApplyView = window.applyView;
 window.applyView = function() {
-  if (typeof origApplyView === 'function') origApplyView();
+  if (typeof __origApplyView === 'function') __origApplyView();
   try { updateDupButton(); } catch(e) {}
 };
 
-// Hook vào init để chạy ngay khi trang load xong
-const origInit = window.init;
+// Hook vào init để chạy ngay khi trang load
+const __origInit = window.init;
 window.init = function() {
-  if (typeof origInit === 'function') origInit();
+  if (typeof __origInit === 'function') __origInit();
   try { updateDupButton(); } catch(e) {}
 };
 
-// Gọi ngay lập tức sau khi DOM sẵn sàng (fallback)
+// Fallback: gọi sau khi DOM sẵn sàng
 if (document.readyState === 'loading') {
-  document.addEventListener('DOMContentLoaded', function() {
-    setTimeout(updateDupButton, 500);
-  });
+  document.addEventListener('DOMContentLoaded', () => setTimeout(updateDupButton, 600));
 } else {
-  setTimeout(updateDupButton, 500);
+  setTimeout(updateDupButton, 600);
 }
-
-
-	
 </script>
 <div id="dup-del-confirm" class="dup-del-confirm hidden">
   <div class="dup-del-confirm-text" id="dup-del-confirm-text"></div>
