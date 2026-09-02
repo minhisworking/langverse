@@ -5474,13 +5474,36 @@ var origStartSelected = window.startSelectedTest;
 window.startSelectedTest = function() {
   const pool = getTestPool();
   if (!pool.length) {
-    if (typeof showPretestToast === 'function') showPretestToast('🚨 Bạn chưa chọn gì để kiểm tra!');
+    if (typeof showPretestToast === 'function') showPretestToast(' Bạn chưa chọn gì để kiểm tra!');
     return;
   }
   if (typeof closePretest === 'function') closePretest();
   
-  // Xử lý theo skill
-  if (PRETEST.skill === 'nghe') {
+  try {
+    if (PRETEST.skill === 'nghe' && typeof startPaperNghe === 'function') {
+      startPaperNghe();
+    } else if (PRETEST.skill === 'doc' && typeof startPaperDoc === 'function') {
+      startPaperDoc();
+    } else if (PRETEST.skill === 'noi') {
+      if (typeof startPaperNoi === 'function') {
+        startPaperNoi();
+      } else {
+        alert('❌ LỖI: Hàm startPaperNoi() chưa được định nghĩa trong code!');
+      }
+    } else if (PRETEST.skill === 'viet' && typeof startPaperViet === 'function') {
+      startPaperViet();
+    } else {
+      if (typeof origStartSelected === 'function') {
+        origStartSelected.call(this);
+      } else {
+        alert('⚠️ Không tìm thấy hàm xử lý cho skill: ' + (PRETEST.skill || 'undefined'));
+      }
+    }
+  } catch (e) {
+    alert(' Lỗi khi bắt đầu bài thi: ' + e.message);
+    console.error(e);
+  }
+};
     if (typeof startPaperNghe === 'function') {
       startPaperNghe();
     }
