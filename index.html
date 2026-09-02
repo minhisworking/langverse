@@ -4921,6 +4921,7 @@ window.startNoiRecord = function(btn, key){
         if(typeof stopNoiRecord === 'function') stopNoiRecord(btn, key);
         return;
     }
+    const SR = window.SpeechRecognition || window.webkitSpeechRecognition;
     navigator.mediaDevices.getUserMedia({audio:true}).then(function(stream){
         const mediaRec = new MediaRecorder(stream);
         const chunks = [];
@@ -4935,89 +4936,60 @@ window.startNoiRecord = function(btn, key){
             stream.getTracks().forEach(tr=>tr.stop());
         };
         mediaRec.start();
-
-        let rec = null;
-        const SpeechRec = window.SpeechRecognition || window.webkitSpeechRecognition;
-        if(SpeechRec){
-            try {
-                rec = new SpeechRec();
-                let rawLang = t.speakLang || lvGetMultiFrontLang();
-                if (!rawLang || rawLang === 'auto') rawLang = 'ja';
-                let langCode = (typeof ttsLang === 'function') ? ttsLang(rawLang, '') : rawLang;
-                rec.lang = langCode;
-                if(rec.lang && rec.lang.length === 2){
-                    const langMap = {'ja':'ja-JP','ko':'ko-KR','zh':'zh-CN','vi':'vi-VN','en':'en-US'};
-                    rec.lang = langMap[rec.lang] || rec.lang;
-                }
-                rec.continuous = true;
-                rec.interimResults = true;
-                rec.maxAlternatives = 1;
-
-                rec.onresult = function(e){
-                    if(!t.noiRecords[key]) t.noiRecords[key] = {};
-                    let interimTranscript = '';
-                    let finalTranscript = '';
-                    for(let i = e.resultIndex; i < e.results.length; i++){
-                        const result = e.results[i];
-                        if(result.isFinal) finalTranscript += result[0].transcript;
-                        else interimTranscript += result[0].transcript;
-                    }
-                    const noteEl = document.getElementById('noi-note-'+key);
-                    if(interimTranscript && !t.noiRecords[key].transcriptFinal){
-                        t.noiRecords[key].transcript = interimTranscript;
-                        if(noteEl) noteEl.textContent = '🎤 Đang nghe: ' + interimTranscript;
-                    }
-                    if(finalTranscript){
-                        t.noiRecords[key].transcript = finalTranscript;
-                        t.noiRecords[key].transcriptFinal = true;
-                        if(noteEl) noteEl.textContent = '✅ ' + finalTranscript;
-                        try { rec.stop(); } catch(e2){}
-                    }
-                };
-
-                rec.onerror = function(e){
-                    const noteEl = document.getElementById('noi-note-'+key);
-                    if(noteEl) noteEl.textContent = '⚠️ Lỗi SR: ' + e.error;
-                };
-
-                rec.onstart = function(){
-                    const noteEl = document.getElementById('noi-note-'+key);
-                    if(noteEl) noteEl.textContent = '🎤 Đang nghe...';
-                };
-
-                rec.onspeechstart = function(){
-                    const noteEl = document.getElementById('noi-note-'+key);
-                    if(noteEl) noteEl.textContent = '🗣️ Đang nghe bạn nói...';
-                };
-
-                rec.onend = function(){
-                    const noteEl = document.getElementById('noi-note-'+key);
-                    if(!t.noiRecords[key] || !t.noiRecords[key].transcriptFinal){
-                        if(!t.noiRecords[key]) t.noiRecords[key] = {};
-                        if(!t.noiRecords[key]._retried){
-                            t.noiRecords[key]._retried = true;
-                            try {
-                                rec.start();
-                                if(noteEl) noteEl.textContent = '🔄 Đang thử lại...';
-                            } catch(e3) {
-                                if(noteEl) noteEl.textContent = '⚠️ Không nhận diện được giọng nói';
-                            }
-                        } else {
-                            if(noteEl) noteEl.textContent = '⚠️ Không nhận diện được giọng nói';
-                        }
-                    }
-                };
-
-                try { rec.start(); } catch(e4){
-                    const noteEl = document.getElementById('noi-note-'+key);
-                    if(noteEl) noteEl.textContent = '⚠️ Không hỗ trợ ghi âm';
-                }
-            } catch(e5) {
-                const noteEl = document.getElementById('noi-note-'+key);
-                if(noteEl) noteEl.textContent = '⚠️ Không khởi tạo được nhận diện giọng nói';
-            }
-        }
-
+        
+        // Thêm SpeechRecognition để lấy transcript
+let rec = null;
+if(SR){
+rec = new SR();
+// === SỬA LỖI Ở ĐÂY ===
+// === FIX: ÉP NGÔN NGỮ NHẬN DIỆN GIỌNG NÓI ===
+// 1. Lấy ngôn ngữ đã được chốt sẵn khi bắt đầu bài thi
+let rawLang = t.speakLang || lvGetMultiFrontLang();
+// 2. Nếu vẫn là 'auto' hoặc rỗng, ép cứng về 'ja' để tránh nhận nhầm sang tiếng Trung
+if (!rawLang || rawLang === 'auto') {
+rawLang = 'ja';
+}
+// 3. Convert mã ngắn (vd: 'ja') sang chuẩn trình duyệt cần (vd: 'ja-JP')
+// Hàm ttsLang sẽ map 'ja' -> 'ja-JP', 'zh' -> 'zh-CN', v.v.
+let langCode = (typeof ttsLang === 'function') ? ttsLang(rawLang, '') : rawLang;
+rec.lang = langCode;
+// === FIX CHO CHROME MOBILE ===
+rec.continuous = false; // Chỉ ghi âm 1 lần rồi dừng
+rec.interimResults = true; // Bật interim results để nhận kết quả sớm hơn trên mobile
+// ========================================
+rec.onresult = function(e){
+if(!t.noiRecords[key]) t.noiRecords[key] = {};
+// Lấy kết quả cuối cùng (final) thay vì interim
+for(let i = e.resultIndex; i < e.results.length; i++){
+if(e.results[i].isFinal){
+t.noiRecords[key].transcript = e.results[i][0].transcript;
+break;
+}
+}
+// Fallback: nếu không có final result, lấy result đầu tiên
+if(!t.noiRecords[key].transcript && e.results.length > 0){
+t.noiRecords[key].transcript = e.results[0][0].transcript;
+}
+};
+rec.onerror = function(e){ 
+console.log('SR error:', e.error); 
+// Hiển thị lỗi cho user trên mobile
+const noteEl = document.getElementById('noi-note-'+key);
+if(noteEl) noteEl.textContent = '⚠️ Lỗi: ' + e.error;
+};
+rec.onend = function(){
+// Khi SR tự động dừng, cập nhật trạng thái
+const noteEl = document.getElementById('noi-note-'+key);
+if(noteEl && !t.noiRecords[key].transcript){
+noteEl.textContent = '️ Không nhận diện được giọng nói';
+}
+};
+try { rec.start(); } catch(e){ 
+console.log('SR start failed:', e); 
+const noteEl = document.getElementById('noi-note-'+key);
+if(noteEl) noteEl.textContent = '⚠️ Không hỗ trợ ghi âm';
+}
+}
         if(!t.noiRecords[key]) t.noiRecords[key] = {};
         t.noiRecords[key].mediaRec = mediaRec;
         t.noiRecords[key].rec = rec;
@@ -5034,7 +5006,7 @@ window.startNoiRecord = function(btn, key){
     }).catch(function(err){
         alert('⚠️ Không thể truy cập microphone: ' + err.message);
     });
-};
+};;
 
 var noiModeLocked = false;
 window.stopNoiRecord = function(btn, key){
@@ -5425,71 +5397,41 @@ $('test-body').innerHTML = html;
 
 // Override startSelectedTest để gọi renderPaperNoi
 var origStartSelected = window.startSelectedTest;
-
-window.startPaperNoi = async function() {
-const pool = getTestPool();
-if (!pool.length) {
-if (typeof showPretestToast === 'function') showPretestToast('🚨 Bạn chưa chọn gì để kiểm tra!');
-return;
-}
-let speakLangNoi = 'auto';
-try {
-const curMultiId = getCurrentMulti();
-if (curMultiId && curMultiId !== 'all') {
-const curMulti = getMultiverses().find(function(m) { return m.id === curMultiId; });
-if (curMulti && curMulti.front) speakLangNoi = curMulti.front;
-}
-} catch(e) {}
-if (!speakLangNoi || speakLangNoi === 'auto') {
-const langF = document.getElementById('ai-lang-front');
-speakLangNoi = (langF && langF.value && langF.value !== 'auto') ? langF.value : 'ja';
-}
-TEST = {
-skill: 'noi', paper: true, pool: pool,
-questions: buildExam('noi', pool),
-curSec: -1, secQueue: [], secPos: 0,
-scores: [], secScores: {}, plays: 0, answered: false,
-noiRecords: {}, speakLang: speakLangNoi
-};
-$('test-modal').classList.add('active');
-$('test-title').textContent = '🗣️ NÓI — BÀI THI';
-await renderPaperNoi();
-};
-
-window.startSelectedTest = async function() {
+window.startSelectedTest = function(){
   const pool = getTestPool();
-  if (!pool.length) {
-    if (typeof showPretestToast === 'function') showPretestToast(' Bạn chưa chọn gì để kiểm tra!');
+  if(!pool.length){ showPretestToast('🚨 Bạn chưa chọn gì để kiểm tra!'); return; }
+  closePretest();
+  
+  if(PRETEST.skill === 'nghe'){ startPaperNghe(); return; }
+if(PRETEST.skill === 'doc'){ startPaperDoc(); return; } // <-- THÊM DÒNG NÀY
+if(PRETEST.skill === 'noi'){
+let langFNoi = $('ai-lang-front') ? $('ai-lang-front').value : 'auto';
+let multiLangNoi = lvGetMultiFrontLang();
+let speakLangNoi = (langFNoi && langFNoi !== 'auto') ? langFNoi : (multiLangNoi !== 'auto' ? multiLangNoi : 'vi');
+TEST = {
+skill: 'noi',
+pool: pool,
+questions: buildExam('noi', pool),
+curSec: -1,
+secQueue: [],
+secPos: 0,
+scores: [],
+secScores: {},
+plays: 0,
+answered: false,
+noiRecords: {},
+speakLang: speakLangNoi
+};
+    $('test-modal').classList.add('active');
+    $('test-title').textContent = '🗣️ NÓI — BÀI THI';
+    renderPaperNoi();
     return;
   }
-  if (typeof closePretest === 'function') closePretest();
   
-  try {
-    if (PRETEST.skill === 'nghe' && typeof startPaperNghe === 'function') {
-      await startPaperNghe();
-    } else if (PRETEST.skill === 'doc' && typeof startPaperDoc === 'function') {
-      await startPaperDoc();
-    } else if (PRETEST.skill === 'noi') {
-      if (typeof startPaperNoi === 'function') {
-        await startPaperNoi();
-      } else {
-        alert('❌ LỖI: Hàm startPaperNoi() chưa được định nghĩa trong code!');
-      }
-    } else if (PRETEST.skill === 'viet' && typeof startPaperViet === 'function') {
-      await startPaperViet();
-    } else {
-      if (typeof origStartSelected === 'function') {
-        origStartSelected.call(this);
-      } else {
-        alert('⚠️ Không tìm thấy hàm xử lý cho skill: ' + (PRETEST.skill || 'undefined'));
-      }
-    }
-  } catch (e) {
-    alert('🚨 Lỗi khi bắt đầu bài thi: ' + (e && e.message ? e.message : e));
-    console.error(e);
-  }
+  TEST = { skill:PRETEST.skill, pool, questions:buildExam(PRETEST.skill,pool), curSec:-1, secQueue:[], secPos:0, scores:[], secScores:{}, plays:0, answered:false };
+  $('test-modal').classList.add('active');
+  showOverview();
 };
-    
 
 })();
 </script>
@@ -6356,7 +6298,40 @@ window.updateVietWordCount = function(qIndex) {
         $('test-body').innerHTML = html;
     }
 
-   
+    // === 7. HOOK VÀO HÀM startSelectedTest CÓ SẴN ===
+    var origStartSelected = window.startSelectedTest;
+    window.startSelectedTest = function() {
+        const pool = getTestPool();
+        if (!pool.length) {
+            if (typeof showPretestToast === 'function') showPretestToast('🚨 Bạn chưa chọn gì để kiểm tra!');
+            return;
+        }
+        
+        if (typeof closePretest === 'function') closePretest();
+
+        if (PRETEST.skill === 'nghe') { startPaperNghe(); return; }
+        if (PRETEST.skill === 'doc') { startPaperDoc(); return; }
+        if (PRETEST.skill === 'noi') { 
+            // Gọi hàm nói gốc (đã được patch ở script khác)
+            if (typeof origStartSelected === 'function') {
+                // Tạm thời trả về để script gốc xử lý phần 'noi'
+                // Nhưng vì ta đã override, ta cần gọi trực tiếp logic của noi nếu có, 
+                // hoặc để script gốc của bạn tự xử lý.
+                // Cách an toàn nhất là check skill và gọi đúng hàm:
+            }
+            // Gọi lại hàm startSelectedTest gốc để nó xử lý phần 'noi'
+            if (typeof origStartSelected === 'function') origStartSelected.call(this);
+            return; 
+        }
+        
+        if (PRETEST.skill === 'viet') {
+            startPaperViet();
+            return;
+        }
+
+        // Fallback cho các skill khác
+        if (typeof origStartSelected === 'function') origStartSelected.call(this);
+    };
 
 })();
 </script>
