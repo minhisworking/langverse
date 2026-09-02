@@ -6883,20 +6883,7 @@ document.addEventListener('click', e => {
   }
 });
 
-// Hook vào applyView để cập nhật nút trùng lặp MỌI LÚC danh sách thay đổi
-const origApplyView = window.applyView;
-window.applyView = function() {
-  if (typeof origApplyView === 'function') origApplyView();
-  updateDupButton();
-};
-
-// Hook vào init để chạy ngay khi trang load xong
-const origInit = window.init;
-window.init = function() {
-  if (typeof origInit === 'function') origInit();
-  updateDupButton();
-};
-
+let dupDelCallback = null;
 function deleteSelectedDups() {
   const checks = document.querySelectorAll('.dup-del-check:checked');
   if (checks.length === 0) {
@@ -6934,6 +6921,23 @@ function deleteSelectedDups() {
     init();
   };
 }
+
+	
+// Hook vào applyView để cập nhật nút trùng lặp MỌI LÚC danh sách thay đổi
+const origApplyView = window.applyView;
+window.applyView = function() {
+  if (typeof origApplyView === 'function') origApplyView();
+  updateDupButton();
+};
+
+// Hook vào init để chạy ngay khi trang load xong
+const origInit = window.init;
+window.init = function() {
+  if (typeof origInit === 'function') origInit();
+  updateDupButton();
+};
+
+
 	
 </script>
 <div id="dup-del-confirm" class="dup-del-confirm hidden">
