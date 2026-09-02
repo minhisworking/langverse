@@ -5471,6 +5471,37 @@ $('test-body').innerHTML = html;
 
 // Override startSelectedTest để gọi renderPaperNoi
 var origStartSelected = window.startSelectedTest;
+
+window.startPaperNoi = async function() {
+const pool = getTestPool();
+if (!pool.length) {
+if (typeof showPretestToast === 'function') showPretestToast('🚨 Bạn chưa chọn gì để kiểm tra!');
+return;
+}
+let speakLangNoi = 'auto';
+try {
+const curMultiId = getCurrentMulti();
+if (curMultiId && curMultiId !== 'all') {
+const curMulti = getMultiverses().find(function(m) { return m.id === curMultiId; });
+if (curMulti && curMulti.front) speakLangNoi = curMulti.front;
+}
+} catch(e) {}
+if (!speakLangNoi || speakLangNoi === 'auto') {
+const langF = document.getElementById('ai-lang-front');
+speakLangNoi = (langF && langF.value && langF.value !== 'auto') ? langF.value : 'ja';
+}
+TEST = {
+skill: 'noi', paper: true, pool: pool,
+questions: buildExam('noi', pool),
+curSec: -1, secQueue: [], secPos: 0,
+scores: [], secScores: {}, plays: 0, answered: false,
+noiRecords: {}, speakLang: speakLangNoi
+};
+$('test-modal').classList.add('active');
+$('test-title').textContent = '🗣️ NÓI — BÀI THI';
+await renderPaperNoi();
+};
+
 window.startSelectedTest = function() {
   const pool = getTestPool();
   if (!pool.length) {
@@ -5504,66 +5535,7 @@ window.startSelectedTest = function() {
     console.error(e);
   }
 };
-    if (typeof startPaperNghe === 'function') {
-      startPaperNghe();
-    }
-    return;
-  }
-  if (PRETEST.skill === 'doc') {
-    if (typeof startPaperDoc === 'function') {
-      startPaperDoc();
-    }
-    return;
-  }
-  if (PRETEST.skill === 'noi') {
-    if (typeof startPaperNoi === 'function') {
-      startPaperNoi();
-    } else {
-      console.error('❌ Hàm startPaperNoi chưa được định nghĩa!');
-      if (typeof showPretestToast === 'function') showPretestToast(' Lỗi: Hàm startPaperNoi chưa tồn tại!', false);
-    }
-    return;
-  }
-  if (PRETEST.skill === 'viet') {
-    if (typeof startPaperViet === 'function') {
-      startPaperViet();
-    }
-    return;
-  }
-  
-  // Fallback
-  if (typeof origStartSelected === 'function') {
-    origStartSelected.call(this);
-  }
-};
-  
-  if (typeof origStartSelected === 'function') origStartSelected.call(this);
-
-  if(PRETEST.skill === 'viet'){ startPaperViet(); return; }
-  // Fallback cho các skill khác
-  if (typeof origStartSelected === 'function') origStartSelected.call(this);
-};
-questions: buildExam('noi', pool),
-curSec: -1,
-secQueue: [],
-secPos: 0,
-scores: [],
-secScores: {},
-plays: 0,
-answered: false,
-noiRecords: {},
-speakLang: speakLangNoi
-};
-    $('test-modal').classList.add('active');
-    $('test-title').textContent = '🗣️ NÓI — BÀI THI';
-    renderPaperNoi();
-    return;
-  }
-  
-  TEST = { skill:PRETEST.skill, pool, questions:buildExam(PRETEST.skill,pool), curSec:-1, secQueue:[], secPos:0, scores:[], secScores:{}, plays:0, answered:false };
-  $('test-modal').classList.add('active');
-  showOverview();
-};
+    
 
 })();
 </script>
