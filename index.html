@@ -4901,17 +4901,17 @@ window.setGemState = function(s){
 if (window.__lvNoiPaperPatch) return;
 window.__lvNoiPaperPatch = true;
 
-const NOI_PLAYS = 1; // Chỉ 1 lần nói duy nhất
+// 🚨 PHÁT HIỆN ANDROID CHROME (Nơi xung đột Microphone)
+const ua = navigator.userAgent;
+window.__isAndroidChrome = /Android/i.test(ua) && /Chrome/i.test(ua) && !/Edg|OPR|SamsungBrowser|Firefox/i.test(ua);
 
+const NOI_PLAYS = 1; 
 function ppNoi(key){
-  return '<button type="button" class="btn-primary" data-nk="'+key+'" style="padding:6px 12px;" onclick="startNoiRecord(this,\''+key+'\')">🎤 Nói</button>';
+return '<button type="button" class="btn-primary" data-nk="'+key+'" style="padding:6px 12px;" onclick="startNoiRecord(this,\''+key+'\')">🎤 Nói</button>';
 }
+window.noiGeminiBusy = false; 
 
-let currentStream = null;
-let currentMediaRecorder = null;
-window.noiGeminiBusy = false; // 🔒 Biến khóa chống spam Gemini
-
-// Tìm hàm startNoiRecord và sửa lại phần này:
+// === HÀM BẮT ĐẦU GHI ÂM / NHẬN DIỆN ===
 window.startNoiRecord = function(btn, key){
     const t = TEST;
     if(!t) return;
@@ -4921,62 +4921,85 @@ window.startNoiRecord = function(btn, key){
         if(typeof stopNoiRecord === 'function') stopNoiRecord(btn, key);
         return;
     }
+
     const SR = window.SpeechRecognition || window.webkitSpeechRecognition;
+    let rec = null;
     
-	let rec = null;
-if(SR){
-rec = new SR();
-// === SỬA LỖI Ở ĐÂY ===
-// === FIX: ÉP NGÔN NGỮ NHẬN DIỆN GIỌNG NÓI ===
-// 1. Lấy ngôn ngữ đã được chốt sẵn khi bắt đầu bài thi
-let rawLang = t.speakLang || lvGetMultiFrontLang();
-// 2. Nếu vẫn là 'auto' hoặc rỗng, ép cứng về 'ja' để tránh nhận nhầm sang tiếng Trung
-if (!rawLang || rawLang === 'auto') {
-rawLang = 'ja';
-}
-// 3. Convert mã ngắn (vd: 'ja') sang chuẩn trình duyệt cần (vd: 'ja-JP')
-// Hàm ttsLang sẽ map 'ja' -> 'ja-JP', 'zh' -> 'zh-CN', v.v.
-let langCode = (typeof ttsLang === 'function') ? ttsLang(rawLang, '') : rawLang;
-rec.lang = langCode;
-// === FIX CHO CHROME MOBILE ===
-rec.continuous = true; // Chỉ ghi âm 1 lần rồi dừng
-rec.interimResults = true; // Bật interim results để nhận kết quả sớm hơn trên mobile
-// ========================================
-rec.onresult = function(e){
-if(!t.noiRecords[key]) t.noiRecords[key] = {};
-// Lấy kết quả cuối cùng (final) thay vì interim
-for(let i = e.resultIndex; i < e.results.length; i++){
-if(e.results[i].isFinal){
-t.noiRecords[key].transcript = e.results[i][0].transcript;
-break;
-}
-}
-// Fallback: nếu không có final result, lấy result đầu tiên
-if(!t.noiRecords[key].transcript && e.results.length > 0){
-t.noiRecords[key].transcript = e.results[0][0].transcript;
-}
-};
-rec.onerror = function(e){ 
-console.log('SR error:', e.error); 
-// Hiển thị lỗi cho user trên mobile
-const noteEl = document.getElementById('noi-note-'+key);
-if(noteEl) noteEl.textContent = '⚠️ Lỗi: ' + e.error;
-};
-rec.onend = function(){
-// Khi SR tự động dừng, cập nhật trạng thái
-const noteEl = document.getElementById('noi-note-'+key);
-if(noteEl && !t.noiRecords[key].transcript){
-noteEl.textContent = '️ Không nhận diện được giọng nói';
-}
-};
-try { rec.start(); } catch(e){ 
-console.log('SR start failed:', e); 
-const noteEl = document.getElementById('noi-note-'+key);
-if(noteEl) noteEl.textContent = '⚠️ Không hỗ trợ ghi âm';
-}
-}
-	
-	navigator.mediaDevices.getUserMedia({audio:true}).then(function(stream){
+    if(SR){
+        rec = new SR();
+        let rawLang = t.speakLang || lvGetMultiFrontLang();
+        if (!rawLang || rawLang === 'auto') rawLang = 'ja';
+        let langCode = (typeof ttsLang === 'function') ? ttsLang(rawLang, '') : rawLang;
+        rec.lang = langCode;
+        rec.continuous = true;
+        rec.interimResults = true;
+
+        rec.onresult = function(e){
+            if(!t.noiRecords[key]) t.noiRecords[key] = {};
+            for(let i = e.resultIndex; i < e.results.length; i++){
+                if(e.results[i].isFinal){
+                    t.noiRecords[key].transcript = e.results[i][0].transcript;
+                    break;
+                }
+            }
+            if(!t.noiRecords[key].transcript && e.results.length > 0){
+                t.noiRecords[key].transcript = e.results[0][0].transcript;
+            }
+        };
+        
+        rec.onerror = function(e){
+            const noteEl = document.getElementById('noi-note-'+key);
+            if(noteEl) noteEl.textContent = '⚠️ Lỗi: ' + e.error;
+        };
+        
+        rec.onend = function(){
+            const noteEl = document.getElementById('noi-note-'+key);
+            if(!t.noiRecords[key].transcript){
+                if(noteEl) noteEl.textContent = '⚠️ Không nhận diện được giọng nói';
+            } else {
+                if(noteEl) noteEl.textContent = '✓ Đã nhận diện giọng nói';
+            }
+            
+            // 🚨 NẾU LÀ ANDROID CHROME -> KẾT THÚC LUỒNG TẠI ĐÂY (KHÔNG CẦN MEDIA RECORDER)
+            if (window.__isAndroidChrome) {
+                if(!t.noiRecords[key]) t.noiRecords[key] = {};
+                t.noiRecords[key].done = true;
+                t.noiRecords[key].recording = false;
+                btn.textContent = '✅ Đã ghi âm';
+                btn.disabled = true;
+                btn.dataset.recording = '0';
+            }
+        };
+
+        try { rec.start(); } catch(e){
+            const noteEl = document.getElementById('noi-note-'+key);
+            if(noteEl) noteEl.textContent = '⚠️ Không hỗ trợ ghi âm';
+        }
+    }
+
+    // 🚨 SKIP MEDIA RECORDER NẾU LÀ ANDROID CHROME (Tránh xung đột Mic)
+    if (window.__isAndroidChrome) {
+        console.log("🤖 Android Chrome detected: Skipping MediaRecorder to prevent microphone conflict.");
+        if(!t.noiRecords[key]) t.noiRecords[key] = {};
+        t.noiRecords[key].rec = rec;
+        t.noiRecords[key].recording = true;
+        
+        btn.textContent = '⏹️ Dừng';
+        btn.dataset.recording = '1';
+        const noteEl = document.getElementById('noi-note-'+key);
+        if(noteEl) noteEl.textContent = '🔴 Đang nhận diện... (Android không hỗ trợ nghe lại)';
+        
+        // Tự động dừng sau 15s
+        setTimeout(function(){
+            if(t.noiRecords[key] && t.noiRecords[key].recording && !t.noiRecords[key].done){
+                try { rec.stop(); } catch(e){}
+            }
+        }, 15000);
+        return; 
+    }
+
+    // === PC / iOS / TRÌNH DUYỆT KHÁC: CHẠY CẢ 2 ===
+    navigator.mediaDevices.getUserMedia({audio:true}).then(function(stream){
         const mediaRec = new MediaRecorder(stream);
         const chunks = [];
         mediaRec.ondataavailable = function(e){ if(e.data.size>0) chunks.push(e.data); };
@@ -4990,167 +5013,170 @@ if(noteEl) noteEl.textContent = '⚠️ Không hỗ trợ ghi âm';
             stream.getTracks().forEach(tr=>tr.stop());
         };
         mediaRec.start();
-        
-        // Thêm SpeechRecognition để lấy transcript
 
         if(!t.noiRecords[key]) t.noiRecords[key] = {};
         t.noiRecords[key].mediaRec = mediaRec;
         t.noiRecords[key].rec = rec;
-		t.noiRecords[key].stream = stream;
+        t.noiRecords[key].stream = stream;
         t.noiRecords[key].recording = true;
+        
         btn.textContent = '⏹️ Dừng';
         btn.dataset.recording = '1';
         const noteEl = document.getElementById('noi-note-'+key);
         if(noteEl) noteEl.textContent = '🔴 Đang ghi âm...';
+        
         setTimeout(function(){
             if(t.noiRecords[key] && t.noiRecords[key].recording){
                 stopNoiRecord(btn, key);
             }
         }, 15000);
     }).catch(function(err){
-		 if(rec) try { rec.stop(); } catch(e){}
+        if(rec) try { rec.stop(); } catch(e){}
         alert('⚠️ Không thể truy cập microphone: ' + err.message);
     });
-};;
+};
 
-var noiModeLocked = false;
+// === HÀM DỪNG GHI ÂM ===
 window.stopNoiRecord = function(btn, key){
     const t = TEST;
     if(!t || !t.noiRecords || !t.noiRecords[key]) return;
-    
     const r = t.noiRecords[key];
     if(!r.recording) return;
-    
     r.recording = false;
     
-    // Stop media recorder
+    // 🚨 XỬ LÝ RIÊNG CHO ANDROID
+    if (window.__isAndroidChrome) {
+        if(r.rec) try { r.rec.stop(); } catch(e){}
+        r.done = true;
+        btn.textContent = '✅ Đã ghi âm';
+        btn.disabled = true;
+        btn.dataset.recording = '0';
+        const noteEl = document.getElementById('noi-note-'+key);
+        if(noteEl) noteEl.textContent = '✓ Đã nhận diện giọng nói';
+        return;
+    }
+
+    // PC / iOS
     if(r.mediaRec && r.mediaRec.state !== 'inactive'){
         r.mediaRec.stop();
     }
-    
-    // Stream đã được stop trong onstop event
-    
     btn.textContent = '✅ Đã ghi âm';
     btn.disabled = true;
     btn.dataset.recording = '0';
-    
     const noteEl = document.getElementById('noi-note-'+key);
     if(noteEl) noteEl.textContent = '✓ Đã ghi âm xong';
 };
 
+// === RENDER GIAO DIỆN (CÓ THÔNG BÁO RIÊNG CHO ANDROID) ===
 async function renderPaperNoi(){
-const t = TEST;
-t.noiRecords = {};
+    const t = TEST;
+    t.noiRecords = {};
+    $('test-body').innerHTML = '<div style="text-align:center; padding:40px; color:#94a3b8;"><div class="ai-spinner" style="width:24px;height:24px;margin:0 auto 12px;"></div>🤖 AI đang chuẩn bị bài thi Nói...</div>';
 
-// 1. Hiện màn hình loading
-$('test-body').innerHTML = '<div style="text-align:center; padding:40px; color:#94a3b8;"><div class="ai-spinner" style="width:24px;height:24px;margin:0 auto 12px;"></div>🤖 AI đang chuẩn bị bài thi Nói...</div>';
+    const p1Words = t.questions.filter(q=>q.sec===0).map(q=>q.v);
+    const wordsStr = p1Words.map(q=>q.word).join(', ');
+    let langCode = lvGetMultiFrontLang();
+    const langNameMap = {
+        'vi': 'tiếng Việt', 'en': 'tiếng Anh', 'ja': 'tiếng Nhật', 'ko': 'tiếng Hàn',
+        'zh': 'tiếng Trung', 'fr': 'tiếng Pháp', 'de': 'tiếng Đức', 'es': 'tiếng Tây Ban Nha'
+    };
+    const langName = langNameMap[langCode] || 'tiếng Nhật';
+    
+    const prompt = profileLine() + `Tạo 2 câu bằng ${langName} để luyện nói, mỗi câu 10-15 từ, có thể chứa các từ: ${wordsStr}.
+    ⚠️ QUAN TRỌNG:
+    - Nếu ngôn ngữ là 'tiếng Nhật': TẤT CẢ phải viết bằng TIẾNG NHẬT
+    - KHÔNG được dùng tiếng Trung nếu ngôn ngữ là tiếng Nhật
+    Trả về JSON {"sentences":["...","..."]} chỉ JSON.`;
+    
+    let sentences = [];
+    window.noiGeminiBusy = true; 
+    try {
+        const g = await geminiText(prompt);
+        const j = parseJsonLoose(g);
+        if (j && j.sentences && Array.isArray(j.sentences)) sentences = j.sentences;
+    } catch(e) { console.error('Lỗi tạo câu:', e); } 
+    finally { window.noiGeminiBusy = false; }
+    
+    if(sentences.length < 2) sentences = ['Sample sentence 1', 'Sample sentence 2'];
 
-// 2. Gọi AI tạo câu cho Phần 1 trước
-const p1Words = t.questions.filter(q=>q.sec===0).map(q=>q.v);
-const wordsStr = p1Words.map(q=>q.word).join(', ');
-let langCode = lvGetMultiFrontLang();
-const langNameMap = {
-'vi': 'tiếng Việt', 'en': 'tiếng Anh', 'ja': 'tiếng Nhật', 'ko': 'tiếng Hàn',
-'zh': 'tiếng Trung', 'fr': 'tiếng Pháp', 'de': 'tiếng Đức', 'es': 'tiếng Tây Ban Nha'
-};
-const langName = langNameMap[langCode] || 'tiếng Nhật'; 
-const prompt = profileLine() + `Tạo 2 câu bằng ${langName} để luyện nói, mỗi câu 10-15 từ, có thể chứa các từ: ${wordsStr}.
-⚠️ QUAN TRỌNG:
-- Nếu ngôn ngữ là 'tiếng Nhật': TẤT CẢ phải viết bằng TIẾNG NHẬT (dùng Kanji, Hiragana, Katakana)
-- KHÔNG được dùng tiếng Trung nếu ngôn ngữ là tiếng Nhật
-- Phân biệt rõ Kanji tiếng Nhật với chữ Hán tiếng Trung
-Trả về JSON {"sentences":["...","..."]} chỉ JSON.`;
+    let html = '<div style="color:#94a3b8;font-size:13px;margin-bottom:12px;">📄 Bài thi Nói — mỗi câu chỉ được nói 1 lần</div>';
+    
+    // 🚨 THÔNG BÁO ĐỘNG THEO HỆ ĐIỀU HÀNH
+    if (window.__isAndroidChrome) {
+        html += '<div style="padding:12px;background:linear-gradient(135deg, rgba(245,158,11,0.15) 0%, rgba(234,179,8,0.1) 100%);border:2px solid #f59e0b;border-radius:10px;margin-bottom:16px;">';
+        html += '<div style="display:flex;align-items:flex-start;gap:10px;"><div style="font-size:20px;">⚠️</div><div style="flex:1;">';
+        html += '<div style="font-weight:bold;color:#fbbf24;margin-bottom:6px;font-size:13px;">Lưu ý dành cho Android</div>';
+        html += '<div style="font-size:12px;color:#fcd34d;line-height:1.7;">';
+        html += 'Do hạn chế của hệ điều hành Android, trình duyệt chỉ cho phép <b>1 ứng dụng</b> truy cập Microphone tại 1 thời điểm.<br>';
+        html += '👉 Hệ thống sẽ <b>ưu tiên Nhận diện giọng nói</b> để Gemini chấm điểm. Bạn sẽ <b>không thể nghe lại</b> file audio trên Android.';
+        html += '</div></div></div></div>';
+    } else {
+        html += '<div style="padding:12px;background:linear-gradient(135deg, rgba(245,158,11,0.15) 0%, rgba(234,179,8,0.1) 100%);border:2px solid #f59e0b;border-radius:10px;margin-bottom:16px;">';
+        html += '<div style="display:flex;align-items:flex-start;gap:10px;"><div style="font-size:20px;">⚠️</div><div style="flex:1;">';
+        html += '<div style="font-weight:bold;color:#fbbf24;margin-bottom:6px;font-size:13px;">Lưu ý quan trọng về quyền microphone</div>';
+        html += '<div style="font-size:12px;color:#fcd34d;line-height:1.7;">';
+        html += '<div><b>Lần 1:</b> Cấp quyền để <b>Speech Recognition</b> lấy transcript (chữ) → Gemini chấm điểm</div>';
+        html += '<div><b>Lần 2:</b> Cấp quyền để <b>MediaRecorder</b> lưu file audio → Bạn review lại ở phần kết quả</div>';
+        html += '</div></div></div></div>';
+    }
 
-let sentences = [];
-window.noiGeminiBusy = true; // 🔒 Bắt đầu khóa
-try {
-const g = await geminiText(prompt);
-const j = parseJsonLoose(g);
-if (j && j.sentences && Array.isArray(j.sentences)) sentences = j.sentences;
-} catch(e) {
-console.error('Lỗi tạo câu:', e);
-} finally {
-window.noiGeminiBusy = false; // 🔓 Hoàn thành thì mở khóa
+    // Phần 1: Đọc từ
+    html += '<div style="border:1px solid var(--border); border-radius:12px; padding:14px; margin-bottom:14px; background:var(--bg);">';
+    html += '<div style="font-weight:bold; color:var(--accent); margin-bottom:10px;">Phần 1: Đọc từ</div>';
+    p1Words.forEach((v, i)=>{
+        const key = 'p1q'+i;
+        html += '<div style="margin-bottom:12px; padding:10px; border:1px dashed var(--border); border-radius:10px;">';
+        html += '<div style="display:flex;align-items:center;gap:8px;margin-bottom:6px;">';
+        html += '<span style="color:#94a3b8;font-size:12px;">Câu '+(i+1)+':</span>';
+        html += '<div class="big-word" style="font-size:20px;">'+esc(v.word)+'</div>';
+        html += '</div>';
+        html += '<div style="display:flex;align-items:center;gap:8px;">';
+        html += ppNoi(key);
+        html += '<span id="noi-note-'+key+'" style="color:#94a3b8;font-size:12px;"></span>';
+        html += '</div></div>';
+    });
+    sentences.forEach((sent, i)=>{
+        const key = 'p1s'+i;
+        html += '<div style="margin-bottom:12px; padding:10px; border:1px dashed var(--border); border-radius:10px;">';
+        html += '<div style="display:flex;align-items:center;gap:8px;margin-bottom:6px;">';
+        html += '<span style="color:#94a3b8;font-size:12px;">Câu '+(p1Words.length+i+1)+':</span>';
+        html += '<div style="font-size:14px;color:#cbd5e1;">'+esc(sent)+'</div>';
+        html += '</div>';
+        html += '<div style="display:flex;align-items:center;gap:8px;">';
+        html += ppNoi(key);
+        html += '<span id="noi-note-'+key+'" style="color:#94a3b8;font-size:12px;"></span>';
+        html += '</div></div>';
+    });
+    html += '</div>';
+
+    // Phần 2: Trả lời chủ đề (Giữ nguyên logic của bạn)
+    html += '<div style="border:1px solid var(--border); border-radius:12px; padding:14px; margin-bottom:14px; background:var(--bg);">';
+    html += '<div style="font-weight:bold; color:var(--accent); margin-bottom:10px;">Phần 2: Trả lời chủ đề</div>';
+    html += '<div style="margin-bottom:12px;">';
+    html += '<div style="color:#94a3b8;font-size:13px;margin-bottom:8px;">Chọn phương thức biểu đạt:</div>';
+    html += '<div style="display:flex;flex-wrap:wrap;gap:8px;">';
+    const modes = ['Tự sự', 'Biểu cảm', 'Thuyết minh', 'Nghị luận', 'Điều hành / Giao tiếp hành chính'];
+    modes.forEach((m, i)=>{
+        html += '<button type="button" class="btn-primary" data-mode="'+esc(m)+'" onclick="selectNoiMode(this,\''+esc(m)+'\')" style="padding:8px 14px;">'+m+'</button>';
+    });
+    html += '</div>';
+    html += '<div id="noi-selected-mode" style="margin-top:8px;color:#94a3b8;font-size:12px;"></div>';
+    html += '<div style="margin-top:6px;padding:8px;background:var(--bg);border-radius:6px;font-size:11px;color:#f59e0b;border-left:3px solid #f59e0b;">⚠️ <b>Lưu ý:</b> Chọn 1 phương thức để Gemini ra đề. Nhấn lại nút đã chọn để đổi đề. Sau khi bấm "Nói" sẽ không đổi đề được nữa.</div>';
+    html += '</div>';
+    html += '<div id="noi-topic-box" style="display:none;margin-top:12px;padding:12px;background:var(--card-bg);border-radius:8px;">';
+    html += '<div style="color:var(--accent);font-weight:bold;margin-bottom:8px;">Đề bài:</div>';
+    html += '<div id="noi-topic-text" style="color:#cbd5e1;font-size:14px;line-height:1.6;"></div>';
+    html += '<div style="margin-top:12px;display:flex;align-items:center;gap:8px;">';
+    html += ppNoi('p2q0');
+    html += '<span id="noi-note-p2q0" style="color:#94a3b8;font-size:12px;"></span>';
+    html += '</div></div></div>';
+    
+    html += '<button class="btn-success" style="width:100%;padding:14px;" onclick="submitNoiTest()">🏁 Nộp bài</button>';
+    $('test-body').innerHTML = html;
 }
-// Fallback nếu AI lỗi hoặc trả về rỗng
-if(sentences.length < 2) sentences = ['Sample sentence 1', 'Sample sentence 2'];
 
-// 3. Render giao diện chính sau khi AI đã soạn xong
-let html = '<div style="color:#94a3b8;font-size:13px;margin-bottom:12px;">📄 Bài thi Nói — mỗi câu chỉ được nói 1 lần</div>';
-html += '<div style="padding:12px;background:linear-gradient(135deg, rgba(245,158,11,0.15) 0%, rgba(234,179,8,0.1) 100%);border:2px solid #f59e0b;border-radius:10px;margin-bottom:16px;">';
-html += '<div style="display:flex;align-items:flex-start;gap:10px;">';
-html += '<div style="font-size:20px;">⚠️</div>';
-html += '<div style="flex:1;">';
-html += '<div style="font-weight:bold;color:#fbbf24;margin-bottom:6px;font-size:13px;">Lưu ý quan trọng về quyền microphone</div>';
-html += '<div style="font-size:12px;color:#fcd34d;line-height:1.7;">';
-html += '<div><b>Lần 1:</b> Cấp quyền để <b>Speech Recognition</b> lấy transcript (chữ) → Gemini chấm điểm</div>';
-html += '<div><b>Lần 2:</b> Cấp quyền để <b>MediaRecorder</b> lưu file audio → Bạn review lại ở phần kết quả</div>';
-html += '</div>';
-html += '</div>';
-html += '</div>';
-html += '</div>';
+// ... (Giữ nguyên toàn bộ các hàm selectNoiMode, submitNoiTest, showNoiResults của bạn ở bên dưới) ...
 
-// Phần 1: Đọc từ
-html += '<div style="border:1px solid var(--border); border-radius:12px; padding:14px; margin-bottom:14px; background:var(--bg);">';
-html += '<div style="font-weight:bold; color:var(--accent); margin-bottom:10px;">Phần 1: Đọc từ</div>';
-p1Words.forEach((v, i)=>{
-const key = 'p1q'+i;
-html += '<div style="margin-bottom:12px; padding:10px; border:1px dashed var(--border); border-radius:10px;">';
-html += '<div style="display:flex;align-items:center;gap:8px;margin-bottom:6px;">';
-html += '<span style="color:#94a3b8;font-size:12px;">Câu '+(i+1)+':</span>';
-html += '<div class="big-word" style="font-size:20px;">'+esc(v.word)+'</div>';
-html += '</div>';
-html += '<div style="display:flex;align-items:center;gap:8px;">';
-html += ppNoi(key);
-html += '<span id="noi-note-'+key+'" style="color:#94a3b8;font-size:12px;"></span>';
-html += '</div>';
-html += '</div>';
-});
-
-// Các câu AI vừa tạo (ghép nối tiếp vào Phần 1)
-sentences.forEach((sent, i)=>{
-const key = 'p1s'+i;
-html += '<div style="margin-bottom:12px; padding:10px; border:1px dashed var(--border); border-radius:10px;">';
-html += '<div style="display:flex;align-items:center;gap:8px;margin-bottom:6px;">';
-html += '<span style="color:#94a3b8;font-size:12px;">Câu '+(p1Words.length+i+1)+':</span>';
-html += '<div style="font-size:14px;color:#cbd5e1;">'+esc(sent)+'</div>';
-html += '</div>';
-html += '<div style="display:flex;align-items:center;gap:8px;">';
-html += ppNoi(key);
-html += '<span id="noi-note-'+key+'" style="color:#94a3b8;font-size:12px;"></span>';
-html += '</div>';
-html += '</div>';
-});
-html += '</div>';
-
-// Phần 2: Trả lời chủ đề
-html += '<div style="border:1px solid var(--border); border-radius:12px; padding:14px; margin-bottom:14px; background:var(--bg);">';
-html += '<div style="font-weight:bold; color:var(--accent); margin-bottom:10px;">Phần 2: Trả lời chủ đề</div>';
-html += '<div style="margin-bottom:12px;">';
-html += '<div style="color:#94a3b8;font-size:13px;margin-bottom:8px;">Chọn phương thức biểu đạt:</div>';
-html += '<div style="display:flex;flex-wrap:wrap;gap:8px;">';
-const modes = ['Tự sự', 'Biểu cảm', 'Thuyết minh', 'Nghị luận', 'Điều hành / Giao tiếp hành chính'];
-modes.forEach((m, i)=>{
-html += '<button type="button" class="btn-primary" data-mode="'+esc(m)+'" onclick="selectNoiMode(this,\''+esc(m)+'\')" style="padding:8px 14px;">'+m+'</button>';
-});
-html += '</div>';
-html += '<div id="noi-selected-mode" style="margin-top:8px;color:#94a3b8;font-size:12px;"></div>';
-html += '<div style="margin-top:6px;padding:8px;background:var(--bg);border-radius:6px;font-size:11px;color:#f59e0b;border-left:3px solid #f59e0b;">⚠️ <b>Lưu ý:</b> Chọn 1 phương thức để Gemini ra đề. Nhấn lại nút đã chọn để đổi đề. Sau khi bấm "Nói" sẽ không đổi đề được nữa.</div>';
-html += '</div>';
-html += '<div id="noi-topic-box" style="display:none;margin-top:12px;padding:12px;background:var(--card-bg);border-radius:8px;">';
-html += '<div style="color:var(--accent);font-weight:bold;margin-bottom:8px;">Đề bài:</div>';
-html += '<div id="noi-topic-text" style="color:#cbd5e1;font-size:14px;line-height:1.6;"></div>';
-html += '<div style="margin-top:12px;display:flex;align-items:center;gap:8px;">';
-html += ppNoi('p2q0');
-html += '<span id="noi-note-p2q0" style="color:#94a3b8;font-size:12px;"></span>';
-html += '</div>';
-html += '</div>';
-html += '</div>';
-html += '<button class="btn-success" style="width:100%;padding:14px;" onclick="submitNoiTest()">🏁 Nộp bài</button>';
-
-// 4. Xuất giao diện cuối cùng ra màn hình
-$('test-body').innerHTML = html;
-}
 
 window.selectNoiMode = function(btn, mode){
 if(noiModeLocked) return;
