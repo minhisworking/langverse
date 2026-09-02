@@ -594,6 +594,34 @@ button, .btn-primary, .btn-success, .btn-warning, .btn-danger, .nav-btn, .close 
 
 /* Chế độ dịu mắt cho mobile */
 @media (max-width: 768px) {
+
+/* ===== LAYOUT NÚT THI MOBILE ===== */
+.test-zone {
+  display: flex !important;
+  flex-wrap: wrap !important;
+  justify-content: center !important;
+  gap: 10px !important;
+}
+
+/* Nút Hồ sơ người học — full width, centered */
+.test-zone > button:first-child {
+  width: 100% !important;
+  max-width: 280px !important;
+  margin: 0 auto !important;
+  order: -1 !important;
+}
+
+/* 4 nút Nghe/Nói/Đọc/Viết — mỗi nút 50%, wrap thành 2x2 */
+.test-zone > button:not(:first-child) {
+  width: calc(50% - 5px) !important;
+  flex: 0 0 calc(50% - 5px) !important;
+  min-width: 0 !important;
+}
+
+
+
+
+	
   :root {
     --bg: #111827;
     --card-bg: #1f2937;
