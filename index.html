@@ -4921,7 +4921,6 @@ window.startNoiRecord = function(btn, key){
         if(typeof stopNoiRecord === 'function') stopNoiRecord(btn, key);
         return;
     }
-    const SR = window.SpeechRecognition || window.webkitSpeechRecognition;
     navigator.mediaDevices.getUserMedia({audio:true}).then(function(stream){
         const mediaRec = new MediaRecorder(stream);
         const chunks = [];
@@ -4936,134 +4935,89 @@ window.startNoiRecord = function(btn, key){
             stream.getTracks().forEach(tr=>tr.stop());
         };
         mediaRec.start();
-        
-        // Thêm SpeechRecognition để lấy transcript
-let rec = null;
-// Fallback cho Chrome Android
-const SpeechRec = window.SpeechRecognition || window.webkitSpeechRecognition;
-if(SpeechRec){
-try {
-rec = new SpeechRec();
-// === SỬA LỖI Ở ĐÂY ===
-// === FIX: ÉP NGÔN NGỮ NHẬN DIỆN GIỌNG NÓI ===
-// 1. Lấy ngôn ngữ đã được chốt sẵn khi bắt đầu bài thi
-let rawLang = t.speakLang || lvGetMultiFrontLang();
-// 2. Nếu vẫn là 'auto' hoặc rỗng, ép cứng về 'ja' để tránh nhận nhầm sang tiếng Trung
-if (!rawLang || rawLang === 'auto') {
-rawLang = 'ja';
-}
-// 3. Convert mã ngắn (vd: 'ja') sang chuẩn trình duyệt cần (vd: 'ja-JP')
-// Hàm ttsLang sẽ map 'ja' -> 'ja-JP', 'zh' -> 'zh-CN', v.v.
-let langCode = (typeof ttsLang === 'function') ? ttsLang(rawLang, '') : rawLang;
-rec.lang = langCode;
 
-// Đảm bảo lang format đầy đủ cho Chrome Android
-if(rec.lang && rec.lang.length === 2){
-const langMap = {'ja':'ja-JP','ko':'ko-KR','zh':'zh-CN','vi':'vi-VN','en':'en-US'};
-rec.lang = langMap[rec.lang] || rec.lang;
-}
-console.log(' SR lang set to:', rec.lang);
+        let rec = null;
+        const SpeechRec = window.SpeechRecognition || window.webkitSpeechRecognition;
+        if(SpeechRec){
+            try {
+                rec = new SpeechRec();
+                let rawLang = t.speakLang || lvGetMultiFrontLang();
+                if (!rawLang || rawLang === 'auto') rawLang = 'ja';
+                let langCode = (typeof ttsLang === 'function') ? ttsLang(rawLang, '') : rawLang;
+                rec.lang = langCode;
+                if(rec.lang && rec.lang.length === 2){
+                    const langMap = {'ja':'ja-JP','ko':'ko-KR','zh':'zh-CN','vi':'vi-VN','en':'en-US'};
+                    rec.lang = langMap[rec.lang] || rec.lang;
+                }
+                rec.continuous = true;
+                rec.interimResults = true;
+                rec.maxAlternatives = 1;
 
+                rec.onresult = function(e){
+                    if(!t.noiRecords[key]) t.noiRecords[key] = {};
+                    let interimTranscript = '';
+                    let finalTranscript = '';
+                    for(let i = e.resultIndex; i < e.results.length; i++){
+                        const result = e.results[i];
+                        if(result.isFinal) finalTranscript += result[0].transcript;
+                        else interimTranscript += result[0].transcript;
+                    }
+                    const noteEl = document.getElementById('noi-note-'+key);
+                    if(interimTranscript && !t.noiRecords[key].transcriptFinal){
+                        t.noiRecords[key].transcript = interimTranscript;
+                        if(noteEl) noteEl.textContent = '🎤 Đang nghe: ' + interimTranscript;
+                    }
+                    if(finalTranscript){
+                        t.noiRecords[key].transcript = finalTranscript;
+                        t.noiRecords[key].transcriptFinal = true;
+                        if(noteEl) noteEl.textContent = '✅ ' + finalTranscript;
+                        try { rec.stop(); } catch(e2){}
+                    }
+                };
 
-// === FIX CHO CHROME MOBILE ===
-// === FIX CHO CHROME MOBILE ===
-rec.continuous = true; // Lắng nghe liên tục
-rec.interimResults = true; // Bật interim results
-rec.maxAlternatives = 1;
-// ========================================
-rec.onresult = function(e){
-if(!t.noiRecords[key]) t.noiRecords[key] = {};
-console.log('SR result event:', e);
-let interimTranscript = '';
-let finalTranscript = '';
-for(let i = e.resultIndex; i < e.results.length; i++){
-const result = e.results[i];
-console.log('Result[' + i + '] isFinal:', result.isFinal, 'transcript:', result[0].transcript);
-if(result.isFinal){
-finalTranscript += result[0].transcript;
-} else {
-interimTranscript += result[0].transcript;
-}
-}
-// Cập nhật interim ngay lập tức để user thấy
-if(interimTranscript && !t.noiRecords[key].transcript){
-t.noiRecords[key].transcript = interimTranscript;
-const noteEl = document.getElementById('noi-note-'+key);
-if(noteEl) noteEl.textContent = '🎤 Đang nghe: ' + interimTranscript;
-}
-// Khi có final result, lưu chính thức
-if(finalTranscript){
-t.noiRecords[key].transcript = finalTranscript;
-t.noiRecords[key].transcriptFinal = true;
-console.log('✅ Final transcript:', finalTranscript);
-const noteEl = document.getElementById('noi-note-'+key);
-if(noteEl) noteEl.textContent = '✅ ' + finalTranscript;
-// Dừng SR vì đã có kết quả
-try { rec.stop(); } catch(e){}
-}
-};
+                rec.onerror = function(e){
+                    const noteEl = document.getElementById('noi-note-'+key);
+                    if(noteEl) noteEl.textContent = '⚠️ Lỗi SR: ' + e.error;
+                };
 
-rec.onend = function(){
-console.log('SR ended');
-// Nếu chưa có transcript, thử start lại 1 lần
-if(!t.noiRecords[key] || !t.noiRecords[key].transcript){
-try {
-rec.start();
-console.log('SR restarted');
-} catch(e) {
-console.log('SR restart failed:', e);
-}
-}
-};
-rec.onerror = function(e){ 
-console.log('SR error:', e.error, e); 
-const noteEl = document.getElementById('noi-note-'+key);
-if(noteEl) noteEl.textContent = '⚠️ Lỗi SR: ' + e.error;
-};
+                rec.onstart = function(){
+                    const noteEl = document.getElementById('noi-note-'+key);
+                    if(noteEl) noteEl.textContent = '🎤 Đang nghe...';
+                };
 
-rec.onstart = function(){
-console.log('✅ SR started for key:', key, 'lang:', rec.lang);
-const noteEl = document.getElementById('noi-note-'+key);
-if(noteEl) noteEl.textContent = '🎤 Đang nghe...';
-};
-rec.onspeechstart = function(){
-console.log('🗣️ Speech detected!');
-const noteEl = document.getElementById('noi-note-'+key);
-if(noteEl) noteEl.textContent = '🗣️ Đang nghe bạn nói...';
-};
-rec.onspeechend = function(){
-console.log('🤫 Speech ended');
-};
-// Hiển thị lỗi cho user trên mobile
-const noteEl = document.getElementById('noi-note-'+key);
-if(noteEl) noteEl.textContent = '⚠️ Lỗi: ' + e.error;
-};
-rec.onend = function(){
-console.log('SR ended for key:', key);
-const noteEl = document.getElementById('noi-note-'+key);
-// Nếu chưa có transcript final, thử restart 1 lần duy nhất
-if(!t.noiRecords[key] || !t.noiRecords[key].transcriptFinal){
-if(!t.noiRecords[key]._retried){
-t.noiRecords[key]._retried = true;
-console.log(' Retrying SR...');
-try { 
-rec.start(); 
-if(noteEl) noteEl.textContent = '🔄 Đang thử lại...';
-} catch(e){ 
-console.log('SR restart failed:', e);
-if(noteEl) noteEl.textContent = '⚠️ Không nhận diện được giọng nói';
-}
-} else {
-if(noteEl) noteEl.textContent = '⚠️ Không nhận diện được giọng nói';
-}
-}
-};
-try { rec.start(); } catch(e){ 
-console.log('SR start failed:', e); 
-const noteEl = document.getElementById('noi-note-'+key);
-if(noteEl) noteEl.textContent = '⚠️ Không hỗ trợ ghi âm';
-}
-}
+                rec.onspeechstart = function(){
+                    const noteEl = document.getElementById('noi-note-'+key);
+                    if(noteEl) noteEl.textContent = '🗣️ Đang nghe bạn nói...';
+                };
+
+                rec.onend = function(){
+                    const noteEl = document.getElementById('noi-note-'+key);
+                    if(!t.noiRecords[key] || !t.noiRecords[key].transcriptFinal){
+                        if(!t.noiRecords[key]) t.noiRecords[key] = {};
+                        if(!t.noiRecords[key]._retried){
+                            t.noiRecords[key]._retried = true;
+                            try {
+                                rec.start();
+                                if(noteEl) noteEl.textContent = '🔄 Đang thử lại...';
+                            } catch(e3) {
+                                if(noteEl) noteEl.textContent = '⚠️ Không nhận diện được giọng nói';
+                            }
+                        } else {
+                            if(noteEl) noteEl.textContent = '⚠️ Không nhận diện được giọng nói';
+                        }
+                    }
+                };
+
+                try { rec.start(); } catch(e4){
+                    const noteEl = document.getElementById('noi-note-'+key);
+                    if(noteEl) noteEl.textContent = '⚠️ Không hỗ trợ ghi âm';
+                }
+            } catch(e5) {
+                const noteEl = document.getElementById('noi-note-'+key);
+                if(noteEl) noteEl.textContent = '⚠️ Không khởi tạo được nhận diện giọng nói';
+            }
+        }
+
         if(!t.noiRecords[key]) t.noiRecords[key] = {};
         t.noiRecords[key].mediaRec = mediaRec;
         t.noiRecords[key].rec = rec;
@@ -5080,7 +5034,7 @@ if(noteEl) noteEl.textContent = '⚠️ Không hỗ trợ ghi âm';
     }).catch(function(err){
         alert('⚠️ Không thể truy cập microphone: ' + err.message);
     });
-};;
+};
 
 var noiModeLocked = false;
 window.stopNoiRecord = function(btn, key){
