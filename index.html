@@ -5538,12 +5538,7 @@ window.startSelectedTest = function() {
 };
   
   if (typeof origStartSelected === 'function') origStartSelected.call(this);
-};
-  if(PRETEST.skill === 'nghe'){ startPaperNghe(); return; }
-  if(PRETEST.skill === 'doc'){ startPaperDoc(); return; }
-  if(PRETEST.skill === 'noi'){ 
-    startPaperNoi(); return; // <-- THÊM DÒNG NÀY
-  }
+
   if(PRETEST.skill === 'viet'){ startPaperViet(); return; }
   // Fallback cho các skill khác
   if (typeof origStartSelected === 'function') origStartSelected.call(this);
