@@ -6861,7 +6861,7 @@ window.closeTest = function(){
     <div id="dup-modal-body" style="max-height:60vh; overflow-y:auto; padding-right:8px;"></div>
     <div style="display:flex; gap:10px; margin-top:20px; justify-content:flex-end;">
       <button class="btn-primary" onclick="closeDupModal()">Đóng</button>
-      <button class="btn-danger" onclick="deleteSelectedDups(this)" style="padding:10px 20px;">🗑️ Xóa các từ đã chọn</button>
+      <button class="btn-danger" onclick="deleteSelectedDups(this); event.stopPropagation();" style="padding:10px 20px;">🗑️ Xóa các từ đã chọn</button>
     </div>
   </div>
 </div>
@@ -6961,34 +6961,34 @@ function deleteSelectedDups(btnElement) {
   const popup = document.getElementById('dup-del-confirm');
   const txt = document.getElementById('dup-del-confirm-text');
   
-  // Nếu vẫn không tìm thấy HTML, báo lỗi rõ ràng ra Console
   if (!popup || !txt) {
-    console.error('❌ Lỗi chí mạng: Không tìm thấy HTML của popup #dup-del-confirm. Vui lòng kiểm tra lại file HTML!');
+    console.error('❌ Lỗi: Không tìm thấy HTML của popup #dup-del-confirm');
     alert('Lỗi hệ thống: Thiếu HTML popup xác nhận. Vui lòng reload trang!');
     return; 
   }
   
   txt.innerHTML = 'Bạn có chắc muốn xóa <b>' + checks.length + '</b> từ trùng lặp đã chọn không? Hành động này không thể hoàn tác.';
   
-  // Lấy vị trí nút bấm để popup nảy lên đúng chỗ
   const rect = btnElement.getBoundingClientRect();
   popup.classList.remove('hidden');
+  popup.dataset.justOpened = '1'; // ← THÊM DÒNG NÀY
   
   requestAnimationFrame(() => {
     const pw = popup.offsetWidth, ph = popup.offsetHeight;
     let left = rect.left + rect.width / 2 - pw / 2;
     let top = rect.top - ph - 8;
     
-    // Chống tràn màn hình
     if (left < 8) left = 8;
     if (left + pw > window.innerWidth - 8) left = window.innerWidth - pw - 8;
     if (top < 8) top = rect.bottom + 8; 
     
     popup.style.left = left + 'px';
     popup.style.top = top + 'px';
+    
+    // Xóa flag sau khi đã định vị xong
+    setTimeout(() => { delete popup.dataset.justOpened; }, 100);
   });
   
-  // Gán callback xóa
   dupDelCallback = () => {
     const indicesToDelete = Array.from(checks).map(cb => parseInt(cb.dataset.idx, 10));
     indicesToDelete.sort((a, b) => b - a);
@@ -7008,6 +7008,10 @@ function deleteSelectedDups(btnElement) {
 document.addEventListener('click', e => {
   const popup = document.getElementById('dup-del-confirm');
   if (!popup) return;
+  
+  // Nếu popup vừa được mở, bỏ qua event này
+  if (popup.dataset.justOpened === '1') return;
+  
   if (e.target.classList.contains('dup-del-ok')) {
     if (dupDelCallback) dupDelCallback();
     closeDupDelConfirm();
