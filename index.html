@@ -6384,7 +6384,10 @@ window.updateVietWordCount = function(qIndex) {
 
         if (PRETEST.skill === 'nghe') { startPaperNghe(); return; }
         if (PRETEST.skill === 'doc') { startPaperDoc(); return; }
-        if (PRETEST.skill === 'noi') { 
+        if(PRETEST.skill === 'noi'){ startPaperNoi(); return; } // <-- THÊM DÒNG NÀY
+		if(PRETEST.skill === 'viet'){ startPaperViet(); return; }
+
+ 
             // Gọi hàm nói gốc (đã được patch ở script khác)
             if (typeof origStartSelected === 'function') {
                 // Tạm thời trả về để script gốc xử lý phần 'noi'
