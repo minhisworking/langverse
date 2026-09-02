@@ -229,7 +229,14 @@ label { display:block; font-size:13px; color:#94a3b8; margin-bottom:5px; }
 .pretest-radio.active { border-color:var(--accent); background:#0c4a6e; }
 .pretest-radio input { accent-color:var(--accent); width:16px; height:16px; cursor:pointer; }
 .pretest-radio span { font-size:14px; font-weight:bold; }
-.pretest-right { border:1px solid var(--border); border-radius:12px; padding:14px; background:var(--bg); max-height:400px; overflow-y:auto; }
+.pretest-right { 
+    border:1px solid var(--border); 
+    border-radius:12px; 
+    padding:14px; 
+    background:var(--bg); 
+    max-height:calc(100vh - 450px);  /* ← Giảm từ 400px xuống 250px */
+    overflow-y:auto; 
+}
 .pretest-search { width:100%; margin-bottom:10px; }
 .pretest-list { display:flex; flex-direction:column; gap:6px; }
 .pretest-item { display:flex; align-items:center; gap:10px; padding:8px 12px; border:1px solid var(--border); border-radius:8px; cursor:pointer; background:var(--card-bg); transition:.15s; }
@@ -242,7 +249,14 @@ label { display:block; font-size:13px; color:#94a3b8; margin-bottom:5px; }
 .pretest-item-all { background:linear-gradient(135deg,#1e293b,#0f172a); border-color:var(--accent); }
 .pretest-summary { margin-top:10px; padding:8px 12px; background:var(--card-bg); border-radius:8px; color:#94a3b8; font-size:12px; text-align:center; }
 .pretest-summary b { color:var(--accent); }
-@media (max-width:640px) { .pretest-layout { grid-template-columns:1fr; } }
+@media (max-width:640px) { 
+
+.pretest-layout { grid-template-columns:1fr;} 
+    .pretest-right { 
+        max-height:calc(100vh - 450px);  /* ← THÊM DÒNG NÀY cho mobile */
+	}
+
+}
 .verse-dot-btn { background:transparent; border:none; color:#94a3b8; font-size:14px; cursor:pointer; padding:2px 6px; border-radius:4px; flex-shrink:0; margin-left:auto; }
 .verse-dot-btn:hover { color:var(--accent); background:var(--bg); }
 .verse-dot-menu {
@@ -4924,33 +4938,58 @@ window.startNoiRecord = function(btn, key){
         mediaRec.start();
         
         // Thêm SpeechRecognition để lấy transcript
-        let rec = null;
-        if(SR){
-            rec = new SR();
-            // === SỬA LỖI Ở ĐÂY ===
-            // === FIX: ÉP NGÔN NGỮ NHẬN DIỆN GIỌNG NÓI ===
+let rec = null;
+if(SR){
+rec = new SR();
+// === SỬA LỖI Ở ĐÂY ===
+// === FIX: ÉP NGÔN NGỮ NHẬN DIỆN GIỌNG NÓI ===
 // 1. Lấy ngôn ngữ đã được chốt sẵn khi bắt đầu bài thi
 let rawLang = t.speakLang || lvGetMultiFrontLang();
-
 // 2. Nếu vẫn là 'auto' hoặc rỗng, ép cứng về 'ja' để tránh nhận nhầm sang tiếng Trung
 if (!rawLang || rawLang === 'auto') {
-    rawLang = 'ja'; 
+rawLang = 'ja';
 }
-
 // 3. Convert mã ngắn (vd: 'ja') sang chuẩn trình duyệt cần (vd: 'ja-JP')
 // Hàm ttsLang sẽ map 'ja' -> 'ja-JP', 'zh' -> 'zh-CN', v.v.
 let langCode = (typeof ttsLang === 'function') ? ttsLang(rawLang, '') : rawLang;
-
 rec.lang = langCode;
+// === FIX CHO CHROME MOBILE ===
+rec.continuous = false; // Chỉ ghi âm 1 lần rồi dừng
+rec.interimResults = true; // Bật interim results để nhận kết quả sớm hơn trên mobile
 // ========================================
-            rec.interimResults = false;
-            rec.onresult = function(e){
-                if(!t.noiRecords[key]) t.noiRecords[key] = {};
-                t.noiRecords[key].transcript = e.results[0][0].transcript;
-            };
-            rec.onerror = function(e){ console.log('SR error:', e.error); };
-            try { rec.start(); } catch(e){ console.log('SR start failed:', e); }
-        }
+rec.onresult = function(e){
+if(!t.noiRecords[key]) t.noiRecords[key] = {};
+// Lấy kết quả cuối cùng (final) thay vì interim
+for(let i = e.resultIndex; i < e.results.length; i++){
+if(e.results[i].isFinal){
+t.noiRecords[key].transcript = e.results[i][0].transcript;
+break;
+}
+}
+// Fallback: nếu không có final result, lấy result đầu tiên
+if(!t.noiRecords[key].transcript && e.results.length > 0){
+t.noiRecords[key].transcript = e.results[0][0].transcript;
+}
+};
+rec.onerror = function(e){ 
+console.log('SR error:', e.error); 
+// Hiển thị lỗi cho user trên mobile
+const noteEl = document.getElementById('noi-note-'+key);
+if(noteEl) noteEl.textContent = '⚠️ Lỗi: ' + e.error;
+};
+rec.onend = function(){
+// Khi SR tự động dừng, cập nhật trạng thái
+const noteEl = document.getElementById('noi-note-'+key);
+if(noteEl && !t.noiRecords[key].transcript){
+noteEl.textContent = '️ Không nhận diện được giọng nói';
+}
+};
+try { rec.start(); } catch(e){ 
+console.log('SR start failed:', e); 
+const noteEl = document.getElementById('noi-note-'+key);
+if(noteEl) noteEl.textContent = '⚠️ Không hỗ trợ ghi âm';
+}
+}
         if(!t.noiRecords[key]) t.noiRecords[key] = {};
         t.noiRecords[key].mediaRec = mediaRec;
         t.noiRecords[key].rec = rec;
@@ -5977,7 +6016,7 @@ Chỉ trả về JSON.`;
     html += '<span style="color:#94a3b8; font-size:12px;">Câu ' + (i + 1) + ':</span>';
     html += '<div class="big-word" style="font-size:18px;">' + esc(v.word) + '</div>';
     html += '</div>';
-            html += '<textarea id="viet-p2-' + i + '" rows="12" style="width:100%; padding:12px; border-radius:8px; border:1px solid var(--border); background:var(--card-bg); color:var(--text); font-size:14px; resize:vertical; line-height:1.6;" placeholder="Viết bài của bạn vào đây (khoảng 700 từ)..." oninput="TEST.userTouched=true; updateVietWordCount(' + i + ')"></textarea>';
+            html += '<textarea id="viet-p2-' + i + '" rows="12" style="width:100%; padding:12px; border-radius:8px; border:1px solid var(--border); background:var(--card-bg); color:var(--text); font-size:14px; resize:vertical; line-height:1.6;" placeholder="Viết 1 câu..." oninput="TEST.userTouched=true; updateVietWordCount(' + i + ')"></textarea>';
             html += '</div>';
         });
         html += '</div>';
