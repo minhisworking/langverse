@@ -603,7 +603,54 @@ button, .btn-primary, .btn-success, .btn-warning, .btn-danger, .nav-btn, .close 
   }
 }
 
+/* Giới hạn chiều cao danh sách từ trong pretest */
+.pretest-right {
+    max-height: calc(100vh - 550px) !important; /* Giảm từ 450px xuống 550px */
+    overflow-y: auto;
+}
 
+.pretest-list {
+    max-height: 300px; /* Giới hạn chiều cao list */
+    overflow-y: auto;
+    margin-bottom: 10px;
+}
+
+/* Đảm bảo nút bắt đầu luôn hiển thị tốt */
+#pretest-modal .modal-content > div:last-child {
+    margin-top: 10px;
+    position: sticky;
+    bottom: 0;
+    background: var(--card-bg);
+    padding: 10px;
+    border-radius: 8px;
+    z-index: 10;
+}
+
+/* Mobile: giảm chiều cao list nhiều hơn */
+@media (max-width: 768px) {
+    .pretest-right {
+        max-height: calc(100vh - 500px) !important;
+    }
+    
+    .pretest-list {
+        max-height: 250px; /* List ngắn hơn trên mobile */
+    }
+}
+
+/* Custom scrollbar cho list */
+.pretest-list::-webkit-scrollbar {
+    width: 6px;
+}
+
+.pretest-list::-webkit-scrollbar-track {
+    background: rgba(0,0,0,0.1);
+    border-radius: 3px;
+}
+
+.pretest-list::-webkit-scrollbar-thumb {
+    background: var(--accent);
+    border-radius: 3px;
+}
 
 </style>
 </head>
