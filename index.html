@@ -760,6 +760,30 @@ button, .btn-primary, .btn-success, .btn-warning, .btn-danger, .nav-btn, .close 
     min-width: 0 !important;
   }
 }
+
+/* Mở rộng tối đa trường nhập từ trong Triệu hồi AI */
+#ai-modal .form-group:last-of-type textarea {
+  width: 100% !important;
+  max-width: 100% !important;
+  box-sizing: border-box !important;
+}
+
+#ai-modal .form-group:last-of-type {
+  width: 100% !important;
+  max-width: 100% !important;
+  flex: 1 1 100% !important;
+}
+
+/* Trên mobile - đảm bảo full width */
+@media (max-width: 768px) {
+  #ai-modal .form-group:last-of-type textarea {
+    width: 100% !important;
+    min-width: 100% !important;
+  }
+}
+
+
+
 	
 </style>
 </head>
