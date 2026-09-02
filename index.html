@@ -649,14 +649,14 @@ button, .btn-primary, .btn-success, .btn-warning, .btn-danger, .nav-btn, .close 
     <button id="shuffle-btn" class="shuffle-btn" onclick="toggleShuffle()" title="Bật/tắt xáo trộn">🔀 Xáo trộn</button>
   </div>
   <div class="flash-area">
-    <button class="nav-btn" onclick="nav(-1)">←</button>
+    <button class="nav-btn" onclick="nav(-1)">⬅️</button>
     <div class="flip-container" id="flip" onclick="setFlipped(!flipped)">
       <div class="flip-inner">
         <div class="face front" id="front"></div>
         <div class="face back" id="back"></div>
       </div>
     </div>
-    <button class="nav-btn" onclick="nav(1)">→</button>
+    <button class="nav-btn" onclick="nav(1)">➡️</button>
   </div>
   <div class="rate-zone">
     <div class="rate-zone-label"><span>🎚 Đánh giá mức độ nhớ</span></div>
@@ -2347,11 +2347,17 @@ window.saveImport = function() {
     
     // 1. Tìm ID của Multiverse dựa trên tên hiển thị (ví dụ: "nhật")
     let mId = '';
-    if (multiName && multiName !== 'all') {
-        const multis = getMultiverses();
-        const found = multis.find(m => m.name === multiName);
-        if (found) mId = found.id;
+if (multiName && multiName !== 'all' && multiName !== 'Tất cả Multiverse') {
+    const multis = getMultiverses();
+    const found = multis.find(m => m.name === multiName);
+    if (found) {
+        mId = found.id;
+    } else {
+        mId = 'm_' + Date.now();
+        multis.push({id: mId, name: multiName, front: '', back: ''});
+        saveMultiverses(multis);
     }
+}
     
     // 2. Duyệt qua từng dòng trong bảng Import
     document.querySelectorAll('#import-body tr').forEach(function(tr) {
@@ -2394,6 +2400,7 @@ window.saveImport = function() {
     }
     
     localStorage.setItem('langverse_data', JSON.stringify(vocab));
+	if(mId){ setCurrentMulti(mId); $('multi-label').textContent = multiName; }
     const displayMsg = mId ? 'vào multiverse "' + multiName + '"' : 'vào Tất cả Multiverse';
     showSaveToast('✨ Đã nạp ' + count + ' từ ' + displayMsg + '!', true);
     
@@ -2588,8 +2595,10 @@ let finalDef=def;
 const etym=cleanInvisible($('new-etym').value);
 if(etym) finalDef=def+'\n\n['+etym+']';
 const pitchEl=$('new-pitch'); const dsEl=$('new-downstep');
-vocab.push({word:cleanInvisible($('new-word').value), definition:finalDef, ipa:cleanInvisible($('new-ipa').value), pos:cleanInvisible($('new-pos').value), example:cleanInvisible($('new-example').value), synonym:cleanInvisible($('new-synonym').value), pitch:pitchEl?cleanInvisible(pitchEl.value):'', downstep:dsEl?cleanInvisible(dsEl.value):'', multi:resolveMultiForAdd()});
+const newMultiId = resolveMultiForAdd();
+vocab.push({word:cleanInvisible($('new-word').value), definition:finalDef, ipa:cleanInvisible($('new-ipa').value), pos:cleanInvisible($('new-pos').value), example:cleanInvisible($('new-example').value), synonym:cleanInvisible($('new-synonym').value), pitch:pitchEl?cleanInvisible(pitchEl.value):'', downstep:dsEl?cleanInvisible(dsEl.value):'', multi:newMultiId});
 localStorage.setItem('langverse_data',JSON.stringify(vocab));
+if(newMultiId){ setCurrentMulti(newMultiId); $('multi-label').textContent = multiNameById(newMultiId); }
 init();
 const _wt=$('add-word-toast');
 if(_wt){ _wt.textContent='✅ Đã lưu thành công từ "'+cleanInvisible($('new-word').value)+'"!'; _wt.style.background='#10b981'; _wt.style.display='block'; }
