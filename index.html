@@ -621,8 +621,129 @@ button, .btn-primary, .btn-success, .btn-warning, .btn-danger, .nav-btn, .close 
   }
 }
 
+/* Nút trùng lặp khi có dữ liệu */
+#dup-btn.has-dup {
+  opacity: 1 !important;
+  pointer-events: auto !important;
+  background: var(--accent);
+  color: #0f172a;
+  font-weight: bold;
+}
+#dup-btn.has-dup:hover {
+  opacity: 0.85 !important;
+}
+
+/* Modal trùng lặp */
+.dup-group {
+  background: var(--bg);
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  padding: 14px;
+  margin-bottom: 14px;
+}
+.dup-group-title {
+  font-size: 15px;
+  font-weight: bold;
+  color: var(--accent);
+  margin-bottom: 12px;
+  padding-bottom: 8px;
+  border-bottom: 1px dashed var(--border);
+}
+.dup-cards {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+  gap: 12px;
+}
+.dup-card {
+  background: var(--card-bg);
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  padding: 12px;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  transition: border-color 0.2s;
+}
+.dup-card:hover {
+  border-color: var(--accent);
+}
+.dup-check-label {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 13px;
+  font-weight: bold;
+  color: #ef4444;
+  cursor: pointer;
+}
+.dup-check-label input {
+  accent-color: #ef4444;
+  width: 16px;
+  height: 16px;
+  cursor: pointer;
+}
+.dup-card-content {
+  font-size: 12px;
+  color: #cbd5e1;
+  line-height: 1.6;
+  word-break: break-word;
+}
+.dup-card-content b {
+  color: var(--text);
+}
 
 
+@media (max-width: 768px) {
+  #ai-modal .row {
+    gap: 6px;
+  }
+  #ai-modal .row .form-group {
+    flex: 1;
+    min-width: 0; /* ← quan trọng, cho phép thu nhỏ */
+  }
+  #ai-modal .row label {
+    font-size: 11px;
+    white-space: normal;
+    line-height: 1.3;
+  }
+  #ai-modal .row select {
+    font-size: 13px;
+    padding: 8px 6px;
+  }
+}
+
+	@media (max-width: 768px) {
+  /* Thu gọn phần Định nghĩa & Tags trong modal Thêm từ */
+  #add-modal .row .form-group {
+    flex: 1;
+    min-width: 0;
+  }
+  #add-modal .row .form-group input {
+    width: 100%;
+    min-width: 0;
+  }
+  /* Nút tag dropdown thu nhỏ lại */
+  #add-modal .row .form-group .tag-arrow {
+    padding: 4px 6px !important;
+    font-size: 11px !important;
+  }
+  /* Nút "Thêm nghĩa" full width, không bị tràn */
+  #add-modal button[onclick="addNewDefRow()"] {
+    width: 100%;
+    margin-top: 8px;
+  }
+  /* Thu gọn hàng IPA / Downstep / Loại từ */
+  #add-modal .row[style*="align-items"] .form-group {
+    flex: 1 !important;
+    min-width: 0 !important;
+  }
+  #add-modal .row[style*="align-items"] .form-group input,
+  #add-modal .row[style*="align-items"] .form-group select {
+    width: 100% !important;
+    min-width: 0 !important;
+  }
+}
+	
 </style>
 </head>
 <body>
@@ -632,7 +753,7 @@ button, .btn-primary, .btn-success, .btn-warning, .btn-danger, .nav-btn, .close 
   <button class="btn-primary" onclick="openImportModal()">📂 Import</button>
   <button class="btn-warning" onclick="openAddModal()">➕ Thêm</button>
   <button class="btn-success" onclick="exportData()">📤 Backup</button>
-  <input type="text" id="search" placeholder="🔍 Từ / nghĩa / IPA / ví dụ / đồng nghĩa..." oninput="applyView()" style="flex:1; min-width:130px;">
+  <input type="text" id="search" placeholder="🔍 Từ / nghĩa / phiên âm / ví dụ / đồng nghĩa..." oninput="applyView()" style="flex:1; min-width:130px;">
     <div class="peek-wrap">
     <button id="multi-btn" class="peek-btn" onclick="toggleMultiPop()">🌌 <span id="multi-label">Tất cả Multiverse</span> ▾</button>
     <div class="peek-pop" id="multi-pop" style="min-width:260px;">
@@ -697,6 +818,8 @@ button, .btn-primary, .btn-success, .btn-warning, .btn-danger, .nav-btn, .close 
         <option value="az">A-Z</option><option value="recent">Mới thêm</option><option value="pos">Loại từ</option><option value="manual">Thủ công</option>
       </select>
       <button id="sortdir" class="dir-btn" onclick="toggleDir()" title="Đảo thứ tự sắp xếp">🔃</button>
+		<button id="sortdir" class="dir-btn" onclick="toggleDir()" title="Đảo thứ tự sắp xếp">🔃</button>
+<button id="dup-btn" class="dir-btn" onclick="openDupModal()" title="Phát hiện trùng lặp" style="opacity:0.4; pointer-events:none; margin-left:6px;">👯 Trùng lặp (0)</button>
     </label>
   </div>
   <div class="word-list" id="word-list"></div>
@@ -843,7 +966,7 @@ button, .btn-primary, .btn-success, .btn-warning, .btn-danger, .nav-btn, .close 
 <div class="modal" id="ai-modal" onclick="if(event.target===this)closeAiModal()">
   <div class="modal-content wide">
     <span class="close" onclick="closeAiModal()">&times;</span>
-    <h2 style="color:var(--accent); margin-top:0;">✨ Triệu hồi AI — Hiến Pháp V4.1 UNIVERSAL</h2>
+    <h2 style="color:var(--accent); margin-top:0;">✨ Triệu hồi AI</h2>
     <div class="form-group">
       <label>🔑 Gemini API Key</label>
       <div class="ai-key-row"><input type="password" id="ai-key" placeholder="AIzaSy..."><button type="button" class="ai-key-toggle" onclick="toggleAiKey()">👁️</button></div>
@@ -5131,10 +5254,10 @@ async function renderPaperNoi(){
     if (window.__isAndroidChrome) {
         html += '<div style="padding:12px;background:linear-gradient(135deg, rgba(245,158,11,0.15) 0%, rgba(234,179,8,0.1) 100%);border:2px solid #f59e0b;border-radius:10px;margin-bottom:16px;">';
         html += '<div style="display:flex;align-items:flex-start;gap:10px;"><div style="font-size:20px;">⚠️</div><div style="flex:1;">';
-        html += '<div style="font-weight:bold;color:#fbbf24;margin-bottom:6px;font-size:13px;">Lưu ý dành cho Android</div>';
+        html += '<div style="font-weight:bold;color:#fbbf24;margin-bottom:6px;font-size:13px;">Lưu ý dành cho Android/IOS</div>';
         html += '<div style="font-size:12px;color:#fcd34d;line-height:1.7;">';
-        html += 'Do hạn chế của hệ điều hành Android, trình duyệt chỉ cho phép <b>1 ứng dụng</b> truy cập Microphone tại 1 thời điểm.<br>';
-        html += '👉 Hệ thống sẽ <b>ưu tiên Nhận diện giọng nói</b> để Gemini chấm điểm. Bạn sẽ <b>không thể nghe lại</b> file audio trên Android.';
+        html += 'Do hạn chế của hệ điều hành Android/IOS, trình duyệt chỉ cho phép <b>1 ứng dụng</b> truy cập Microphone tại 1 thời điểm.<br>';
+        html += '👉 Hệ thống sẽ <b>ưu tiên Nhận diện giọng nói</b> để Gemini chấm điểm. Bạn sẽ <b>không thể nghe lại</b> file audio trên Android/IOS.';
         html += '</div></div></div></div>';
     } else {
         html += '<div style="padding:12px;background:linear-gradient(135deg, rgba(245,158,11,0.15) 0%, rgba(234,179,8,0.1) 100%);border:2px solid #f59e0b;border-radius:10px;margin-bottom:16px;">';
@@ -6483,6 +6606,158 @@ window.closeTest = function(){
   if(typeof origCloseTest === 'function') origCloseTest();
 };
 </script>
+<div class="modal" id="dup-modal" onclick="if(event.target===this)closeDupModal()">
+  <div class="modal-content wide" style="max-width:900px;">
+    <span class="close" onclick="closeDupModal()">&times;</span>
+    <h2 style="color:var(--accent); margin-top:0;">👯 Phát hiện trùng lặp</h2>
+    <p style="color:#94a3b8; font-size:13px; margin-bottom:16px;">
+      So sánh các từ giống nhau trong danh sách hiện tại. 
+      <b>Mặc định giữ từ có vị trí nhỏ nhất (thêm sớm nhất)</b>. Tick vào ô "Xóa" để loại bỏ bản sao.
+    </p>
+    <div id="dup-modal-body" style="max-height:60vh; overflow-y:auto; padding-right:8px;"></div>
+    <div style="display:flex; gap:10px; margin-top:20px; justify-content:flex-end;">
+      <button class="btn-primary" onclick="closeDupModal()">Đóng</button>
+      <button class="btn-danger" onclick="deleteSelectedDups()" style="padding:10px 20px;">🗑️ Xóa các từ đã chọn</button>
+    </div>
+  </div>
+</div>
 
+
+<script>
+// Cập nhật trạng thái nút Trùng lặp mỗi khi danh sách thay đổi
+function updateDupButton() {
+  const btn = $('dup-btn');
+  if (!btn) return;
+  
+  const counts = {};
+  viewList.forEach(idx => {
+    const w = cleanInvisible(vocab[idx].word).toLowerCase();
+    if (w) counts[w] = (counts[w] || 0) + 1;
+  });
+  
+  let dupGroups = 0;
+  for (let w in counts) {
+    if (counts[w] > 1) dupGroups++;
+  }
+  
+  if (dupGroups > 0) {
+    btn.textContent = `👯 Trùng lặp (${dupGroups})`;
+    btn.classList.add('has-dup');
+  } else {
+    btn.textContent = `👯 Trùng lặp (0)`;
+    btn.classList.remove('has-dup');
+  }
+}
+
+// Mở Modal và render danh sách trùng lặp
+function openDupModal() {
+  const counts = {};
+  viewList.forEach(idx => {
+    const w = cleanInvisible(vocab[idx].word).toLowerCase();
+    if (w) {
+      if (!counts[w]) counts[w] = [];
+      counts[w].push(idx);
+    }
+  });
+  
+  const body = $('dup-modal-body');
+  body.innerHTML = '';
+  let hasDups = false;
+  
+  for (let w in counts) {
+    if (counts[w].length > 1) {
+      hasDups = true;
+      const groupDiv = document.createElement('div');
+      groupDiv.className = 'dup-group';
+      groupDiv.innerHTML = `<div class="dup-group-title">🔤 Từ: "<b>${esc(w)}</b>" (${counts[w].length} bản sao)</div>`;
+      
+      const cardsDiv = document.createElement('div');
+      cardsDiv.className = 'dup-cards';
+      
+      counts[w].forEach((idx, i) => {
+        const v = vocab[idx];
+        const card = document.createElement('div');
+        card.className = 'dup-card';
+        
+        // Mặc định giữ từ đầu tiên (vị trí nhỏ nhất = thêm sớm nhất), tick xóa các từ còn lại
+        const isChecked = i > 0 ? 'checked' : '';
+        const isKeepBadge = i === 0 ? '<span style="color:#10b981; font-size:11px; font-weight:bold; margin-left:6px;">(Giữ mặc định)</span>' : '';
+        
+        card.innerHTML = `
+          <label class="dup-check-label">
+            <input type="checkbox" class="dup-del-check" data-idx="${idx}" ${isChecked}>
+            <span>Xóa bản sao này</span>
+            ${isKeepBadge}
+          </label>
+          <div class="dup-card-content">
+            <div><b>Nghĩa:</b> ${esc(v.definition || '...')}</div>
+            <div><b>IPA:</b> ${esc(v.ipa || '')}</div>
+            <div><b>Loại từ:</b> ${esc(v.pos || '')}</div>
+            <div><b>Ví dụ:</b> ${esc(v.example || '')}</div>
+            <div style="font-size:11px; color:#94a3b8; margin-top:6px; border-top:1px solid var(--border); padding-top:4px;">
+              📍 Vị trí trong danh sách: <b>#${idx + 1}</b> <i>(càng nhỏ càng được thêm sớm)</i>
+            </div>
+          </div>
+        `;
+        cardsDiv.appendChild(card);
+      });
+      
+      groupDiv.appendChild(cardsDiv);
+      body.appendChild(groupDiv);
+    }
+  }
+  
+  if (!hasDups) {
+    body.innerHTML = '<div style="text-align:center; color:#94a3b8; padding:30px; font-size:15px;"> Tuyệt vời! Không có trùng lặp nào.</div>';
+  }
+  
+  $('dup-modal').classList.add('active');
+}
+
+function closeDupModal() {
+  $('dup-modal').classList.remove('active');
+}
+
+// Xử lý xóa các từ đã tick
+function deleteSelectedDups() {
+  const checks = document.querySelectorAll('.dup-del-check:checked');
+  if (checks.length === 0) {
+    alert('🚨 Bạn chưa chọn từ nào để xóa!');
+    return;
+  }
+  
+  if (!confirm(`Bạn có chắc muốn xóa ${checks.length} từ trùng lặp đã chọn không? Hành động này không thể hoàn tác.`)) {
+    return;
+  }
+  
+  const indicesToDelete = Array.from(checks).map(cb => parseInt(cb.dataset.idx, 10));
+  // Sắp xếp giảm dần để xóa từ cuối lên đầu, tránh bị lệch index
+  indicesToDelete.sort((a, b) => b - a);
+  
+  indicesToDelete.forEach(idx => {
+    vocab.splice(idx, 1);
+  });
+  
+  // Dọn dẹp lại set selected cho an toàn
+  const newSelected = new Set();
+  vocab.forEach(v => {
+    if (selected.has(keyOf(v))) newSelected.add(keyOf(v));
+  });
+  selected = newSelected;
+  
+  localStorage.setItem('langverse_data', JSON.stringify(vocab));
+  closeDupModal();
+  init(); // Render lại toàn bộ giao diện
+}
+
+// Hook vào hàm renderList có sẵn để tự động cập nhật nút
+const origRenderList = window.renderList;
+window.renderList = function() {
+  if (typeof origRenderList === 'function') origRenderList();
+  updateDupButton();
+};
+</script>
+
+	
 </body>
 </html>
