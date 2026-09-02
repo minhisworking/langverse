@@ -5474,10 +5474,45 @@ var origStartSelected = window.startSelectedTest;
 window.startSelectedTest = function() {
   const pool = getTestPool();
   if (!pool.length) {
-    if (typeof showPretestToast === 'function') showPretestToast(' Bạn chưa chọn gì để kiểm tra!');
+    if (typeof showPretestToast === 'function') showPretestToast('🚨 Bạn chưa chọn gì để kiểm tra!');
     return;
   }
   if (typeof closePretest === 'function') closePretest();
+  
+  // Xử lý theo skill
+  if (PRETEST.skill === 'nghe') {
+    if (typeof startPaperNghe === 'function') {
+      startPaperNghe();
+    }
+    return;
+  }
+  if (PRETEST.skill === 'doc') {
+    if (typeof startPaperDoc === 'function') {
+      startPaperDoc();
+    }
+    return;
+  }
+  if (PRETEST.skill === 'noi') {
+    if (typeof startPaperNoi === 'function') {
+      startPaperNoi();
+    } else {
+      console.error('❌ Hàm startPaperNoi chưa được định nghĩa!');
+      if (typeof showPretestToast === 'function') showPretestToast(' Lỗi: Hàm startPaperNoi chưa tồn tại!', false);
+    }
+    return;
+  }
+  if (PRETEST.skill === 'viet') {
+    if (typeof startPaperViet === 'function') {
+      startPaperViet();
+    }
+    return;
+  }
+  
+  // Fallback
+  if (typeof origStartSelected === 'function') {
+    origStartSelected.call(this);
+  }
+};
   if(PRETEST.skill === 'nghe'){ startPaperNghe(); return; }
   if(PRETEST.skill === 'doc'){ startPaperDoc(); return; }
   if(PRETEST.skill === 'noi'){ startPaperNoi(); return; }
