@@ -6746,43 +6746,7 @@ window.closeTest = function(){
   if(typeof origCloseTest === 'function') origCloseTest();
 };
 </script>
-function deleteSelectedDups() {
-  const checks = document.querySelectorAll('.dup-del-check:checked');
-  if (checks.length === 0) {
-    alert('🚨 Bạn chưa chọn từ nào để xóa!');
-    return;
-  }
-  const popup = $('dup-del-confirm');
-  const txt = $('dup-del-confirm-text');
-  txt.innerHTML = 'Bạn có chắc muốn xóa <b>' + checks.length + '</b> từ trùng lặp đã chọn không? Hành động này không thể hoàn tác.';
-  
-  const btn = event.target;
-  const rect = btn.getBoundingClientRect();
-  popup.classList.remove('hidden');
-  
-  requestAnimationFrame(() => {
-    const pw = popup.offsetWidth, ph = popup.offsetHeight;
-    let left = rect.left + rect.width / 2 - pw / 2;
-    let top = rect.top - ph - 8;
-    if (left < 8) left = 8;
-    if (left + pw > window.innerWidth - 8) left = window.innerWidth - pw - 8;
-    if (top < 8) top = rect.bottom + 8;
-    popup.style.left = left + 'px';
-    popup.style.top = top + 'px';
-  });
-  
-  dupDelCallback = () => {
-    const indicesToDelete = Array.from(checks).map(cb => parseInt(cb.dataset.idx, 10));
-    indicesToDelete.sort((a, b) => b - a);
-    indicesToDelete.forEach(idx => { vocab.splice(idx, 1); });
-    const newSelected = new Set();
-    vocab.forEach(v => { if (selected.has(keyOf(v))) newSelected.add(keyOf(v)); });
-    selected = newSelected;
-    localStorage.setItem('langverse_data', JSON.stringify(vocab));
-    closeDupModal();
-    init();
-  };
-}
+
 	
 <div class="modal" id="dup-modal" onclick="if(event.target===this)closeDupModal()">
   <div class="modal-content wide" style="max-width:900px;">
@@ -6898,24 +6862,7 @@ function closeDupModal() {
 
 let dupDelCallback = null;
 
-function closeDupDelConfirm() {
-  const popup = $('dup-del-confirm');
-  if (popup) popup.classList.add('hidden');
-  dupDelCallback = null;
-}
-
-document.addEventListener('click', e => {
-  const popup = $('dup-del-confirm');
-  if (!popup) return;
-  if (e.target.classList.contains('dup-del-ok')) {
-    if (dupDelCallback) dupDelCallback();
-    closeDupDelConfirm();
-  } else if (e.target.classList.contains('dup-del-cancel')) {
-    closeDupDelConfirm();
-  } else if (!popup.classList.contains('hidden') && !e.target.closest('#dup-del-confirm')) {
-    closeDupDelConfirm();
-  }
-});
+);
 
 function closeDupDelConfirm() {
   $('dup-del-confirm').classList.add('hidden');
@@ -6942,6 +6889,45 @@ window.renderList = function() {
   if (typeof origRenderList === 'function') origRenderList();
   updateDupButton();
 };
+
+function deleteSelectedDups() {
+  const checks = document.querySelectorAll('.dup-del-check:checked');
+  if (checks.length === 0) {
+    alert('🚨 Bạn chưa chọn từ nào để xóa!');
+    return;
+  }
+  const popup = $('dup-del-confirm');
+  const txt = $('dup-del-confirm-text');
+  txt.innerHTML = 'Bạn có chắc muốn xóa <b>' + checks.length + '</b> từ trùng lặp đã chọn không? Hành động này không thể hoàn tác.';
+  
+  const btn = event.target;
+  const rect = btn.getBoundingClientRect();
+  popup.classList.remove('hidden');
+  
+  requestAnimationFrame(() => {
+    const pw = popup.offsetWidth, ph = popup.offsetHeight;
+    let left = rect.left + rect.width / 2 - pw / 2;
+    let top = rect.top - ph - 8;
+    if (left < 8) left = 8;
+    if (left + pw > window.innerWidth - 8) left = window.innerWidth - pw - 8;
+    if (top < 8) top = rect.bottom + 8;
+    popup.style.left = left + 'px';
+    popup.style.top = top + 'px';
+  });
+  
+  dupDelCallback = () => {
+    const indicesToDelete = Array.from(checks).map(cb => parseInt(cb.dataset.idx, 10));
+    indicesToDelete.sort((a, b) => b - a);
+    indicesToDelete.forEach(idx => { vocab.splice(idx, 1); });
+    const newSelected = new Set();
+    vocab.forEach(v => { if (selected.has(keyOf(v))) newSelected.add(keyOf(v)); });
+    selected = newSelected;
+    localStorage.setItem('langverse_data', JSON.stringify(vocab));
+    closeDupModal();
+    init();
+  };
+}
+	
 </script>
 <div id="dup-del-confirm" class="dup-del-confirm hidden">
   <div class="dup-del-confirm-text" id="dup-del-confirm-text"></div>
