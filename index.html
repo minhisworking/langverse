@@ -621,15 +621,22 @@ button, .btn-primary, .btn-success, .btn-warning, .btn-danger, .nav-btn, .close 
   }
 }
 
-/* Nút trùng lặp khi có dữ liệu */
-#dup-btn.has-dup {
+/* Nút trùng lặp - trạng thái mặc định (bị khóa) */
+#dup-btn.dup-disabled {
+  opacity: 0.4 !important;
+  pointer-events: none !important;
+  cursor: not-allowed;
+}
+/* Nút trùng lặp - khi có dữ liệu (mở khóa) */
+#dup-btn:not(.dup-disabled) {
   opacity: 1 !important;
   pointer-events: auto !important;
   background: var(--accent);
   color: #0f172a;
   font-weight: bold;
+  cursor: pointer;
 }
-#dup-btn.has-dup:hover {
+#dup-btn:not(.dup-disabled):hover {
   opacity: 0.85 !important;
 }
 
@@ -959,7 +966,7 @@ button, .btn-primary, .btn-success, .btn-warning, .btn-danger, .nav-btn, .close 
         <option value="az">A-Z</option><option value="recent">Mới thêm</option><option value="pos">Loại từ</option><option value="manual">Thủ công</option>
       </select>
       <button id="sortdir" class="dir-btn" onclick="toggleDir()" title="Đảo thứ tự sắp xếp">🔃</button>
-<button id="dup-btn" class="dir-btn" onclick="openDupModal()" title="Phát hiện trùng lặp" style="opacity:0.4; pointer-events:none; margin-left:6px;">👯 Trùng lặp (0)</button>
+<button id="dup-btn" class="dir-btn dup-disabled" onclick="openDupModal()" title="Phát hiện trùng lặp" style="margin-left:6px;">👯 Trùng lặp (0)</button>
     </label>
   </div>
   <div class="word-list" id="word-list"></div>
@@ -6771,9 +6778,14 @@ function updateDupButton() {
   const btn = $('dup-btn');
   if (!btn) return;
   
+  // Đảm bảo viewList và vocab đã sẵn sàng
+  if (typeof viewList === 'undefined' || typeof vocab === 'undefined') return;
+  if (!Array.isArray(viewList) || !Array.isArray(vocab)) return;
+  
   const counts = {};
   viewList.forEach(idx => {
-    const w = cleanInvisible(vocab[idx].word).toLowerCase();
+    if (!vocab[idx]) return;
+    const w = (typeof cleanInvisible === 'function' ? cleanInvisible(vocab[idx].word) : vocab[idx].word).toLowerCase();
     if (w) counts[w] = (counts[w] || 0) + 1;
   });
   
@@ -6783,10 +6795,12 @@ function updateDupButton() {
   }
   
   if (dupGroups > 0) {
-    btn.textContent = `👯 Trùng lặp (${dupGroups})`;
+    btn.textContent = '👯 Trùng lặp (' + dupGroups + ')';
+    btn.classList.remove('dup-disabled');
     btn.classList.add('has-dup');
   } else {
-    btn.textContent = `👯 Trùng lặp (0)`;
+    btn.textContent = '👯 Trùng lặp (0)';
+    btn.classList.add('dup-disabled');
     btn.classList.remove('has-dup');
   }
 }
@@ -6927,15 +6941,24 @@ function deleteSelectedDups() {
 const origApplyView = window.applyView;
 window.applyView = function() {
   if (typeof origApplyView === 'function') origApplyView();
-  updateDupButton();
+  try { updateDupButton(); } catch(e) {}
 };
 
 // Hook vào init để chạy ngay khi trang load xong
 const origInit = window.init;
 window.init = function() {
   if (typeof origInit === 'function') origInit();
-  updateDupButton();
+  try { updateDupButton(); } catch(e) {}
 };
+
+// Gọi ngay lập tức sau khi DOM sẵn sàng (fallback)
+if (document.readyState === 'loading') {
+  document.addEventListener('DOMContentLoaded', function() {
+    setTimeout(updateDupButton, 500);
+  });
+} else {
+  setTimeout(updateDupButton, 500);
+}
 
 
 	
