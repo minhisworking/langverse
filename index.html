@@ -81,7 +81,13 @@ button:hover { opacity:.85; }
     margin-top: 6px;
     padding: 0 15px;  /* THÊM DÒNG NÀY */
 }
-.ipa-big { font-family:monospace; color:#94a3b8; }
+.ipa-big { 
+    font-family: monospace; 
+    color: #94a3b8; 
+    white-space: nowrap; 
+    writing-mode: horizontal-tb; 
+    text-orientation: mixed;
+}
 .tts-btn { background:var(--card-bg); border:1px solid var(--border); color:var(--accent); width:36px; height:36px; border-radius:50%; font-size:15px; display:flex; align-items:center; justify-content:center; cursor:pointer; padding:0; flex-shrink:0; }
 .tts-btn:hover { border-color:var(--accent); opacity:1; }
 .tts-btn.speaking { animation:pulse 1s infinite; border-color:var(--accent); }
@@ -404,6 +410,17 @@ body { overflow-x: hidden; }
   
   }
   
+  .ipa-row { 
+    flex-direction: row !important; 
+    flex-wrap: nowrap !important; 
+    overflow-x: auto; 
+    max-width: 100%; 
+}
+.ipa-big { 
+    white-space: nowrap !important; 
+    writing-mode: horizontal-tb !important; 
+    font-size: 16px !important; 
+}
   .nav-btn { width: 44px; height: 44px; font-size: 20px; }
   
   /* Modal full màn hình hơn */
