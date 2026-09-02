@@ -507,16 +507,16 @@ button, .btn-primary, .btn-success, .btn-warning, .btn-danger, .nav-btn, .close 
   <button class="btn-success" onclick="exportData()">📤 Backup</button>
   <input type="text" id="search" placeholder="🔍 Từ / nghĩa / IPA / ví dụ / đồng nghĩa..." oninput="applyView()" style="flex:1; min-width:130px;">
     <div class="peek-wrap">
-    <button id="multi-btn" class="peek-btn" onclick="toggleMultiPop()">🌍 <span id="multi-label">Tất cả Multiverse</span> ▾</button>
+    <button id="multi-btn" class="peek-btn" onclick="toggleMultiPop()">🌌 <span id="multi-label">Tất cả Multiverse</span> ▾</button>
     <div class="peek-pop" id="multi-pop" style="min-width:260px;">
       <div class="peek-pop-title">🌍 Chọn Multiverse</div>
       <div class="peek-pop-body" id="multi-pop-body" style="max-height:320px; overflow-y:auto;"></div>
     </div>
   </div>
 <div class="peek-wrap">
-    <button id="filter-btn" class="peek-btn" onclick="toggleFilterPop()">🌌 <span id="filter-label">Tất cả vũ trụ</span> ▾</button>
+    <button id="filter-btn" class="peek-btn" onclick="toggleFilterPop()">☀️ <span id="filter-label">Tất cả vũ trụ</span> ▾</button>
     <div class="peek-pop" id="filter-pop">
-      <div class="peek-pop-title">🌌 Remix vũ trụ — tick để học gộp</div>
+      <div class="peek-pop-title">☀️ Remix vũ trụ — tick để học gộp</div>
       <div class="peek-pop-body" id="filter-pop-body" style="max-height:280px; overflow-y:auto;"></div>
     </div>
   </div>
@@ -1344,7 +1344,7 @@ items.forEach(({v,i})=>{
     const isAll = PRETEST.selectedVerses.size === 0;
     const allItem = document.createElement('label');
     allItem.className = 'pretest-item pretest-item-all' + (isAll?' checked':'');
-    allItem.innerHTML = '<input type="checkbox" '+(isAll?'checked':'')+'><span class="pt-tag">🌌 Tất cả vũ trụ</span><span class="pt-def" style="margin-left:auto;">'+vocab.length+' từ</span>';
+    allItem.innerHTML = '<input type="checkbox" '+(isAll?'checked':'')+'><span class="pt-tag">☀️ Tất cả vũ trụ</span><span class="pt-def" style="margin-left:auto;">'+vocab.length+' từ</span>';
     allItem.addEventListener('click', e=>{ if(e.target.tagName==='INPUT') return; e.preventDefault(); PRETEST.selectedVerses.clear(); renderPretestList(); });
     allItem.querySelector('input').addEventListener('change', e=>{ if(e.target.checked) PRETEST.selectedVerses.clear(); renderPretestList(); });
     list.appendChild(allItem);
@@ -1362,7 +1362,7 @@ matched.forEach(t=>{
     });
     if(!matched.length) list.innerHTML = '<div class="img-suggest-status">😢 Không có vũ trụ nào khớp.</div>';
     const vCount = isAll ? vocab.length : vocab.filter(v=>getAllTags(v.definition).some(t=>PRETEST.selectedVerses.has(t))).length;
-    $('pretest-summary').innerHTML = isAll ? 'Đang chọn: <b>🌌 Tất cả vũ trụ</b> · '+vCount+' từ' : 'Đang gộp <b>'+PRETEST.selectedVerses.size+'</b> vũ trụ · '+vCount+' từ';
+    $('pretest-summary').innerHTML = isAll ? 'Đang chọn: <b>☀️ Tất cả vũ trụ</b> · '+vCount+' từ' : 'Đang gộp <b>'+PRETEST.selectedVerses.size+'</b> vũ trụ · '+vCount+' từ';
   }
   
   // Thêm vào cuối hàm renderPretestList(), trước dấu }
@@ -1552,7 +1552,7 @@ function renderFilterPop(){
 const body=$('filter-pop-body'); if(!body) return;
 const all=collectAllVocabTags();
 getCustomVerses().forEach(t=>{ if(!all.includes(t)) all.push(t); });
-let html='<label class="chk-row"><input type="checkbox" data-f="__all" '+(filterSet.size===0?'checked':'')+'><span>🌌 Tất cả vũ trụ</span></label>';
+let html='<label class="chk-row"><input type="checkbox" data-f="__all" '+(filterSet.size===0?'checked':'')+'><span>☀️ Tất cả vũ trụ</span></label>';
 html+='<div class="multi-item multi-add" onclick="openAddVerseModal()">➕ Thêm vũ trụ</div>';
 all.forEach(t=>{
 html+='<label class="chk-row" style="position:relative;"><input type="checkbox" data-f="'+esc(t)+'" '+(filterSet.has(t)?'checked':'')+'><span>'+esc(t)+'</span><button class="verse-dot-btn" data-vtag="'+esc(t)+'" onclick="event.stopPropagation(); openVerseDotMenu(this, this.dataset.vtag)">⋮</button></label>';
@@ -1880,71 +1880,145 @@ function ghepDinhNghia(dongNghia,khoiEty){ if(!dongNghia.length) return ''; let 
 function postProcessRows(rows){ return rows.map(row=>{ if(row.length!==8) return row; let def=row[1]; def=haTagXuongCuoiDong(def); const {dongNghia,khoiEty}=tachDinhNghia(def); if(dongNghia.length){ row[1]=ghepDinhNghia(dongNghia,khoiEty); } return row; }); }
 
 async function callAi(){
-  const key=cleanInvisible($('ai-key').value); const input=cleanInvisible($('ai-input').value);
-  if(!key){ aiSetStatus('🚨 Sếp chưa dán API Key!','error'); return; }
-  if(!input){ aiSetStatus('🚨 Chưa nhập từ vựng để hỏi!','error'); return; }
-  localStorage.setItem('langverse_ai_key',key);
-  const btn=$('ai-call-btn'); btn.disabled=true;
-  $('ai-log').innerHTML=''; $('ai-log').style.display='block';
-  aiLog('📡 Đang hỏi Google: "đứa con út hệ Flash nhà ngươi tên gì, số mấy?"...','info');
-  aiSetStatus('<span class="ai-spinner"></span>Đang dò danh sách bé Flash...','loading');
-  let tsv=null, success=false;
-  try{
-    let rList;
-    try{ const lc=new AbortController(); const lt=setTimeout(()=>lc.abort(),15000); rList=await fetch('https://generativelanguage.googleapis.com/v1beta/models?key='+key,{signal:lc.signal}); clearTimeout(lt); }
-    catch(netErr){ aiLog('💀 LỖI MẠNG khi lấy list models: '+netErr.message,'err'); aiSetStatus('⚠️ Mất kết nối mạng hoặc Google chặn request!','error'); btn.disabled=false; return; }
-    if(!rList.ok){ let eb=''; try{ eb=JSON.stringify(await rList.json()).slice(0,300);}catch(e){eb='(không đọc được body)';} aiLog('💀 Lỗi '+rList.status+': Google chưa cho xem danh sách model.','err'); aiLog('🚨 100% DO API KEY RỒI SẾP ƠI!','err'); aiSetStatus('💀 Lỗi '+rList.status+' — 100% do API Key!','error'); btn.disabled=false; return; }
-    const listData=await rList.json();
-    const tenModels=(listData.models||[]).map(m=>(m.name||'').replace('models/',''));
-    aiLog('✓ Tìm thấy '+tenModels.length+' model tổng','ok');
-    const flash=tenModels.filter(m=>{ const ml=m.toLowerCase(); return ml.includes('flash')&&!ml.includes('pro')&&!ml.includes('ultra')&&!['image','audio','video','tts','live','robot','embedding','aqa'].some(k=>ml.includes(k)); });
-    const docVer=n=>{ const mm=n.match(/(\d+\.\d+)/); return mm?parseFloat(mm[1]):0; };
-    flash.sort((a,b)=>{ const va=docVer(a),vb=docVer(b); const la=a.toLowerCase().includes('lite')?0:1; const lb=b.toLowerCase().includes('lite')?0:1; return (vb-va)||(lb-la); });
-    if(!flash.length){ aiLog('😱 Google hết bé Flash thật?!','err'); aiSetStatus('😱 Google hết bé Flash!','error'); btn.disabled=false; return; }
-    aiLog('🎯 Chốt đơn '+flash.length+' bé Flash.','ok'); aiLog('   Top 3: '+flash.slice(0,3).join(', '),'info');
+    const key=cleanInvisible($('ai-key').value); 
+    const rawInput=cleanInvisible($('ai-input').value);
+    if(!key){ aiSetStatus('🚨 Sếp chưa dán API Key!','error'); return; }
+    if(!rawInput){ aiSetStatus('🚨 Chưa nhập từ vựng để hỏi!','error'); return; }
+    localStorage.setItem('langverse_ai_key',key);
+    
+    const btn=$('ai-call-btn'); btn.disabled=true;
+    $('ai-log').innerHTML=''; $('ai-log').style.display='block';
+    
+    // 🚀 CHUNKING: Chia nhỏ input để tránh timeout và lỗi format
+    const allWords = rawInput.split('\n').map(w => w.trim()).filter(Boolean);
+    const CHUNK_SIZE = 30; // Mỗi lần xử lý 30 từ (Bạn có thể chỉnh số này)
+    const chunks = [];
+    for (let i = 0; i < allWords.length; i += CHUNK_SIZE) {
+        chunks.push(allWords.slice(i, i + CHUNK_SIZE).join('\n'));
+    }
+    
+    aiLog(`📡 Chia nhỏ ${allWords.length} từ thành ${chunks.length} lô (mỗi lô ${CHUNK_SIZE} từ) để tránh timeout...`, 'info');
+    let allRows = [];
+    
+    // 1. Lấy list model Flash
+    let flash = [];
+    try {
+        aiSetStatus('<span class="ai-spinner"></span>Đang dò danh sách bé Flash...','loading');
+        const rList = await fetch('https://generativelanguage.googleapis.com/v1beta/models?key='+key);
+        if(!rList.ok) throw new Error('Lỗi list model');
+        const listData = await rList.json();
+        const tenModels = (listData.models||[]).map(m=>(m.name||'').replace('models/',''));
+        flash = tenModels.filter(m=>{ 
+            const ml=m.toLowerCase(); 
+            return ml.includes('flash')&&!ml.includes('pro')&&!ml.includes('ultra')&&!['image','audio','video','tts','live','robot','embedding','aqa'].some(k=>ml.includes(k)); 
+        });
+        const docVer=n=>{ const mm=n.match(/(\d+\.\d+)/); return mm?parseFloat(mm[1]):0; };
+        flash.sort((a,b)=>{ 
+            const va=docVer(a),vb=docVer(b); 
+            const la=a.toLowerCase().includes('lite')?0:1; 
+            const lb=b.toLowerCase().includes('lite')?0:1; 
+            return (vb-va)||(lb-la); 
+        });
+    } catch(e) {
+        aiLog('💀 Không lấy được list model.', 'err');
+        btn.disabled=false; return;
+    }
+
+    if(!flash.length){ aiLog('😱 Google hết bé Flash thật?!','err'); btn.disabled=false; return; }
+
+    // 2. Chuẩn bị Prompt & Ngôn ngữ
     const frontSel=$('ai-lang-front').value, backSel=$('ai-lang-back').value;
     localStorage.setItem('langverse_ai_lang_front',frontSel); localStorage.setItem('langverse_ai_lang_back',backSel);
-    const frontBase=frontSel==='auto'?detectLang(input).split('-')[0]:frontSel;
+    const frontBase=frontSel==='auto'?detectLang(rawInput).split('-')[0]:frontSel;
     const frontName=langName(frontBase), backName=langName(backSel);
     const isJA=frontBase==='ja';
     const constitution=isJA?AI_CONSTITUTION_JA:AI_CONSTITUTION;
-    aiLog(isJA?'🇯🇵 Mặt trước tiếng Nhật → bật Hiến Pháp NIHONGO V3.4.3':'🌐 Bật Hiến Pháp UNIVERSAL V4.1 ('+frontName+' → '+backName+')','info');
     const langNote='\n🌐 NGÔN NGỮ MẶT TRƯỚC (Từ gốc / Cột 1): '+frontName+'\n🌐 NGÔN NGỮ MẶT SAU (Định nghĩa / Cột 2): '+backName;
-    const userPrompt=(isJA
-? 'Biến danh sách từ tiếng Nhật sau thành TSV 8 cột theo Hiến Pháp NIHONGO 8 CỘT.\nDữ liệu:\n'+input+'\nYÊU CẦU SỐNG CÒN (NO YAPPING):\n1. Chỉ trả về TSV trần, không markdown, không chào hỏi, không dòng tiêu đề, không comment.\n2. Cột 1 Kanji/Kana | Cột 2 Nghĩa VIP + (tag) | Cột 3 Furigana + Hán・Việt | Cột 4 Pitch/Downstep (⓿❶) | Cột 5 Loại từ | Cột 6 Ví dụ tiếng Nhật | Cột 7 Đồng nghĩa/trái nghĩa | Cột 8 Etymology thuần Việt (TRẦN, không ngoặc vuông).\n3. Đa nghĩa → mỗi nghĩa 1 dòng ① ② ③, cuối dòng (tag) nếu liên quan. Đơn nghĩa → 1 dòng.\n4. Định nghĩa xuống dòng bọc "".\n5. Etymology chỉ thuần Việt, KHÔNG Kanji/Hán Việt.\n6. TỤC NGỮ/THÀNH NGỮ: Cột 4 Downstep BẮT BUỘC để TRỐNG, tuyệt đối CẤM bịa số (như ❺❻) cho cả cụm dài.'
-: 'Biến danh sách từ sau thành TSV 8 cột theo Hiến Pháp UNIVERSAL 8 CỘT.\nDữ liệu:\n'+input+'\nYÊU CẦU SỐNG CÒN (NO YAPPING):\n1. Chỉ trả về TSV trần, không markdown, không chào hỏi, không dòng tiêu đề.\n2. Cột 1 Từ gốc | Cột 2 Nghĩa + (tag) | Cột 3 IPA | Cột 4 Hạt nhân/Downstep (trống nếu không áp dụng) | Cột 5 Loại từ | Cột 6 Ví dụ | Cột 7 Đồng nghĩa | Cột 8 Etymology (TRẦN, không ngoặc vuông).\n3. Tag subtopic do AI TỰ CHẾ — NGÔN NGỮ TAG = NGÔN NGỮ ĐỊNH NGHĨA. Format: "Tên Lĩnh Vực + Emoji". Tag CHỈ khi thật sự liên quan.\n4. Đa nghĩa → mỗi nghĩa 1 dòng, tag cuối dòng nếu liên quan. Đơn nghĩa → 1 dòng.\n5. Định nghĩa xuống dòng phải bọc "".\n6. Mọi ô IPA bắt buộc có giá trị.')+langNote;
-    const payload={ contents:[{ parts:[{ text: constitution+'\n\n'+userPrompt }] }], generationConfig:{ temperature:0.4 } };
-    const maxRetries=3, waitSeconds=2, triedModels=Math.min(flash.length,3), REQUEST_TIMEOUT=30000;
-    for(let idx=0; idx<triedModels; idx++){
-      const model=flash[idx];
-      aiLog('\n🔥 VÒNG '+(idx+1)+': '+model,'info');
-      aiSetStatus('<span class="ai-spinner"></span>Đang triệu hồi <b>'+model+'</b>...','loading');
-      const url='https://generativelanguage.googleapis.com/v1beta/models/'+model+':generateContent?key='+key;
-      for(let attempt=1; attempt<=maxRetries; attempt++){
-        let r;
-        try{ aiLog('   🚀 Triệu hồi '+model+' (Lần '+attempt+'/'+maxRetries+')...','info'); const ctrl=new AbortController(); const to=setTimeout(()=>ctrl.abort(),REQUEST_TIMEOUT); r=await fetch(url,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(payload),signal:ctrl.signal}); clearTimeout(to); }
-        catch(netErr){ if(netErr.name==='AbortError') aiLog('   ⏱️ TIMEOUT '+REQUEST_TIMEOUT/1000+'s!','err'); else aiLog('   ❌ LỖI MẠNG: '+netErr.message,'err'); if(attempt<maxRetries){ aiLog('   💤 Nghỉ '+waitSeconds+'s...','warn'); await new Promise(res=>setTimeout(res,waitSeconds*1000)); continue; } break; }
-        if(r.ok){ let data; try{ data=await r.json(); }catch(pe){ aiLog('   ❌ Parse JSON lỗi: '+pe.message,'err'); break; } tsv=data?.candidates?.[0]?.content?.parts?.[0]?.text; if(tsv){ aiLog('   ✅ '+model+' nhận job thành công!','ok'); success=true; break; } else { const br=data?.promptFeedback?.blockReason||data?.candidates?.[0]?.finishReason; aiLog('   ⚠️ Response OK nhưng trống. Block: '+(br||'unknown'),'warn'); break; } }
-        else { let ei=''; try{ const ed=await r.json(); ei=ed?.error?.message||ed?.error?.status||''; }catch(e){ try{ ei=(await r.text()).slice(0,200);}catch(x){} } aiLog('   ❌ HTTP '+r.status+': '+ei.slice(0,200),'err'); if(r.status===429||r.status===503){ if(attempt<maxRetries){ aiLog('   💤 Nghỉ '+waitSeconds+'s...','warn'); await new Promise(res=>setTimeout(res,waitSeconds*1000)); continue; } else aiLog('   🗑️ Bé "báo" quá. Đổi bé khác!','warn'); } else aiLog('   👻 Lỗi lạ ('+r.status+'). Out gấp!','err'); break; }
-      }
-      if(success) break;
-      aiLog('   ⚠️ Bé '+model+' không đáp được, thử bé khác...','warn');
+
+    // 3. Loop qua từng chunk (lô)
+    for (let cIdx = 0; cIdx < chunks.length; cIdx++) {
+        const chunkInput = chunks[cIdx];
+        aiLog(`\n🔥 [Lô ${cIdx + 1}/${chunks.length}] Đang xử lý ${chunkInput.split('\n').length} từ...`, 'info');
+        aiSetStatus(`<span class="ai-spinner"></span>Đang xử lý lô ${cIdx + 1}/${chunks.length}...`, 'loading');
+        
+        const userPrompt = (isJA
+            ? 'Biến danh sách từ tiếng Nhật sau thành TSV 8 cột theo Hiến Pháp NIHONGO 8 CỘT.\nDữ liệu:\n'+chunkInput+'\nYÊU CẦU SỐNG CÒN (NO YAPPING):\n1. Chỉ trả về TSV trần, không markdown, không chào hỏi, không dòng tiêu đề, không comment.\n2. Cột 1 Kanji/Kana | Cột 2 Nghĩa VIP + (tag) | Cột 3 Furigana + Hán・Việt | Cột 4 Pitch/Downstep (⓿❶) | Cột 5 Loại từ | Cột 6 Ví dụ tiếng Nhật | Cột 7 Đồng nghĩa/trái nghĩa | Cột 8 Etymology thuần Việt (TRẦN, không ngoặc vuông).\n3. Đa nghĩa → mỗi nghĩa 1 dòng ① ② ③, cuối dòng (tag) nếu liên quan. Đơn nghĩa → 1 dòng.\n4. Định nghĩa xuống dòng bọc "".\n5. Etymology chỉ thuần Việt, KHÔNG Kanji/Hán Việt.\n6. TỤC NGỮ/THÀNH NGỮ: Cột 4 Downstep BẮT BUỘC để TRỐNG, tuyệt đối CẤM bịa số (như ❺❻) cho cả cụm dài.'
+            : 'Biến danh sách từ sau thành TSV 8 cột theo Hiến Pháp UNIVERSAL 8 CỘT.\nDữ liệu:\n'+chunkInput+'\nYÊU CẦU SỐNG CÒN (NO YAPPING):\n1. Chỉ trả về TSV trần, không markdown, không chào hỏi, không dòng tiêu đề.\n2. Cột 1 Từ gốc | Cột 2 Nghĩa + (tag) | Cột 3 IPA | Cột 4 Hạt nhân/Downstep (trống nếu không áp dụng) | Cột 5 Loại từ | Cột 6 Ví dụ | Cột 7 Đồng nghĩa | Cột 8 Etymology (TRẦN, không ngoặc vuông).\n3. Tag subtopic do AI TỰ CHẾ — NGÔN NGỮ TAG = NGÔN NGỮ ĐỊNH NGHĨA. Format: "Tên Lĩnh Vực + Emoji". Tag CHỈ khi thật sự liên quan.\n4. Đa nghĩa → mỗi nghĩa 1 dòng, tag cuối dòng nếu liên quan. Đơn nghĩa → 1 dòng.\n5. Định nghĩa xuống dòng phải bọc "".\n6. Mọi ô IPA bắt buộc có giá trị.')+langNote;
+            
+        const payload={ contents:[{ parts:[{ text: constitution+'\n'+userPrompt }] }], generationConfig:{ temperature:0.4 } };
+        
+        const REQUEST_TIMEOUT = 120000; // ⏱️ Tăng lên 2 phút cho mỗi lô (thay vì 30s)
+        let tsv = null;
+        let success = false;
+        
+        // Gọi API cho lô hiện tại
+        for(let idx=0; idx<Math.min(flash.length, 3); idx++){
+            const model=flash[idx];
+            for(let attempt=1; attempt<=2; attempt++){
+                let r;
+                try{ 
+                    const ctrl=new AbortController(); 
+                    const to=setTimeout(()=>ctrl.abort(),REQUEST_TIMEOUT); 
+                    r=await fetch('https://generativelanguage.googleapis.com/v1beta/models/'+model+':generateContent?key='+key,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(payload),signal:ctrl.signal}); 
+                    clearTimeout(to); 
+                } catch(netErr){ 
+                    if(attempt<2) { await new Promise(res=>setTimeout(res,2000)); continue; } 
+                    break; 
+                }
+                if(r.ok){ 
+                    let data; 
+                    try{ data=await r.json(); }catch(pe){ break; } 
+                    tsv=data?.candidates?.[0]?.content?.parts?.[0]?.text; 
+                    if(tsv){ success=true; break; } 
+                    else break; 
+                } else {
+                    if(r.status===429||r.status===503){ 
+                        if(attempt<2){ await new Promise(res=>setTimeout(res,2000)); continue; } 
+                    } 
+                    break; 
+                }
+            }
+            if(success) break;
+        }
+        
+        if(!success || !tsv){
+            aiLog(`❌ Lô ${cIdx + 1} thất bại. Bỏ qua lô này.`, 'err');
+            continue;
+        }
+        
+        // Parse và gộp vào bảng tổng
+        tsv=tsv.replace(/```tsv/g,'').replace(/```/g,'').trim();
+        let rows=parseTsv(tsv).filter(row=>row&&row.some(c=>c&&c.trim()));
+        if(rows.length&&['từ gốc','word','từ'].includes(rows[0][0].trim().toLowerCase())){ rows=rows.slice(1); }
+        
+        rows = postProcessRows(rows);
+        allRows = allRows.concat(rows);
+        aiLog(`✅ Lô ${cIdx + 1} hoàn tất (${rows.length} dòng).`, 'ok');
     }
-    if(!success||!tsv){ aiLog('\n💀 Dòng họ Flash "bất lực".','err'); aiSetStatus('💀 Flash bất lực — xem log!','error'); btn.disabled=false; return; }
-    aiLog('\n📜 TSV raw ('+tsv.length+' chars)','info');
-    tsv=tsv.replace(/```tsv/g,'').replace(/```/g,'').trim();
-    let rows=parseTsv(tsv).filter(row=>row&&row.some(c=>c&&c.trim()));
-    aiLog('✓ Parse được '+rows.length+' dòng TSV','ok');
-    if(rows.length&&['từ gốc','word','từ'].includes(rows[0][0].trim().toLowerCase())){ rows=rows.slice(1); aiLog('✓ Bỏ header, còn '+rows.length+' dòng','ok'); }
-    if(!rows.length){ aiLog('❌ Không có dòng data hợp lệ!','err'); aiSetStatus('❌ AI trả về nhưng parse không ra data!','error'); btn.disabled=false; return; }
-    aiLog('🔧 Đang post-process...','info'); rows=postProcessRows(rows); aiLog('✓ Post-process hoàn tất','ok');
+    
+    // 4. Xuất kết quả cuối cùng ra bảng Preview
+    if(!allRows.length){ 
+        aiLog('❌ Không có dòng data hợp lệ nào!','err'); 
+        aiSetStatus('❌ AI trả về nhưng parse không ra data!','error'); 
+        btn.disabled=false; return; 
+    }
+    
     const tbody=$('ai-body'); tbody.innerHTML='';
-    rows.forEach(row=>{ const tr=document.createElement('tr'); for(let c=0;c<8;c++){ const td=document.createElement('td'); const inp=document.createElement('input'); inp.value=row[c]||''; td.appendChild(inp); tr.appendChild(td); } tbody.appendChild(tr); });
+    allRows.forEach(row=>{ 
+        const tr=document.createElement('tr'); 
+        for(let c=0;c<8;c++){ 
+            const td=document.createElement('td'); 
+            const inp=document.createElement('input'); 
+            inp.value=row[c]||''; 
+            td.appendChild(inp); 
+            tr.appendChild(td); 
+        } 
+        tbody.appendChild(tr); 
+    });
     $('ai-preview-wrap').classList.add('show');
-    aiLog('\n🎉 HOÀN TẤT! '+rows.length+' dòng sẵn sàng import','ok');
-    aiSetStatus('✨ Slay! AI đẻ ra <b>'+rows.length+'</b> dòng. Bấm <b>🚀 Mang đi sửa & Import</b>!','success');
-  }catch(err){ aiLog('\n❌ LỖI KHÔNG MONG ĐỢI: '+err.message,'err'); aiSetStatus('⚠️ Lỗi không mong đợi: '+err.message,'error'); }
-  finally{ btn.disabled=false; }
+    aiLog(`\n🎉 HOÀN TẤT! ${allRows.length} dòng sẵn sàng import`,'ok');
+    aiSetStatus('✨ Slay! AI đẻ ra <b>'+allRows.length+'</b> dòng. Bấm <b>🚀 Mang đi sửa & Import</b>!','success');
+    btn.disabled=false;
 }
 
 function sendAiToImport(){ const rows=Array.from($('ai-body').querySelectorAll('tr')).map(tr=>Array.from(tr.querySelectorAll('input')).map(inp=>cleanInvisible(inp.value))).filter(r=>r[0]); if(!rows.length){ aiSetStatus('🚨 Preview trống!','error'); return; } closeAiModal(); buildTable(rows.length); const tbody=$('import-body'); rows.forEach((row,r)=>{ const tr=tbody.children[r]; if(!tr) return; const inputs=tr.querySelectorAll('input'); const map=[0,1,2,4,5,6]; row.forEach((val,c)=>{ const ic=map[c]; if(inputs[ic]) inputs[ic].value=val; }); }); assignRowIndexes(); $('import-modal').classList.add('active'); }
@@ -3391,7 +3465,7 @@ window.renderPretestList = function(){
       var allCount=only? vocab.filter(function(v){return !lvIsTested(v,skill);}).length : vocab.length;
       var allItem=document.createElement('label');
       allItem.className='pretest-item pretest-item-all'+(isAll?' checked':'');
-      allItem.innerHTML='<input type="checkbox" '+(isAll?'checked':'')+'><span class="pt-tag">🌌 Tất cả vũ trụ</span><span class="pt-def" style="margin-left:auto;">'+allCount+' từ</span>';
+      allItem.innerHTML='<input type="checkbox" '+(isAll?'checked':'')+'><span class="pt-tag">☀️ Tất cả vũ trụ</span><span class="pt-def" style="margin-left:auto;">'+allCount+' từ</span>';
       allItem.addEventListener('click', function(e){ if(e.target.tagName==='INPUT')return; e.preventDefault(); PRETEST.selectedVerses.clear(); renderPretestList(); });
       allItem.querySelector('input').addEventListener('change', function(e){ if(e.target.checked)PRETEST.selectedVerses.clear(); renderPretestList(); });
       list.appendChild(allItem);
@@ -3409,7 +3483,7 @@ window.renderPretestList = function(){
       });
       if(!matched.length) list.innerHTML='<div class="img-suggest-status">😢 Không có vũ trụ nào khớp.</div>';
       var vCount=isAll? allCount : vocab.filter(function(v){ return getAllTags(v.definition).some(function(t){return PRETEST.selectedVerses.has(t);})&&(!only||!lvIsTested(v,skill)); }).length;
-      $('pretest-summary').innerHTML = isAll ? ('Đang chọn: <b>🌌 Tất cả vũ trụ</b> · '+vCount+' từ') : ('Đang gộp <b>'+PRETEST.selectedVerses.size+'</b> vũ trụ · '+vCount+' từ');
+      $('pretest-summary').innerHTML = isAll ? ('Đang chọn: <b>☀️ Tất cả vũ trụ</b> · '+vCount+' từ') : ('Đang gộp <b>'+PRETEST.selectedVerses.size+'</b> vũ trụ · '+vCount+' từ');
     }
   }catch(e){}
 };
