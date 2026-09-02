@@ -5502,7 +5502,7 @@ $('test-title').textContent = '🗣️ NÓI — BÀI THI';
 await renderPaperNoi();
 };
 
-window.startSelectedTest = function() {
+window.startSelectedTest = async function() {
   const pool = getTestPool();
   if (!pool.length) {
     if (typeof showPretestToast === 'function') showPretestToast(' Bạn chưa chọn gì để kiểm tra!');
@@ -5512,17 +5512,17 @@ window.startSelectedTest = function() {
   
   try {
     if (PRETEST.skill === 'nghe' && typeof startPaperNghe === 'function') {
-      startPaperNghe();
+      await startPaperNghe();
     } else if (PRETEST.skill === 'doc' && typeof startPaperDoc === 'function') {
-      startPaperDoc();
+      await startPaperDoc();
     } else if (PRETEST.skill === 'noi') {
       if (typeof startPaperNoi === 'function') {
-        startPaperNoi();
+        await startPaperNoi();
       } else {
         alert('❌ LỖI: Hàm startPaperNoi() chưa được định nghĩa trong code!');
       }
     } else if (PRETEST.skill === 'viet' && typeof startPaperViet === 'function') {
-      startPaperViet();
+      await startPaperViet();
     } else {
       if (typeof origStartSelected === 'function') {
         origStartSelected.call(this);
@@ -5531,7 +5531,7 @@ window.startSelectedTest = function() {
       }
     }
   } catch (e) {
-    alert(' Lỗi khi bắt đầu bài thi: ' + e.message);
+    alert('🚨 Lỗi khi bắt đầu bài thi: ' + (e && e.message ? e.message : e));
     console.error(e);
   }
 };
