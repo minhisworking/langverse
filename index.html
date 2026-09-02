@@ -137,8 +137,9 @@ button:hover { opacity:.85; }
 .img-add-trigger { position:absolute; top:12px; right:12px; z-index:5; display:flex; align-items:center; gap:6px; padding:4px 8px 4px 4px; border-radius:8px; cursor:pointer; transition:background .2s; background:var(--card-bg); }
 .img-add-trigger:hover { background:#334155; }
 .img-add-icon { width:30px; height:30px; display:flex; align-items:center; justify-content:center; background:var(--bg); border:1px solid var(--border); border-radius:8px; font-size:16px; flex-shrink:0; }
-.img-add-label { font-size:12px; color:var(--accent); font-weight:600; white-space:nowrap; max-width:0; opacity:0; overflow:hidden; transition:max-width .25s ease, opacity .2s ease; }
-.img-add-trigger:hover .img-add-label { max-width:90px; opacity:1; }
+.img-add-label { font-size:12px; color:var(--accent); font-weight:600; white-space:nowrap; max-width:0; opacity:0; overflow:hidden; transition:max-width .25s ease, opacity .2s ease; cursor:pointer; }
+.img-add-trigger.img-show-label .img-add-label { max-width:90px; opacity:1; }
+.img-add-label:hover { text-decoration:underline; }
 .img-preview-placeholder { display:none; position:absolute; inset:14px; z-index:4; align-items:center; justify-content:center; }
 .face.img-preview-mode .img-preview-placeholder { display:flex; }
 .face.img-preview-mode .front-main, .face.img-preview-mode .back-main, .face.img-preview-mode .front-example, .face.img-preview-mode .info-box, .face.img-preview-mode .etym, .face.img-preview-mode .face-top, .face.img-preview-mode .flip-hint { opacity:0; pointer-events:none; }
@@ -2459,7 +2460,26 @@ vocab.push({word:cells[0], definition:def, ipa:cells[2], downstep:cells[3], pos:
 $('fileInput').addEventListener('change', e=>{ const file=e.target.files[0]; if(!file) return; const reader=new FileReader(); reader.onload=ev=>{ try{ const newData=JSON.parse(ev.target.result).map(v=>({word:cleanInvisible(v.word),definition:cleanInvisible(v.definition),ipa:cleanInvisible(v.ipa),pos:cleanInvisible(v.pos),example:cleanInvisible(v.example),synonym:cleanInvisible(v.synonym),img:v.img||''})); vocab=[...vocab,...newData]; localStorage.setItem('langverse_data',JSON.stringify(vocab)); closeImportModal(); init(); alert('✨ Đã nạp thêm '+newData.length+' từ vào vũ trụ!'); }catch(err){ alert('🚨 File JSON bị lỗi!'); } }; reader.readAsText(file); e.target.value=''; });
 
 function buildImgArea(imgSrc){ const inner=imgSrc?'<img src="'+imgSrc+'" alt="ảnh" style="max-width:100%; max-height:100%; object-fit:contain; border-radius:8px;">':'<div class="img-preview-box"><span class="ipp-icon">🖼️</span><span>Khu vực dành cho ảnh</span></div>'; return '<div class="img-add-trigger" title="Thêm ảnh"><span class="img-add-label">Thêm ảnh</span><span class="img-add-icon">🖼️</span></div><div class="img-preview-placeholder">'+inner+'</div>'; }
-function attachImgTriggers(){ ['front','back'].forEach(id=>{ const face=$(id); const trigger=face.querySelector('.img-add-trigger'); if(!trigger) return; trigger.addEventListener('mouseenter',()=>face.classList.add('img-preview-mode')); trigger.addEventListener('mouseleave',()=>face.classList.remove('img-preview-mode')); trigger.addEventListener('click',e=>{ e.stopPropagation(); openImgModal(); }); }); }
+function attachImgTriggers(){
+  ['front','back'].forEach(id=>{
+    const face=$(id);
+    const trigger=face.querySelector('.img-add-trigger');
+    if(!trigger) return;
+    const icon=trigger.querySelector('.img-add-icon');
+    const label=trigger.querySelector('.img-add-label');
+    // Click vào icon 🖼️ → toggle preview mode + hiện/ẩn label
+    icon.addEventListener('click', e=>{
+      e.stopPropagation();
+      const showing=trigger.classList.toggle('img-show-label');
+      face.classList.toggle('img-preview-mode', showing);
+    });
+    // Click vào chữ "Thêm ảnh" → mở modal
+    label.addEventListener('click', e=>{
+      e.stopPropagation();
+      openImgModal();
+    });
+  });
+}
 
 function updateCounter(){ $('counter').textContent='🃏 '+(currentPos+1)+' / '+viewList.length+' · 🎯 '+calcMastery()+'%'; }
 function init(){ renderFilterPop(); updateFilterLabel(); applyView(); }
