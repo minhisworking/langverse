@@ -694,21 +694,31 @@ button, .btn-primary, .btn-success, .btn-warning, .btn-danger, .nav-btn, .close 
 
 
 @media (max-width: 768px) {
+  /* Ép 2 trường ngôn ngữ xếp dọc để không bao giờ bị đè */
   #ai-modal .row {
-    gap: 6px;
+    display: flex !important;
+    flex-direction: column !important;
+    gap: 12px !important;
   }
+  
   #ai-modal .row .form-group {
-    flex: 1;
-    min-width: 0; /* ← quan trọng, cho phép thu nhỏ */
+    width: 100% !important;
+    margin-bottom: 0 !important;
   }
-  #ai-modal .row label {
-    font-size: 11px;
-    white-space: normal;
-    line-height: 1.3;
+
+  /* Đảm bảo label wrap chữ và không bị tràn */
+  #ai-modal label {
+    white-space: normal !important;
+    word-break: break-word;
+    line-height: 1.4;
+    display: block;
   }
+
+  /* Select box full width, font vừa phải */
   #ai-modal .row select {
-    font-size: 13px;
-    padding: 8px 6px;
+    width: 100% !important;
+    font-size: 14px !important;
+    padding: 10px !important;
   }
 }
 
@@ -975,8 +985,8 @@ button, .btn-primary, .btn-success, .btn-warning, .btn-danger, .nav-btn, .close 
     <div class="form-group">
       <label>📝 Từ vựng cần hỏi (mọi ngôn ngữ, 1 từ hoặc danh sách, mỗi từ 1 dòng)</label>
       <div class="row" style="margin-bottom:8px;">
-        <div class="form-group" style="margin-bottom:0;"><label>🗣️ Ngôn ngữ MẶT TRƯỚC (từ gốc)</label><select id="ai-lang-front"></select></div>
-        <div class="form-group" style="margin-bottom:0;"><label>🗣️ Ngôn ngữ MẶT SAU (định nghĩa)</label><select id="ai-lang-back"></select></div>
+        <div class="form-group" style="margin-bottom:0;"><label>🗣️ Ngôn ngữ MẶT TRƯỚC<br>(từ gốc)</label><select id="ai-lang-front"></select></div>
+        <div class="form-group" style="margin-bottom:0;"><label>🗣️ Ngôn ngữ MẶT SAU<br>(định nghĩa)</label><select id="ai-lang-back"></select></div>
       </div>
       <textarea id="ai-input" rows="3" placeholder="right&#10;sakura&#10;phở&#10;rendez-vous"></textarea>
     </div>
