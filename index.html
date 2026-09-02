@@ -4899,19 +4899,6 @@ window.setGemState = function(s){
 <script>
 (function(){
 if (window.__lvNoiPaperPatch) return;
-window.__lvNoiPaperPatch = true;
-
-const NOI_PLAYS = 1; // Chỉ 1 lần nói duy nhất
-
-function ppNoi(key){
-  return '<button type="button" class="btn-primary" data-nk="'+key+'" style="padding:6px 12px;" onclick="startNoiRecord(this,\''+key+'\')">🎤 Nói</button>';
-}
-
-let currentStream = null;
-let currentMediaRecorder = null;
-window.noiGeminiBusy = false; // 🔒 Biến khóa chống spam Gemini
-
-// Tìm hàm startNoiRecord và sửa lại phần này:
 window.startNoiRecord = function(btn, key){
     const t = TEST;
     if(!t) return;
@@ -4925,8 +4912,7 @@ window.startNoiRecord = function(btn, key){
     const SR = window.SpeechRecognition || window.webkitSpeechRecognition;
     const noteEl = document.getElementById('noi-note-'+key);
 
-    // 1. KHỞI TẠO VÀ BẮT ĐẦU SPEECHRECOGNITION NGAY LẬP TỨC (Synchronous)
-    // Điều này BẮT BUỘC trên Chrome Android để không bị mất "user activation"
+    // 1. BẮT ĐẦU SPEECHRECOGNITION NGAY LẬP TỨC (Đồng bộ - Giữ User Activation)
     let rec = null;
     if(SR){
         rec = new SR();
@@ -4955,14 +4941,13 @@ window.startNoiRecord = function(btn, key){
             if(noteEl) noteEl.textContent = '⚠️ Lỗi nhận diện: ' + e.error;
         };
         rec.onend = function(){
-            // Khi SpeechRecognition tự dừng, ta cũng dừng MediaRecorder
             if(t.noiRecords[key] && t.noiRecords[key].recording){
                 stopNoiRecord(btn, key);
             }
         };
 
         try { 
-            rec.start(); // <-- GỌI NGAY TẠI ĐÂY, TRONG LUỒNG SỰ KIỆN CLICK
+            rec.start(); // <-- GỌI NGAY TẠI ĐÂY, KHÔNG ĐỂ TRONG PROMISE
         } catch(e) { 
             console.log('SR start failed:', e);
             if(noteEl) noteEl.textContent = '⚠️ Trình duyệt chặn nhận diện giọng nói';
@@ -4972,7 +4957,7 @@ window.startNoiRecord = function(btn, key){
         if(noteEl) noteEl.textContent = '⚠️ Trình duyệt không hỗ trợ SpeechRecognition';
     }
 
-    // 2. SAU ĐÓ MỚI GỌI getUserMedia ĐỂ LƯU FILE AUDIO (Async)
+    // 2. GỌI getUserMedia SAU (Bất đồng bộ)
     navigator.mediaDevices.getUserMedia({audio:true}).then(function(stream){
         const mediaRec = new MediaRecorder(stream);
         const chunks = [];
@@ -4992,14 +4977,13 @@ window.startNoiRecord = function(btn, key){
         if(!t.noiRecords[key]) t.noiRecords[key] = {};
         t.noiRecords[key].mediaRec = mediaRec;
         t.noiRecords[key].rec = rec;
-        t.noiRecords[key].stream = stream; // Lưu stream để chủ động tắt khi cần
+        t.noiRecords[key].stream = stream;
         t.noiRecords[key].recording = true;
 
         btn.textContent = '⏹️ Dừng';
         btn.dataset.recording = '1';
         if(noteEl) noteEl.textContent = '🔴 Đang ghi âm...';
 
-        // Auto stop sau 15s
         setTimeout(function(){
             if(t.noiRecords[key] && t.noiRecords[key].recording){
                 stopNoiRecord(btn, key);
@@ -5009,11 +4993,35 @@ window.startNoiRecord = function(btn, key){
     }).catch(function(err){
         console.error('getUserMedia error:', err);
         if(noteEl) noteEl.textContent = '⚠️ Không truy cập được Mic: ' + err.name;
-        // Nếu lỗi Mic thì dừng luôn SpeechRecognition
         if(rec && t.noiRecords[key] && t.noiRecords[key].recording) {
              stopNoiRecord(btn, key);
         }
     });
+};
+
+window.stopNoiRecord = function(btn, key){
+    const t = TEST;
+    if(!t || !t.noiRecords || !t.noiRecords[key]) return;
+    const r = t.noiRecords[key];
+    if(!r.recording) return;
+    r.recording = false;
+
+    if(r.mediaRec && r.mediaRec.state !== 'inactive'){
+        r.mediaRec.stop();
+    }
+    if(r.stream) {
+        r.stream.getTracks().forEach(tr => tr.stop());
+    }
+    if(r.rec) {
+        try { r.rec.stop(); } catch(e) {}
+    }
+
+    btn.textContent = '✅ Đã ghi âm';
+    btn.disabled = true;
+    btn.dataset.recording = '0';
+    
+    const noteEl = document.getElementById('noi-note-'+key);
+    if(noteEl) noteEl.textContent = '✓ Đã ghi âm xong';
 };
 
 
