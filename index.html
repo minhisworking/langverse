@@ -5471,10 +5471,20 @@ $('test-body').innerHTML = html;
 
 // Override startSelectedTest để gọi renderPaperNoi
 var origStartSelected = window.startSelectedTest;
-window.startSelectedTest = function(){
+window.startSelectedTest = function() {
   const pool = getTestPool();
-  if(!pool.length){ showPretestToast('🚨 Bạn chưa chọn gì để kiểm tra!'); return; }
-  closePretest();
+  if (!pool.length) {
+    if (typeof showPretestToast === 'function') showPretestToast(' Bạn chưa chọn gì để kiểm tra!');
+    return;
+  }
+  if (typeof closePretest === 'function') closePretest();
+  if(PRETEST.skill === 'nghe'){ startPaperNghe(); return; }
+  if(PRETEST.skill === 'doc'){ startPaperDoc(); return; }
+  if(PRETEST.skill === 'noi'){ startPaperNoi(); return; }
+  if(PRETEST.skill === 'viet'){ startPaperViet(); return; }
+  // Fallback
+  if (typeof origStartSelected === 'function') origStartSelected.call(this);
+};
   if(PRETEST.skill === 'nghe'){ startPaperNghe(); return; }
   if(PRETEST.skill === 'doc'){ startPaperDoc(); return; }
   if(PRETEST.skill === 'noi'){ 
@@ -6371,43 +6381,7 @@ window.updateVietWordCount = function(qIndex) {
         $('test-body').innerHTML = html;
     }
 
-    // === 7. HOOK VÀO HÀM startSelectedTest CÓ SẴN ===
-    var origStartSelected = window.startSelectedTest;
-    window.startSelectedTest = function() {
-        const pool = getTestPool();
-        if (!pool.length) {
-            if (typeof showPretestToast === 'function') showPretestToast('🚨 Bạn chưa chọn gì để kiểm tra!');
-            return;
-        }
-        
-        if (typeof closePretest === 'function') closePretest();
-
-        if (PRETEST.skill === 'nghe') { startPaperNghe(); return; }
-        if (PRETEST.skill === 'doc') { startPaperDoc(); return; }
-        if(PRETEST.skill === 'noi'){ startPaperNoi(); return; } // <-- THÊM DÒNG NÀY
-		if(PRETEST.skill === 'viet'){ startPaperViet(); return; }
-
- 
-            // Gọi hàm nói gốc (đã được patch ở script khác)
-            if (typeof origStartSelected === 'function') {
-                // Tạm thời trả về để script gốc xử lý phần 'noi'
-                // Nhưng vì ta đã override, ta cần gọi trực tiếp logic của noi nếu có, 
-                // hoặc để script gốc của bạn tự xử lý.
-                // Cách an toàn nhất là check skill và gọi đúng hàm:
-            }
-            // Gọi lại hàm startSelectedTest gốc để nó xử lý phần 'noi'
-            if (typeof origStartSelected === 'function') origStartSelected.call(this);
-            return; 
-        }
-        
-        if (PRETEST.skill === 'viet') {
-            startPaperViet();
-            return;
-        }
-
-        // Fallback cho các skill khác
-        if (typeof origStartSelected === 'function') origStartSelected.call(this);
-    };
+   
 
 })();
 </script>
