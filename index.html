@@ -4939,8 +4939,11 @@ window.startNoiRecord = function(btn, key){
         
         // Thêm SpeechRecognition để lấy transcript
 let rec = null;
-if(SR){
-rec = new SR();
+// Fallback cho Chrome Android
+const SpeechRec = window.SpeechRecognition || window.webkitSpeechRecognition;
+if(SpeechRec){
+try {
+rec = new SpeechRec();
 // === SỬA LỖI Ở ĐÂY ===
 // === FIX: ÉP NGÔN NGỮ NHẬN DIỆN GIỌNG NÓI ===
 // 1. Lấy ngôn ngữ đã được chốt sẵn khi bắt đầu bài thi
@@ -4959,20 +4962,46 @@ rec.interimResults = true; // Bật interim results để nhận kết quả s�
 // ========================================
 rec.onresult = function(e){
 if(!t.noiRecords[key]) t.noiRecords[key] = {};
-// Lấy kết quả cuối cùng (final) thay vì interim
+console.log('SR result:', e.results); // Debug
+let finalTranscript = '';
 for(let i = e.resultIndex; i < e.results.length; i++){
+const transcript = e.results[i][0].transcript;
 if(e.results[i].isFinal){
-t.noiRecords[key].transcript = e.results[i][0].transcript;
-break;
+finalTranscript = transcript;
+} else {
+// Interim result - vẫn lưu tạm
+if(!t.noiRecords[key].transcript){
+t.noiRecords[key].transcript = transcript;
 }
 }
-// Fallback: nếu không có final result, lấy result đầu tiên
-if(!t.noiRecords[key].transcript && e.results.length > 0){
-t.noiRecords[key].transcript = e.results[0][0].transcript;
+}
+if(finalTranscript){
+t.noiRecords[key].transcript = finalTranscript;
+console.log('Final transcript:', finalTranscript);
+}
+};
+
+rec.onend = function(){
+console.log('SR ended');
+// Nếu chưa có transcript, thử start lại 1 lần
+if(!t.noiRecords[key] || !t.noiRecords[key].transcript){
+try {
+rec.start();
+console.log('SR restarted');
+} catch(e) {
+console.log('SR restart failed:', e);
+}
 }
 };
 rec.onerror = function(e){ 
-console.log('SR error:', e.error); 
+console.log('SR error:', e.error, e); 
+const noteEl = document.getElementById('noi-note-'+key);
+if(noteEl) noteEl.textContent = '⚠️ Lỗi SR: ' + e.error;
+};
+
+rec.onstart = function(){
+console.log('SR started for key:', key);
+};
 // Hiển thị lỗi cho user trên mobile
 const noteEl = document.getElementById('noi-note-'+key);
 if(noteEl) noteEl.textContent = '⚠️ Lỗi: ' + e.error;
