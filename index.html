@@ -6883,10 +6883,17 @@ document.addEventListener('click', e => {
   }
 });
 
-// Hook vào hàm renderList có sẵn để tự động cập nhật nút
-const origRenderList = window.renderList;
-window.renderList = function() {
-  if (typeof origRenderList === 'function') origRenderList();
+// Hook vào applyView để cập nhật nút trùng lặp MỌI LÚC danh sách thay đổi
+const origApplyView = window.applyView;
+window.applyView = function() {
+  if (typeof origApplyView === 'function') origApplyView();
+  updateDupButton();
+};
+
+// Hook vào init để chạy ngay khi trang load xong
+const origInit = window.init;
+window.init = function() {
+  if (typeof origInit === 'function') origInit();
   updateDupButton();
 };
 
