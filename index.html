@@ -4921,62 +4921,10 @@ window.startNoiRecord = function(btn, key){
         if(typeof stopNoiRecord === 'function') stopNoiRecord(btn, key);
         return;
     }
-
     const SR = window.SpeechRecognition || window.webkitSpeechRecognition;
-    const noteEl = document.getElementById('noi-note-'+key);
-
-    // 1. KHỞI TẠO VÀ BẮT ĐẦU SPEECHRECOGNITION NGAY LẬP TỨC (Synchronous)
-    // Điều này BẮT BUỘC trên Chrome Android để không bị mất "user activation"
-    let rec = null;
-    if(SR){
-        rec = new SR();
-        let rawLang = t.speakLang || lvGetMultiFrontLang();
-        if (!rawLang || rawLang === 'auto') rawLang = 'ja'; 
-        let langCode = (typeof ttsLang === 'function') ? ttsLang(rawLang, '') : rawLang;
-        
-        rec.lang = langCode;
-        rec.continuous = false; 
-        rec.interimResults = true; 
-
-        rec.onresult = function(e){
-            if(!t.noiRecords[key]) t.noiRecords[key] = {};
-            for(let i = e.resultIndex; i < e.results.length; i++){
-                if(e.results[i].isFinal){
-                    t.noiRecords[key].transcript = e.results[i][0].transcript;
-                    break;
-                }
-            }
-            if(!t.noiRecords[key].transcript && e.results.length > 0){
-                t.noiRecords[key].transcript = e.results[0][0].transcript;
-            }
-        };
-        rec.onerror = function(e){
-            console.log('SR error:', e.error);
-            if(noteEl) noteEl.textContent = '⚠️ Lỗi nhận diện: ' + e.error;
-        };
-        rec.onend = function(){
-            // Khi SpeechRecognition tự dừng, ta cũng dừng MediaRecorder
-            if(t.noiRecords[key] && t.noiRecords[key].recording){
-                stopNoiRecord(btn, key);
-            }
-        };
-
-        try { 
-            rec.start(); // <-- GỌI NGAY TẠI ĐÂY, TRONG LUỒNG SỰ KIỆN CLICK
-        } catch(e) { 
-            console.log('SR start failed:', e);
-            if(noteEl) noteEl.textContent = '⚠️ Trình duyệt chặn nhận diện giọng nói';
-            return; 
-        }
-    } else {
-        if(noteEl) noteEl.textContent = '⚠️ Trình duyệt không hỗ trợ SpeechRecognition';
-    }
-
-    // 2. SAU ĐÓ MỚI GỌI getUserMedia ĐỂ LƯU FILE AUDIO (Async)
     navigator.mediaDevices.getUserMedia({audio:true}).then(function(stream){
         const mediaRec = new MediaRecorder(stream);
         const chunks = [];
-        
         mediaRec.ondataavailable = function(e){ if(e.data.size>0) chunks.push(e.data); };
         mediaRec.onstop = function(){
             const blob = new Blob(chunks, {type:'audio/webm'});
@@ -4988,56 +4936,95 @@ window.startNoiRecord = function(btn, key){
             stream.getTracks().forEach(tr=>tr.stop());
         };
         mediaRec.start();
-
+        
+        // Thêm SpeechRecognition để lấy transcript
+let rec = null;
+if(SR){
+rec = new SR();
+// === SỬA LỖI Ở ĐÂY ===
+// === FIX: ÉP NGÔN NGỮ NHẬN DIỆN GIỌNG NÓI ===
+// 1. Lấy ngôn ngữ đã được chốt sẵn khi bắt đầu bài thi
+let rawLang = t.speakLang || lvGetMultiFrontLang();
+// 2. Nếu vẫn là 'auto' hoặc rỗng, ép cứng về 'ja' để tránh nhận nhầm sang tiếng Trung
+if (!rawLang || rawLang === 'auto') {
+rawLang = 'ja';
+}
+// 3. Convert mã ngắn (vd: 'ja') sang chuẩn trình duyệt cần (vd: 'ja-JP')
+// Hàm ttsLang sẽ map 'ja' -> 'ja-JP', 'zh' -> 'zh-CN', v.v.
+let langCode = (typeof ttsLang === 'function') ? ttsLang(rawLang, '') : rawLang;
+rec.lang = langCode;
+// === FIX CHO CHROME MOBILE ===
+rec.continuous = false; // Chỉ ghi âm 1 lần rồi dừng
+rec.interimResults = true; // Bật interim results để nhận kết quả sớm hơn trên mobile
+// ========================================
+rec.onresult = function(e){
+if(!t.noiRecords[key]) t.noiRecords[key] = {};
+// Lấy kết quả cuối cùng (final) thay vì interim
+for(let i = e.resultIndex; i < e.results.length; i++){
+if(e.results[i].isFinal){
+t.noiRecords[key].transcript = e.results[i][0].transcript;
+break;
+}
+}
+// Fallback: nếu không có final result, lấy result đầu tiên
+if(!t.noiRecords[key].transcript && e.results.length > 0){
+t.noiRecords[key].transcript = e.results[0][0].transcript;
+}
+};
+rec.onerror = function(e){ 
+console.log('SR error:', e.error); 
+// Hiển thị lỗi cho user trên mobile
+const noteEl = document.getElementById('noi-note-'+key);
+if(noteEl) noteEl.textContent = '⚠️ Lỗi: ' + e.error;
+};
+rec.onend = function(){
+// Khi SR tự động dừng, cập nhật trạng thái
+const noteEl = document.getElementById('noi-note-'+key);
+if(noteEl && !t.noiRecords[key].transcript){
+noteEl.textContent = '️ Không nhận diện được giọng nói';
+}
+};
+try { rec.start(); } catch(e){ 
+console.log('SR start failed:', e); 
+const noteEl = document.getElementById('noi-note-'+key);
+if(noteEl) noteEl.textContent = '⚠️ Không hỗ trợ ghi âm';
+}
+}
         if(!t.noiRecords[key]) t.noiRecords[key] = {};
         t.noiRecords[key].mediaRec = mediaRec;
         t.noiRecords[key].rec = rec;
-        t.noiRecords[key].stream = stream; // Lưu stream để chủ động tắt khi cần
         t.noiRecords[key].recording = true;
-
         btn.textContent = '⏹️ Dừng';
         btn.dataset.recording = '1';
+        const noteEl = document.getElementById('noi-note-'+key);
         if(noteEl) noteEl.textContent = '🔴 Đang ghi âm...';
-
-        // Auto stop sau 15s
         setTimeout(function(){
             if(t.noiRecords[key] && t.noiRecords[key].recording){
                 stopNoiRecord(btn, key);
             }
         }, 15000);
-        
     }).catch(function(err){
-        console.error('getUserMedia error:', err);
-        if(noteEl) noteEl.textContent = '⚠️ Không truy cập được Mic: ' + err.name;
-        // Nếu lỗi Mic thì dừng luôn SpeechRecognition
-        if(rec && t.noiRecords[key] && t.noiRecords[key].recording) {
-             stopNoiRecord(btn, key);
-        }
+        alert('⚠️ Không thể truy cập microphone: ' + err.message);
     });
-};
-
+};;
 
 var noiModeLocked = false;
 window.stopNoiRecord = function(btn, key){
     const t = TEST;
     if(!t || !t.noiRecords || !t.noiRecords[key]) return;
+    
     const r = t.noiRecords[key];
     if(!r.recording) return;
+    
     r.recording = false;
-
-    // Stop Media Recorder
+    
+    // Stop media recorder
     if(r.mediaRec && r.mediaRec.state !== 'inactive'){
         r.mediaRec.stop();
     }
-    // Stop Stream tracks (Quan trọng để tắt đèn báo mic trên Android)
-    if(r.stream) {
-        r.stream.getTracks().forEach(tr => tr.stop());
-    }
-    // Stop Speech Recognition
-    if(r.rec) {
-        try { r.rec.stop(); } catch(e) {}
-    }
-
+    
+    // Stream đã được stop trong onstop event
+    
     btn.textContent = '✅ Đã ghi âm';
     btn.disabled = true;
     btn.dataset.recording = '0';
