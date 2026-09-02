@@ -5475,16 +5475,15 @@ window.startSelectedTest = function(){
   const pool = getTestPool();
   if(!pool.length){ showPretestToast('🚨 Bạn chưa chọn gì để kiểm tra!'); return; }
   closePretest();
-  
   if(PRETEST.skill === 'nghe'){ startPaperNghe(); return; }
-if(PRETEST.skill === 'doc'){ startPaperDoc(); return; } // <-- THÊM DÒNG NÀY
-if(PRETEST.skill === 'noi'){
-let langFNoi = $('ai-lang-front') ? $('ai-lang-front').value : 'auto';
-let multiLangNoi = lvGetMultiFrontLang();
-let speakLangNoi = (langFNoi && langFNoi !== 'auto') ? langFNoi : (multiLangNoi !== 'auto' ? multiLangNoi : 'vi');
-TEST = {
-skill: 'noi',
-pool: pool,
+  if(PRETEST.skill === 'doc'){ startPaperDoc(); return; }
+  if(PRETEST.skill === 'noi'){ 
+    startPaperNoi(); return; // <-- THÊM DÒNG NÀY
+  }
+  if(PRETEST.skill === 'viet'){ startPaperViet(); return; }
+  // Fallback cho các skill khác
+  if (typeof origStartSelected === 'function') origStartSelected.call(this);
+};
 questions: buildExam('noi', pool),
 curSec: -1,
 secQueue: [],
