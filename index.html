@@ -151,7 +151,9 @@ button:hover { opacity:.85; }
 .gif-badge { position:absolute; top:4px; right:4px; background:#ef4444; color:#fff; font-size:9px; font-weight:bold; padding:2px 5px; border-radius:4px; pointer-events:none; }
 .img-suggest-status { grid-column:1/-1; font-size:12px; color:#94a3b8; text-align:center; padding:8px; }
 .list-head { display:flex; justify-content:space-between; align-items:center; gap:10px; margin-bottom:10px; flex-wrap:wrap; }
-.list-title { font-size:16px; color:#94a3b8; }
+.sort-wrap { order: 1; }
+.list-title-row { order: 2; display:flex; align-items:center; gap:10px; width:100%; }
+.list-title { font-size:16px; color:#94a3b8; flex:1; }
 .sort-wrap { display:flex; align-items:center; gap:6px; font-size:13px; color:#94a3b8; }
 #sort { padding:6px 10px; font-size:13px; border-radius:8px; }
 .dir-btn { background:var(--card-bg); border:1px solid var(--border); color:var(--accent); border-radius:8px; padding:6px 10px; font-size:14px; cursor:pointer; transition:transform .3s; }
@@ -582,21 +584,7 @@ order: 0;
     align-items: center;
     gap: 8px;
 }
-#selected-btn {
-    order: 1;
-    flex-shrink: 0;
-}
-.list-title {
-    order: 2;
-    flex: 1;
-    min-width: 100px;
-    margin-top: 0;
-}
-.sort-wrap {
-    order: 3;
-    width: 100%;
-    margin-top: 4px;
-}
+
 	
 }
 
@@ -1048,16 +1036,17 @@ button, .btn-primary, .btn-success, .btn-warning, .btn-danger, .nav-btn, .close 
 
 <div id="list-zone">
  <div class="list-head">
+<label class="sort-wrap">Sắp xếp:
+<select id="sort" onchange="setSort(this.value)">
+<option value="az">A-Z</option><option value="recent">Mới thêm</option><option value="pos">Loại từ</option><option value="manual">Thủ công</option>
+</select>
+<button id="sortdir" class="dir-btn" onclick="toggleDir()" title="Đảo thứ tự sắp xếp">🔃</button>
+<button id="dup-btn" class="dir-btn dup-disabled" onclick="openDupModal()" title="Phát hiện trùng lặp" style="margin-left:6px;">👯 Trùng lặp (0)</button>
+</label>
+<div class="list-title-row">
 <button id="selected-btn" class="selected-btn" disabled>Đã chọn</button>
 <div class="list-title" id="list-title"></div>
-<label class="sort-wrap">Sắp xếp:
-      <select id="sort" onchange="setSort(this.value)">
-        <option value="az">A-Z</option><option value="recent">Mới thêm</option><option value="pos">Loại từ</option><option value="manual">Thủ công</option>
-      </select>
-      <button id="sortdir" class="dir-btn" onclick="toggleDir()" title="Đảo thứ tự sắp xếp">🔃</button>
-<button id="dup-btn" class="dir-btn dup-disabled" onclick="openDupModal()" title="Phát hiện trùng lặp" style="margin-left:6px;">👯 Trùng lặp (0)</button>
-    </label>
-</label>
+</div>
 </div>
 <div id="selected-popup" class="selected-popup hidden"></div>
 	
