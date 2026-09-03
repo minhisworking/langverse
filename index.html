@@ -1177,14 +1177,18 @@ body.fullscreen-mode .rate-milestones > span {
 }
 
 /* Hàng nút điều hướng nằm trên thanh đánh giá */
+/* Hàng nút điều hướng nằm trên thanh đánh giá */
 .nav-row {
-  display: flex;
-  justify-content: center;
-  align-items: center;
-  gap: 16px;
-  margin: 12px auto 8px auto;
-  max-width: 720px;
-  position: relative;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    gap: 16px;
+    margin: 12px auto 8px auto;
+    max-width: 720px;
+    width: 100%;
+    position: relative;
+    padding-right: 50px; /* 🛡️ Chừa không gian cho nút Bomb bên phải, tránh che mất nút ➡️ */
+    box-sizing: border-box;
 }
 .nav-row .nav-btn {
 width: 52px;
@@ -1523,17 +1527,23 @@ body.fullscreen-mode .bomb-modal-content {
 
 
 /* Khi popup Bom mở, đẩy 2 nút mũi tên sang sát lề trái */
+/* Khi popup Bom mở, đẩy 2 nút mũi tên sang sát lề trái */
 .nav-row.bomb-popup-open {
-  justify-content: flex-start !important;
-  padding-left: 20px; /* Chừa một khoảng nhỏ cho đẹp */
+    justify-content: flex-start !important;
+    padding-left: 10px !important; /* Sát lề trái cho gọn gàng */
+    padding-right: 50px !important; /* Vẫn giữ chỗ cho nút Bomb bên phải */
 }
 
 /* Trên mobile, căn chỉnh lại khoảng cách cho vừa vặn */
 @media (max-width: 768px) {
-  .nav-row.bomb-popup-open {
-    padding-left: 12px;
-    gap: 12px;
-  }
+  .nav-row {
+        padding-right: 45px; /* Chừa chỗ cho bomb trên mobile */
+    }
+    .nav-row.bomb-popup-open {
+        padding-left: 12px;
+        padding-right: 45px !important;
+        gap: 12px;
+    }
 }
 
 
