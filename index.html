@@ -29,7 +29,7 @@ button:hover { opacity:.85; }
 
 .fullscreen-btn { background:var(--card-bg); border:1px solid var(--border); color:var(--accent); border-radius:8px; padding:8px 12px; font-size:16px; cursor:pointer; line-height:1; }
 	
-	/* ===== FULLSCREEN MODE - ULTIMATE FIX ===== */
+	/* ===== FULLSCREEN MODE - HOÀN CHỈNH ===== */
 body.fullscreen-mode header { display: none !important; }
 body.fullscreen-mode .list-head { display: none !important; }
 body.fullscreen-mode .word-list { display: none !important; }
@@ -7318,21 +7318,21 @@ setTimeout(updateSelectedBtn, 500);
 // ===== 🖥️ CHẾ ĐỘ TOÀN MÀN HÌNH =====
 // ===== ️ CHẾ ĐỘ TOÀN MÀN HÌNH =====
 <script>
-// ===== ️ CHẾ ĐỘ TOÀN MÀN HÌNH - PHIÊN BẢN ỔN ĐỊNH =====
+// ===== CHẾ ĐỘ TOÀN MÀN HÌNH - HOÀN CHỈNH =====
 function toggleFullscreen() {
     const btn = document.getElementById('fullscreen-btn');
     const isCurrentlyFullscreen = document.body.classList.contains('fullscreen-mode');
     
     if (!isCurrentlyFullscreen) {
-        // Vào chế độ toàn màn hình (Ép hiện UI ngay lập tức)
+        // Vào chế độ toàn màn hình
         document.body.classList.add('fullscreen-mode');
         if (btn) {
             btn.classList.add('on');
-            btn.textContent = '⛶';
+            btn.textContent = '';
             btn.title = 'Thoát toàn màn hình';
         }
         
-        // Cố gắng gọi Fullscreen API của trình duyệt
+        // Cố gắng gọi Fullscreen API
         const el = document.documentElement;
         const req = el.requestFullscreen || el.webkitRequestFullscreen || el.mozRequestFullScreen || el.msRequestFullscreen;
         if (req) { try { req.call(el); } catch(e) {} }
@@ -7351,7 +7351,7 @@ function toggleFullscreen() {
     }
 }
 
-// Đồng bộ trạng thái nếu người dùng bấm ESC để thoát
+// Đồng bộ trạng thái nếu người dùng bấm ESC
 document.addEventListener('fullscreenchange', syncFullscreenState);
 document.addEventListener('webkitfullscreenchange', syncFullscreenState);
 document.addEventListener('mozfullscreenchange', syncFullscreenState);
@@ -7360,7 +7360,6 @@ document.addEventListener('MSFullscreenChange', syncFullscreenState);
 function syncFullscreenState() {
     const isFullscreen = document.fullscreenElement || document.webkitFullscreenElement || document.mozFullScreenElement;
     const btn = document.getElementById('fullscreen-btn');
-    // Nếu trình duyệt tự thoát (bấm ESC) nhưng class UI vẫn còn -> xóa class
     if (!isFullscreen && document.body.classList.contains('fullscreen-mode')) {
         document.body.classList.remove('fullscreen-mode');
         if (btn) {
