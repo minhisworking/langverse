@@ -3585,7 +3585,11 @@ function nav(d){
 
 	
 }
-function setFlipped(b){ flipped=b; $('flip').classList.toggle('flipped',b); }
+function setFlipped(b){ 
+    if (isShowingBomb) return; // 🛡️ Chặn lật thẻ khi đang có Bom
+    flipped=b; 
+    $('flip').classList.toggle('flipped',b); 
+}
 function renderList(){
     $('list-title').textContent='📚 Danh sách vũ trụ ('+viewList.length+' từ)';
     const wrap=$('word-list');
@@ -3740,7 +3744,14 @@ clearTimeout(window._addWordT);
 window._addWordT=setTimeout(()=>{ closeAddModal(); const w2=$('add-word-toast'); if(w2) w2.style.display='none'; },1400);
 }
 function exportData(){ const dataStr="data:text/json;charset=utf-8,"+encodeURIComponent(JSON.stringify(vocab,null,2)); const a=document.createElement('a'); a.setAttribute("href",dataStr); a.setAttribute("download","langverse_backup.json"); document.body.appendChild(a); a.click(); a.remove(); }
-document.addEventListener('keydown', e=>{ const t=e.target.tagName; if(t==='INPUT'||t==='TEXTAREA'||t==='SELECT') return; if(e.key==='ArrowRight') nav(1); if(e.key==='ArrowLeft') nav(-1); if(e.key===' '||e.key==='Enter'){ e.preventDefault(); setFlipped(!flipped); } });
+document.addEventListener('keydown', e=>{ 
+    const t=e.target.tagName; 
+    if(t==='INPUT'||t==='TEXTAREA'||t==='SELECT') return; 
+    if(isShowingBomb) return; // 🛡️ Chặn toàn bộ phím tắt khi đang gỡ Bom
+    if(e.key==='ArrowRight') nav(1); 
+    if(e.key==='ArrowLeft') nav(-1); 
+    if(e.key===' '||e.key==='Enter'){ e.preventDefault(); setFlipped(!flipped); } 
+});
 if('speechSynthesis' in window){ window.speechSynthesis.getVoices(); window.speechSynthesis.onvoiceschanged=()=>window.speechSynthesis.getVoices(); }
 $('sort').value=localStorage.getItem('langverse_sort')||'az';
 fillLangSelects(); updateDirBtn(); renderFrontChecklist(); renderBackChecklist(); initMultiLabel(); init();
@@ -8229,7 +8240,7 @@ function updateBombBadge() {
     </div>
     
     <div class="bomb-tools-section">
-      <h3>🧰 Chọn dụng cụ để gỡ bom: <span class="bomb-tools-subtitle">(Phần trăm càng nhiều, Bomb càng khó quay trở lại)</span></h3>
+      <h3>🧰 Chọn dụng cụ để gỡ bom: <span class="bomb-tools-subtitle">(Phần trăm càng cao, chọn càng nhiều dụng cụ, Bomb càng khó quay trở lại)</span></h3>
       
       <div class="bomb-tools-grid">
         <button class="bomb-tool-btn" data-mode="definition" onclick="toggleBombTool(this)">⬜ Định nghĩa (50%)</button>
@@ -8776,20 +8787,30 @@ function renderBombCard() {
   // Bắt đầu countdown
   startBombTimer(timeLimit);
   
-  // Bắt sự kiện Enter
-  setTimeout(() => {
+  // Bắt sự kiện Enter & Chặn lật thẻ khi click vào ô input
+setTimeout(() => {
     const input = document.getElementById('bomb-input');
     if (input) {
-      input.addEventListener('keypress', (e) => {
-        if (e.key === 'Enter') {
-          const userInput = input.value.trim();
-          if (userInput) {
-            defuseBomb(userInput);
-          }
-        }
-      });
+        // 🛡️ Khiên 1: Chặn sự kiện click nổi bọt (bubble up) lên .flip-container
+        input.addEventListener('click', (e) => {
+            e.stopPropagation(); 
+        });
+        input.addEventListener('mousedown', (e) => {
+            e.stopPropagation(); 
+        });
+        
+        // 🛡️ Khiên 2: Chặn phím Enter lật thẻ
+        input.addEventListener('keypress', (e) => {
+            if (e.key === 'Enter') {
+                e.stopPropagation(); 
+                const userInput = input.value.trim();
+                if (userInput) {
+                    defuseBomb(userInput);
+                }
+            }
+        });
     }
-  }, 150);
+}, 150);
 }
 
 // 3. Hàm countdown
