@@ -2250,18 +2250,38 @@ if(vdm&&vdm.classList.contains('show')&&!e.target.closest('#verse-dot-menu')&&!e
 if(mdm&&mdm.classList.contains('show')&&!e.target.closest('#multi-dot-menu')&&!e.target.closest('.multi-dot-btn')) closeMultiDotMenu();
   const mpop=$('multi-pop');
   if(mpop.classList.contains('show')&&!e.target.closest('#multi-pop')&&!e.target.closest('#multi-btn')) mpop.classList.remove('show'); });
-$('dot-menu').addEventListener('click', e=>{ 
-    const btn=e.target.closest('.dot-menu-item'); 
-    if(!btn) return; 
-    e.stopPropagation(); 
-    const act=btn.dataset.act, idx=dotMenuTarget; 
-    if(act==='delete'){ 
-        const r=btn.getBoundingClientRect(); 
-        const m=selected.size>0; 
-        closeDotMenu(); 
-        openDelConfirm(r,idx,m); 
-        return; 
-    } 
+$('dot-menu').addEventListener('click', e=>{
+  const btn=e.target.closest('.dot-menu-item');
+  if(!btn) return;
+  e.stopPropagation();
+  const act=btn.dataset.act, idx=dotMenuTarget;
+  if(act==='delete'){
+    // Lấy vị trí nút TRƯỚC khi đóng menu
+    const r=btn.getBoundingClientRect();
+    const m=selected.size>0;
+    closeDotMenu();
+    // Điều chỉnh vị trí popup hiển thị ngay dưới nút
+    const box=$('del-confirm');
+    delConfirmTarget=idx;
+    delConfirmMulti=m;
+    const txt=$('del-confirm-text');
+    if(m) txt.innerHTML='🗑️ Xóa <b>'+selected.size+'</b> từ đã chọn khỏi vũ trụ luôn hả sếp?';
+    else txt.innerHTML='🗑️ Xóa từ "'+esc(cleanInvisible(vocab[idx].word))+'" khỏi vũ trụ luôn hả sếp?';
+    box.classList.remove('hidden');
+    const mw=box.offsetWidth, mh=box.offsetHeight;
+    // Hiển thị ngay dưới nút "Xóa từ này"
+    let left=r.left;
+    let top=r.bottom+8;
+    // Nếu vượt quá màn hình bên phải
+    if(left+mw>window.innerWidth-8) left=window.innerWidth-mw-8;
+    if(left<8) left=8;
+    // Nếu vượt quá màn hình bên dưới thì hiển thị trên nút
+    if(top+mh>window.innerHeight-8) top=r.top-mh-8;
+    if(top<8) top=8;
+    box.style.left=left+'px';
+    box.style.top=top+'px';
+    return;
+  }
     if(act==='move-multi'){
         if(idx==null && selected.size===0) return;
         openMoveMultiPopup(idx, btn);
@@ -2354,7 +2374,7 @@ Cột 8 Etymology: "MÌ ĂN LIỀN" thuần Việt, viết TRẦN không ngoặc
 LUẬT TỊNH KHẨU (NO-YAPPING): khung TSV không comment/ghi chú.
 🍜 CHƯƠNG II: ETYMOLOGY "MÌ ĂN LIỀN" (CỘT 8)
 1. Thuần Việt, viết TRẦN không ngoặc vuông; KHÔNG Kanji/Hán Việt.
-2. Loại Ateji / Yojijukugo / thành ngữ cố định.
+2. Loại Ateji
 🪞 CHƯƠNG III: SOI GƯƠNG ことわざ / 慣用句
 1. Nếu Cột 1 là tục ngữ / thành ngữ / quán dụng ngữ tiếng Nhật: TRƯỚC TIÊN tìm tục ngữ / thành ngữ của NGÔN NGỮ MẶT SAU có ý nghĩa TƯƠNG ĐỒNG (NẾU CÓ) → đặt ở ĐẦU Cột 2 dạng "≈ [câu tương đương]".
 2. Nếu KHÔNG CÓ → diễn giải ý nghĩa như bình thường.
