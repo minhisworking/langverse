@@ -998,7 +998,7 @@ button, .btn-primary, .btn-success, .btn-warning, .btn-danger, .nav-btn, .close 
 /* Nút Đã chọn */
 .selected-btn { background: var(--card-bg); border: 1px solid var(--border); color: #64748b; border-radius: 8px; padding: 6px 12px; font-size: 13px; cursor: not-allowed; opacity: 0.5; transition: all 0.2s; }
 .selected-btn.active { background: var(--accent); color: #0f172a; border-color: var(--accent); cursor: pointer; opacity: 1; font-weight: bold; box-shadow: 0 0 10px rgba(56, 189, 248, 0.5); }
-.selected-popup { position: fixed; background: var(--card-bg); border: 1px solid var(--accent); border-radius: 10px; padding: 10px; min-width: 250px; max-height: 300px; overflow-y: auto; box-shadow: 0 10px 30px rgba(0,0,0,0.5); z-index: 200; }
+.selected-popup { position: fixed; background: var(--card-bg); border: 1px solid var(--accent); border-radius: 10px; padding: 10px; min-width: 250px; max-height: 300px; overflow-y: auto; box-shadow: 0 10px 30px rgba(0,0,0,0.5); z-index: 9999; }
 .selected-popup.hidden { display: none; }
 .selected-popup-header { font-size: 13px; font-weight: bold; color: var(--accent); margin-bottom: 8px; border-bottom: 1px solid var(--border); padding-bottom: 6px; }
 .selected-popup-item { display: flex; justify-content: space-between; align-items: center; padding: 6px 8px; font-size: 13px; color: var(--text); border-radius: 6px; margin-bottom: 4px; background: var(--bg); }
@@ -2134,7 +2134,7 @@ function updateDotMenuLabels(idx){
           sa=document.querySelector('#dot-menu [data-act="select-all"]'),
           mm=document.querySelector('#dot-menu [data-act="move-multi"]'); 
     del.textContent=selected.size>0?('️🗑️ Xóa các từ đã chọn ('+selected.size+')'):'🗑️ Xóa từ này'; 
-    edit.textContent=isEditMulti(idx)?('️ Chỉnh sửa những từ này ('+selected.size+')'):'✏️ Chỉnh sửa từ'; 
+    edit.textContent=isEditMulti(idx)?('️✏️ Chỉnh sửa những từ này ('+selected.size+')'):'✏️ Chỉnh sửa từ'; 
     s1.textContent=(idx!=null&&selected.has(keyOf(vocab[idx])))?'❌ Bỏ chọn từ này':'✅ Chọn từ này'; 
     sa.textContent=selected.size>0?'❌ Bỏ chọn tất cả':'✅ Chọn tất cả'; 
     if(mm) mm.textContent = selected.size>1 ? '🌍 Chuyển multiverse những từ này' : '🌍 Chuyển multiverse';
@@ -7131,6 +7131,7 @@ function updateSelectedBtn() {
 }
 
 // Xử lý khi bấm nút "Đã chọn"
+// Xử lý khi bấm nút "Đã chọn"
 $('selected-btn').addEventListener('click', (e) => {
     e.stopPropagation();
     if (selected.size === 0) return;
@@ -7139,8 +7140,15 @@ $('selected-btn').addEventListener('click', (e) => {
     if (isHidden) {
         renderSelectedPopup();
         const rect = $('selected-btn').getBoundingClientRect();
+        popup.style.left = rect.left + 'px';
+        popup.style.right = 'auto';
         popup.style.top = (rect.bottom + 8) + 'px';
-        popup.style.right = (window.innerWidth - rect.right) + 'px';
+        // Nếu popup tràn ra ngoài màn hình bên phải, đẩy lại vào trong
+        setTimeout(() => {
+            if (rect.left + popup.offsetWidth > window.innerWidth - 10) {
+                popup.style.left = (window.innerWidth - popup.offsetWidth - 10) + 'px';
+            }
+        }, 0);
         popup.classList.remove('hidden');
     } else {
         popup.classList.add('hidden');
