@@ -7174,12 +7174,18 @@ document.addEventListener('click', (e) => {
         popup.classList.add('hidden');
     }
     if (e.target.classList && e.target.classList.contains('remove-btn')) {
-        const key = e.target.dataset.key;
-        selected.delete(key);
-        renderList();
-        updateSelectedBtn();
-        if (selected.size === 0) popup.classList.add('hidden');
-    }
+    const key = e.target.dataset.key;
+    selected.delete(key);
+    renderList();
+    updateSelectedBtn();
+    // Xóa trực tiếp dòng đó khỏi popup
+    const item = e.target.closest('.selected-popup-item');
+    if (item) item.remove();
+    // Cập nhật lại số lượng trên header popup
+    const headerCount = popup.querySelector('.selected-popup-header span');
+    if (headerCount) headerCount.textContent = `(${selected.size})`;
+    if (selected.size === 0) popup.classList.add('hidden');
+}
 });
 
 // Hook vào renderList để luôn cập nhật nút
