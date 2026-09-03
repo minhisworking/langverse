@@ -27,7 +27,71 @@ button:hover { opacity:.85; }
 .shuffle-btn { background:var(--card-bg); border:1px solid var(--border); color:var(--text); border-radius:8px; padding:8px 14px; font-size:14px; cursor:pointer; }
 .shuffle-btn:hover { border-color:var(--accent); opacity:1; }
 
-.fullscreen-btn { background:var(--card-bg); border:1px solid var(--border); color:var(--accent); border-radius:8px; padding:8px 12px; font-size:16px; cursor:pointer; line-height:1; }.fullscreen-btn:hover { border-color:var(--accent); opacity:1; }.fullscreen-btn.on { background:var(--accent); color:#0f172a; border-color:var(--accent); }
+.fullscreen-btn { background:var(--card-bg); border:1px solid var(--border); color:var(--accent); border-radius:8px; padding:8px 12px; font-size:16px; cursor:pointer; line-height:1; }
+	
+	/* ===== CHẾ ĐỘ TOÀN MÀN HÌNH ===== */
+body.fullscreen-mode header,
+body.fullscreen-mode #list-zone,
+body.fullscreen-mode .test-zone {
+  display: none !important;
+}
+
+body.fullscreen-mode #study-zone {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  z-index: 9998;
+  background: var(--bg);
+  display: flex;
+  flex-direction: column;
+  padding: 10px;
+  overflow: hidden;
+}
+
+body.fullscreen-mode .counter-row {
+  margin-top: 5px;
+  margin-bottom: 10px;
+  flex-shrink: 0;
+}
+
+body.fullscreen-mode .flash-area {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 10px;
+  min-height: 0;
+}
+
+body.fullscreen-mode .flip-container {
+  width: 100%;
+  max-width: 900px;
+  height: calc(100vh - 220px);
+  max-height: 600px;
+}
+
+body.fullscreen-mode .nav-btn {
+  font-size: 28px;
+  padding: 12px 20px;
+}
+
+body.fullscreen-mode .rate-zone {
+  flex-shrink: 0;
+  margin-bottom: 10px;
+}
+
+body.fullscreen-mode .big-word {
+  font-size: 42px !important;
+}
+
+body.fullscreen-mode .ipa-big {
+  font-size: 22px !important;
+}
+	
+	.fullscreen-btn:hover { border-color:var(--accent); opacity:1; }.fullscreen-btn.on { background:var(--accent); color:#0f172a; border-color:var(--accent); }
 	
 .shuffle-btn.on { background:var(--accent); color:#0f172a; border-color:var(--accent); }
 .peek-btn { background:var(--card-bg); border:1px solid var(--border); color:var(--accent); border-radius:8px; padding:6px 12px; font-size:13px; cursor:pointer; }
@@ -1071,6 +1135,7 @@ button, .btn-primary, .btn-success, .btn-warning, .btn-danger, .nav-btn, .close 
       <div class="peek-wrap"><span class="peek-item" data-face="front">mặt trước</span>
         <div class="peek-pop" id="pop-front"><div class="peek-pop-title">🃏 Mặt trước — tick để ẩn</div><div class="peek-pop-body" id="pop-front-body"></div></div>
       </div>
+		   <span class="peek-sep">/</span>
       <div class="peek-wrap"><span class="peek-item" data-face="back">mặt sau</span>
         <div class="peek-pop" id="pop-back"><div class="peek-pop-title">📖 Mặt sau — tick để ẩn</div><div class="peek-pop-body" id="pop-back-body"></div></div>
       </div>
@@ -7213,6 +7278,7 @@ setTimeout(updateSelectedBtn, 500);
 
 <script>
 // ===== 🖥️ CHẾ ĐỘ TOÀN MÀN HÌNH =====
+// ===== ️ CHẾ ĐỘ TOÀN MÀN HÌNH =====
 function toggleFullscreen() {
     const btn = document.getElementById('fullscreen-btn');
     const isFullscreen = document.fullscreenElement || document.webkitFullscreenElement || document.mozFullScreenElement;
@@ -7240,10 +7306,12 @@ function updateFullscreenBtn() {
     if (!btn) return;
     const isFullscreen = document.fullscreenElement || document.webkitFullscreenElement || document.mozFullScreenElement;
     if (isFullscreen) {
+        document.body.classList.add('fullscreen-mode');
         btn.classList.add('on');
         btn.textContent = '⛶';
         btn.title = 'Thoát toàn màn hình';
     } else {
+        document.body.classList.remove('fullscreen-mode');
         btn.classList.remove('on');
         btn.textContent = '⛶';
         btn.title = 'Toàn màn hình';
