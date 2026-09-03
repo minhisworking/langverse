@@ -1169,8 +1169,7 @@ body.fullscreen-mode .big-word {
 </div>
 </div>
 <div id="selected-popup" class="selected-popup hidden"></div>
-	
-  </div>
+
   <div class="word-list" id="word-list"></div>
 
 <div id="study-zone">
@@ -7335,12 +7334,12 @@ function toggleFullscreen() {
     const isCurrentlyFullscreen = document.body.classList.contains('fullscreen-mode');
     
     if (!isCurrentlyFullscreen) {
-        document.body.classList.add('fullscreen-mode');
-        if (btn) {
-            btn.classList.add('on');
-            btn.textContent = '';
-            btn.title = 'Thoát toàn màn hình';
-        }
+    document.body.classList.add('fullscreen-mode');
+    if (btn) {
+        btn.classList.add('on');
+        btn.textContent = '⛶'; // ✅ Giữ lại icon (hoặc đổi thành ✖ để dễ nhận biết nút thoát)
+        btn.title = 'Thoát toàn màn hình';
+    }
         const el = document.documentElement;
         const req = el.requestFullscreen || el.webkitRequestFullscreen || el.mozRequestFullScreen || el.msRequestFullscreen;
         if (req) { try { req.call(el); } catch(e) {} }
