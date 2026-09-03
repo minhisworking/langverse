@@ -998,7 +998,15 @@ button, .btn-primary, .btn-success, .btn-warning, .btn-danger, .nav-btn, .close 
   to { opacity: 1; transform: translateY(0); }
 }
 
-	
+/* Nút Đã chọn */
+.selected-btn { background: var(--card-bg); border: 1px solid var(--border); color: #64748b; border-radius: 8px; padding: 6px 12px; font-size: 13px; cursor: not-allowed; opacity: 0.5; transition: all 0.2s; }
+.selected-btn.active { background: var(--accent); color: #0f172a; border-color: var(--accent); cursor: pointer; opacity: 1; font-weight: bold; box-shadow: 0 0 10px rgba(56, 189, 248, 0.5); }
+.selected-popup { position: fixed; background: var(--card-bg); border: 1px solid var(--accent); border-radius: 10px; padding: 10px; min-width: 250px; max-height: 300px; overflow-y: auto; box-shadow: 0 10px 30px rgba(0,0,0,0.5); z-index: 200; }
+.selected-popup.hidden { display: none; }
+.selected-popup-header { font-size: 13px; font-weight: bold; color: var(--accent); margin-bottom: 8px; border-bottom: 1px solid var(--border); padding-bottom: 6px; }
+.selected-popup-item { display: flex; justify-content: space-between; align-items: center; padding: 6px 8px; font-size: 13px; color: var(--text); border-radius: 6px; margin-bottom: 4px; background: var(--bg); }
+.selected-popup-item:hover { background: #334155; }
+.selected-popup-item .remove-btn { color: #ef4444; cursor: pointer; font-size: 16px; padding: 0 4px; }	
 </style>
 </head>
 <body>
@@ -1031,14 +1039,21 @@ button, .btn-primary, .btn-success, .btn-warning, .btn-danger, .nav-btn, .close 
 
 <div id="list-zone">
   <div class="list-head">
-    <div class="list-title" id="list-title"></div>
-    <label class="sort-wrap">Sắp xếp:
+<div class="list-title" id="list-title"></div>
+<div style="display:flex; align-items:center; gap:10px; flex-wrap:wrap;">
+<button id="selected-btn" class="selected-btn" disabled>Đã chọn</button>
+<label class="sort-wrap">Sắp xếp:
       <select id="sort" onchange="setSort(this.value)">
         <option value="az">A-Z</option><option value="recent">Mới thêm</option><option value="pos">Loại từ</option><option value="manual">Thủ công</option>
       </select>
       <button id="sortdir" class="dir-btn" onclick="toggleDir()" title="Đảo thứ tự sắp xếp">🔃</button>
 <button id="dup-btn" class="dir-btn dup-disabled" onclick="openDupModal()" title="Phát hiện trùng lặp" style="margin-left:6px;">👯 Trùng lặp (0)</button>
     </label>
+</label>
+</div>
+</div>
+<div id="selected-popup" class="selected-popup hidden"></div>
+	
   </div>
   <div class="word-list" id="word-list"></div>
 
@@ -7100,6 +7115,79 @@ if (document.readyState === 'loading') {
     <button class="dup-del-ok">OK</button>
   </div>
 </div>
+
+
+<script>
+// Cập nhật trạng thái nút "Đã chọn"
+function updateSelectedBtn() {
+    const btn = $('selected-btn');
+    if (!btn) return;
+    const count = selected.size;
+    if (count > 0) {
+        btn.textContent = `Đã chọn (${count})`;
+        btn.classList.add('active');
+        btn.disabled = false;
+    } else {
+        btn.textContent = 'Đã chọn';
+        btn.classList.remove('active');
+        btn.disabled = true;
+    }
+}
+
+// Xử lý khi bấm nút "Đã chọn"
+$('selected-btn').addEventListener('click', (e) => {
+    e.stopPropagation();
+    if (selected.size === 0) return;
+    const popup = $('selected-popup');
+    const isHidden = popup.classList.contains('hidden');
+    if (isHidden) {
+        renderSelectedPopup();
+        const rect = $('selected-btn').getBoundingClientRect();
+        popup.style.top = (rect.bottom + 8) + 'px';
+        popup.style.right = (window.innerWidth - rect.right) + 'px';
+        popup.classList.remove('hidden');
+    } else {
+        popup.classList.add('hidden');
+    }
+});
+
+// Render danh sách từ đã chọn vào popup
+function renderSelectedPopup() {
+    const popup = $('selected-popup');
+    let html = `<div class="selected-popup-header">Các từ đã chọn <span>(${selected.size})</span></div><div>`;
+    selected.forEach(key => {
+        const v = vocab.find(x => keyOf(x) === key);
+        if (v) html += `<div class="selected-popup-item"><span>${esc(v.word)}</span><span class="remove-btn" data-key="${esc(key)}">✕</span></div>`;
+    });
+    html += '</div>';
+    popup.innerHTML = html;
+}
+
+// Đóng popup khi click ra ngoài và xử lý nút xóa trong popup
+document.addEventListener('click', (e) => {
+    const popup = $('selected-popup');
+    if (popup && !popup.classList.contains('hidden') && !e.target.closest('#selected-popup') && !e.target.closest('#selected-btn')) {
+        popup.classList.add('hidden');
+    }
+    if (e.target.classList && e.target.classList.contains('remove-btn')) {
+        const key = e.target.dataset.key;
+        selected.delete(key);
+        renderList();
+        updateSelectedBtn();
+        if (selected.size === 0) popup.classList.add('hidden');
+    }
+});
+
+// Hook vào renderList để luôn cập nhật nút
+const __origRenderListSelected = window.renderList;
+window.renderList = function() {
+    if (typeof __origRenderListSelected === 'function') __origRenderListSelected();
+    updateSelectedBtn();
+};
+
+// Gọi lần đầu khi trang load
+setTimeout(updateSelectedBtn, 500);
+</script>
 	
 </body>
 </html>
