@@ -29,14 +29,12 @@ button:hover { opacity:.85; }
 
 .fullscreen-btn { background:var(--card-bg); border:1px solid var(--border); color:var(--accent); border-radius:8px; padding:8px 12px; font-size:16px; cursor:pointer; line-height:1; }
 	
-	/* ===== CHẾ ĐỘ TOÀN MÀN HÌNH (FIX CHẮC CHẮN HIỆN) ===== */
-body.fullscreen-mode header,
-body.fullscreen-mode .list-head,
-body.fullscreen-mode .word-list,
-body.fullscreen-mode .test-zone,
-body.fullscreen-mode #empty-msg {
-  display: none !important;
-}
+	/* ===== FULLSCREEN MODE - ULTIMATE FIX ===== */
+body.fullscreen-mode header { display: none !important; }
+body.fullscreen-mode .list-head { display: none !important; }
+body.fullscreen-mode .word-list { display: none !important; }
+body.fullscreen-mode .test-zone { display: none !important; }
+body.fullscreen-mode #empty-msg { display: none !important; }
 
 body.fullscreen-mode #list-zone {
   display: block !important;
@@ -50,16 +48,17 @@ body.fullscreen-mode #study-zone {
   left: 0 !important;
   right: 0 !important;
   bottom: 0 !important;
-  z-index: 9998 !important;
+  z-index: 9999 !important;
   background: var(--bg) !important;
   display: flex !important;
   flex-direction: column !important;
   padding: 10px !important;
-  overflow: hidden !important;
   margin: 0 !important;
+  width: 100vw !important;
+  height: 100vh !important;
+  overflow: hidden !important;
 }
 
-/* Ép 3 thành phần chính phải hiện */
 body.fullscreen-mode .counter-row,
 body.fullscreen-mode .flash-area,
 body.fullscreen-mode .rate-zone {
@@ -7318,42 +7317,57 @@ setTimeout(updateSelectedBtn, 500);
 <script>
 // ===== 🖥️ CHẾ ĐỘ TOÀN MÀN HÌNH =====
 // ===== ️ CHẾ ĐỘ TOÀN MÀN HÌNH =====
+<script>
+// ===== ️ CHẾ ĐỘ TOÀN MÀN HÌNH - PHIÊN BẢN ỔN ĐỊNH =====
 function toggleFullscreen() {
     const btn = document.getElementById('fullscreen-btn');
-    const isFullscreen = document.fullscreenElement || document.webkitFullscreenElement || document.mozFullScreenElement;
+    const isCurrentlyFullscreen = document.body.classList.contains('fullscreen-mode');
     
-    if (!isFullscreen) {
-        // Vào fullscreen
+    if (!isCurrentlyFullscreen) {
+        // Vào chế độ toàn màn hình (Ép hiện UI ngay lập tức)
+        document.body.classList.add('fullscreen-mode');
+        if (btn) {
+            btn.classList.add('on');
+            btn.textContent = '⛶';
+            btn.title = 'Thoát toàn màn hình';
+        }
+        
+        // Cố gắng gọi Fullscreen API của trình duyệt
         const el = document.documentElement;
         const req = el.requestFullscreen || el.webkitRequestFullscreen || el.mozRequestFullScreen || el.msRequestFullscreen;
-        if (req) req.call(el);
+        if (req) { try { req.call(el); } catch(e) {} }
     } else {
-        // Thoát fullscreen
+        // Thoát chế độ toàn màn hình
+        document.body.classList.remove('fullscreen-mode');
+        if (btn) {
+            btn.classList.remove('on');
+            btn.textContent = '⛶';
+            btn.title = 'Toàn màn hình';
+        }
+        
+        // Cố gắng thoát Fullscreen API
         const exit = document.exitFullscreen || document.webkitExitFullscreen || document.mozCancelFullScreen || document.msExitFullscreen;
-        if (exit) exit.call(document);
+        if (exit) { try { exit.call(document); } catch(e) {} }
     }
 }
 
-// Cập nhật trạng thái nút khi thay đổi fullscreen
-document.addEventListener('fullscreenchange', updateFullscreenBtn);
-document.addEventListener('webkitfullscreenchange', updateFullscreenBtn);
-document.addEventListener('mozfullscreenchange', updateFullscreenBtn);
-document.addEventListener('MSFullscreenChange', updateFullscreenBtn);
+// Đồng bộ trạng thái nếu người dùng bấm ESC để thoát
+document.addEventListener('fullscreenchange', syncFullscreenState);
+document.addEventListener('webkitfullscreenchange', syncFullscreenState);
+document.addEventListener('mozfullscreenchange', syncFullscreenState);
+document.addEventListener('MSFullscreenChange', syncFullscreenState);
 
-function updateFullscreenBtn() {
-    const btn = document.getElementById('fullscreen-btn');
-    if (!btn) return;
+function syncFullscreenState() {
     const isFullscreen = document.fullscreenElement || document.webkitFullscreenElement || document.mozFullScreenElement;
-    if (isFullscreen) {
-        document.body.classList.add('fullscreen-mode');  // ← Dòng này phải có
-        btn.classList.add('on');
-        btn.textContent = '⛶';
-        btn.title = 'Thoát toàn màn hình';
-    } else {
-        document.body.classList.remove('fullscreen-mode');  // ← Dòng này phải có
-        btn.classList.remove('on');
-        btn.textContent = '⛶';
-        btn.title = 'Toàn màn hình';
+    const btn = document.getElementById('fullscreen-btn');
+    // Nếu trình duyệt tự thoát (bấm ESC) nhưng class UI vẫn còn -> xóa class
+    if (!isFullscreen && document.body.classList.contains('fullscreen-mode')) {
+        document.body.classList.remove('fullscreen-mode');
+        if (btn) {
+            btn.classList.remove('on');
+            btn.textContent = '⛶';
+            btn.title = 'Toàn màn hình';
+        }
     }
 }
 </script>
