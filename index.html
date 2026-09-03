@@ -1062,10 +1062,8 @@ button, .btn-primary, .btn-success, .btn-warning, .btn-danger, .nav-btn, .close 
 .selected-popup-item .remove-btn { color: #ef4444; cursor: pointer; font-size: 16px; padding: 0 4px; }	
 
 
-/* ===== FULLSCREEN MODE - FIX ĐÚNG CẤU TRÚC HTML ===== */
+/* ===== FULLSCREEN MODE - BẢN CÂN ĐỐI ===== */
 body.fullscreen-mode header { display: none !important; }
-
-/* Ẩn các phần không cần thiết trong #list-zone */
 body.fullscreen-mode .list-head,
 body.fullscreen-mode .word-list,
 body.fullscreen-mode .test-zone,
@@ -1073,7 +1071,7 @@ body.fullscreen-mode #empty-msg {
   display: none !important;
 }
 
-/* Biến #list-zone (thẻ cha chứa tất cả) thành khung toàn màn hình */
+/* Khung fullscreen chiếm toàn màn hình */
 body.fullscreen-mode #list-zone {
   position: fixed !important;
   top: 0 !important;
@@ -1084,43 +1082,94 @@ body.fullscreen-mode #list-zone {
   background: var(--bg) !important;
   display: flex !important;
   flex-direction: column !important;
-  padding: 10px !important;
+  padding: 16px 24px !important;
   overflow: hidden !important;
   margin: 0 !important;
 }
 
-/* Giữ lại thanh counter (nút Ẩn, Đếm, Xáo trộn) */
+/* Thanh counter (nút Ẩn, Đếm, Xáo trộn, Fullscreen) */
 body.fullscreen-mode #study-zone {
   flex-shrink: 0;
-  margin-bottom: 10px;
+  margin-bottom: 12px;
+}
+body.fullscreen-mode .counter-row {
+  gap: 12px;
+  margin-top: 0;
+  margin-bottom: 0;
+}
+body.fullscreen-mode .fullscreen-btn,
+body.fullscreen-mode .shuffle-btn,
+body.fullscreen-mode .peek-btn {
+  padding: 8px 16px !important;
+  font-size: 14px !important;
 }
 
-/* Flashcard chiếm phần giữa màn hình */
+/* Khu vực flashcard - chiếm phần giữa, không quá to */
 body.fullscreen-mode .flash-area {
   flex: 1 !important;
   display: flex !important;
   align-items: center !important;
   justify-content: center !important;
   min-height: 0 !important;
+  gap: 20px !important;
+  padding: 0 10px !important;
 }
 
+/* Nút điều hướng trái/phải rõ hơn */
+body.fullscreen-mode .nav-btn {
+  font-size: 28px !important;
+  padding: 12px !important;
+  background: var(--card-bg) !important;
+  border: 1px solid var(--border) !important;
+  border-radius: 10px !important;
+  flex-shrink: 0 !important;
+}
+body.fullscreen-mode .nav-btn:hover {
+  background: var(--accent) !important;
+  color: var(--bg) !important;
+  opacity: 1 !important;
+}
+
+/* Thẻ flashcard - kích thước hợp lý */
 body.fullscreen-mode .flip-container {
   width: 100% !important;
-  max-width: 900px !important;
-  height: calc(100vh - 200px) !important;
-  max-height: 600px !important;
+  max-width: 720px !important;
+  height: auto !important;
+  max-height: 55vh !important;
+  min-height: 380px !important;
+}
+body.fullscreen-mode .face {
+  padding: 24px 28px !important;
+}
+body.fullscreen-mode .big-word {
+  font-size: 38px !important;
 }
 
-/* Thanh đánh giá nằm dưới cùng */
+/* Thanh đánh giá mức độ nhớ - RỘNG hơn, dễ thao tác */
 body.fullscreen-mode .rate-zone {
   flex-shrink: 0;
-  margin-top: 10px;
+  margin-top: 12px;
+  max-width: 720px !important;
+  width: 100% !important;
+  margin-left: auto !important;
+  margin-right: auto !important;
+  padding: 14px 20px !important;
 }
-
-body.fullscreen-mode .big-word {
-  font-size: 42px !important;
+body.fullscreen-mode .rate-zone-label {
+  font-size: 14px !important;
+  margin-bottom: 10px !important;
 }
-
+body.fullscreen-mode #recall-slider {
+  height: 8px !important;
+  cursor: pointer;
+}
+body.fullscreen-mode .rate-milestones {
+  font-size: 11px !important;
+  margin-top: 6px !important;
+}
+body.fullscreen-mode .rate-milestones > span {
+  line-height: 1.3;
+}
 
 
 
