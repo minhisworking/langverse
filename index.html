@@ -7871,7 +7871,7 @@ function syncFullscreenState() {
 
 // ===== BOMB MODE LOGIC =====
 let bombModeEnabled = false;
-let bombTools = ['definition', 'tag']; // Mặc định chọn Definition + Tag
+let bombTools = []; 
 let bombStats = { defused: 0, exploded: 0 }; // Thống kê
 
 // Toggle popup on/off
@@ -7936,18 +7936,15 @@ function setBombMode(enabled) {
 // Toggle dụng cụ gỡ bom
 function toggleBombTool(btn) {
   const mode = btn.dataset.mode;
-  
   if (bombTools.includes(mode)) {
     bombTools = bombTools.filter(m => m !== mode);
     btn.textContent = btn.textContent.replace('✅', '⬜');
     btn.classList.remove('active');
   } else {
     bombTools.push(mode);
-    btn.textContent = btn.textContent.replace('', '✅');
+    btn.textContent = btn.textContent.replace('⬜', '✅');  // ← SỬA THÀNH THẾ NÀY
     btn.classList.add('active');
   }
-  
-  // Lưu cấu hình
   localStorage.setItem('bomb_tools', JSON.stringify(bombTools));
 }
 
@@ -8056,21 +8053,11 @@ function updateBombBadge() {
       <h3>🧰 Chọn dụng cụ để gỡ bom: <span class="bomb-tools-subtitle">(Phần trăm càng nhiều, Bomb càng khó quay trở lại)</span></h3>
       
       <div class="bomb-tools-grid">
-        <button class="bomb-tool-btn active" data-mode="definition" onclick="toggleBombTool(this)">
-          ✅ Định nghĩa (50%)
-        </button>
-        <button class="bomb-tool-btn" data-mode="pronunciation" onclick="toggleBombTool(this)">
-          ⬜ Phiên âm (20%)
-        </button>
-        <button class="bomb-tool-btn active" data-mode="tag" onclick="toggleBombTool(this)">
-          ✅ Tag (15%)
-        </button>
-        <button class="bomb-tool-btn" data-mode="synonym" onclick="toggleBombTool(this)">
-          ⬜ Từ đồng nghĩa (10%)
-        </button>
-        <button class="bomb-tool-btn" data-mode="etymology" onclick="toggleBombTool(this)">
-          ⬜ Từ nguyên (5%)
-        </button>
+        <button class="bomb-tool-btn" data-mode="definition" onclick="toggleBombTool(this)">⬜ Định nghĩa (50%)</button>
+<button class="bomb-tool-btn" data-mode="pronunciation" onclick="toggleBombTool(this)"> Phiên âm (20%)</button>
+<button class="bomb-tool-btn" data-mode="tag" onclick="toggleBombTool(this)">⬜ Tag (15%)</button>
+<button class="bomb-tool-btn" data-mode="synonym" onclick="toggleBombTool(this)">⬜ Từ đồng nghĩa (10%)</button>
+<button class="bomb-tool-btn" data-mode="etymology" onclick="toggleBombTool(this)">⬜ Từ nguyên (5%)</button>
       </div>
     </div>
     
