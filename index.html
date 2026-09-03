@@ -1205,6 +1205,18 @@ body.fullscreen-mode .flash-area {
   justify-content: center;
 }
 
+/* Bỏ nền đen & viền cho nút ️ ➡️ trong hàng nav-row khi fullscreen */
+body.fullscreen-mode .nav-row .nav-btn {
+background: transparent !important;
+border: none !important;
+box-shadow: none !important;
+padding: 8px !important;
+}
+body.fullscreen-mode .nav-row .nav-btn:hover {
+background: rgba(56, 189, 248, 0.15) !important; /* Hiệu ứng hover nhẹ màu xanh */
+border-radius: 8px !important;
+}
+	
 </style>
 </head>
 <body>
