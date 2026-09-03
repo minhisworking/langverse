@@ -578,15 +578,24 @@ order: 0;
 	}
 /* Dòng "Danh sách vũ trụ" xuống dưới dòng "Sắp xếp" trên mobile */
 .list-head {
-    flex-direction: column;
-    align-items: flex-start;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 8px;
+}
+#selected-btn {
+    order: 1;
+    flex-shrink: 0;
 }
 .list-title {
     order: 2;
-    margin-top: 6px;
+    flex: 1;
+    min-width: 100px;
+    margin-top: 0;
 }
 .sort-wrap {
-    order: 1;
+    order: 3;
+    width: 100%;
+    margin-top: 4px;
 }
 	
 }
@@ -1038,10 +1047,9 @@ button, .btn-primary, .btn-success, .btn-warning, .btn-danger, .nav-btn, .close 
 
 
 <div id="list-zone">
-  <div class="list-head">
-<div class="list-title" id="list-title"></div>
-<div style="display:flex; align-items:center; gap:10px; flex-wrap:wrap;">
+ <div class="list-head">
 <button id="selected-btn" class="selected-btn" disabled>Đã chọn</button>
+<div class="list-title" id="list-title"></div>
 <label class="sort-wrap">Sắp xếp:
       <select id="sort" onchange="setSort(this.value)">
         <option value="az">A-Z</option><option value="recent">Mới thêm</option><option value="pos">Loại từ</option><option value="manual">Thủ công</option>
@@ -1050,7 +1058,6 @@ button, .btn-primary, .btn-success, .btn-warning, .btn-danger, .nav-btn, .close 
 <button id="dup-btn" class="dir-btn dup-disabled" onclick="openDupModal()" title="Phát hiện trùng lặp" style="margin-left:6px;">👯 Trùng lặp (0)</button>
     </label>
 </label>
-</div>
 </div>
 <div id="selected-popup" class="selected-popup hidden"></div>
 	
@@ -2137,7 +2144,7 @@ function updateDotMenuLabels(idx){
           s1=document.querySelector('#dot-menu [data-act="select-one"]'), 
           sa=document.querySelector('#dot-menu [data-act="select-all"]'),
           mm=document.querySelector('#dot-menu [data-act="move-multi"]'); 
-    del.textContent=selected.size>0?('️ Xóa các từ đã chọn ('+selected.size+')'):'🗑️ Xóa từ này'; 
+    del.textContent=selected.size>0?('️🗑️ Xóa các từ đã chọn ('+selected.size+')'):'🗑️ Xóa từ này'; 
     edit.textContent=isEditMulti(idx)?('️ Chỉnh sửa những từ này ('+selected.size+')'):'✏️ Chỉnh sửa từ'; 
     s1.textContent=(idx!=null&&selected.has(keyOf(vocab[idx])))?'❌ Bỏ chọn từ này':'✅ Chọn từ này'; 
     sa.textContent=selected.size>0?'❌ Bỏ chọn tất cả':'✅ Chọn tất cả'; 
