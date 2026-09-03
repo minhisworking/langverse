@@ -1485,7 +1485,15 @@ body.fullscreen-mode .img-add-icon {
     padding: 20px;
   }
 }
-	
+
+
+/* Đảm bảo Modal Bomb luôn hiện trên cùng trong Fullscreen */
+body.fullscreen-mode .modal {
+  z-index: 10001 !important;
+}
+body.fullscreen-mode .bomb-modal-content {
+  z-index: 10002 !important;
+}	
 	
 </style>
 </head>
