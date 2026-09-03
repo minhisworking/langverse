@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=5.0, user-scalable=yes">
-<title>LangVerse 🌌 - Quizlet Mode</title>
+<title>LangVerse 🌌</title>
 
 <style>
 :root { --bg:#0f172a; --card-bg:#1e293b; --text:#f8fafc; --accent:#38bdf8; --border:#334155; --subtopic:#818cf8; }
@@ -26,6 +26,9 @@ button:hover { opacity:.85; }
 .counter { color:#94a3b8; font-size:14px; }
 .shuffle-btn { background:var(--card-bg); border:1px solid var(--border); color:var(--text); border-radius:8px; padding:8px 14px; font-size:14px; cursor:pointer; }
 .shuffle-btn:hover { border-color:var(--accent); opacity:1; }
+
+.fullscreen-btn { background:var(--card-bg); border:1px solid var(--border); color:var(--accent); border-radius:8px; padding:8px 12px; font-size:16px; cursor:pointer; line-height:1; }.fullscreen-btn:hover { border-color:var(--accent); opacity:1; }.fullscreen-btn.on { background:var(--accent); color:#0f172a; border-color:var(--accent); }
+	
 .shuffle-btn.on { background:var(--accent); color:#0f172a; border-color:var(--accent); }
 .peek-btn { background:var(--card-bg); border:1px solid var(--border); color:var(--accent); border-radius:8px; padding:6px 12px; font-size:13px; cursor:pointer; }
 .peek-btn:hover { border-color:var(--accent); opacity:1; }
@@ -1067,6 +1070,8 @@ button, .btn-primary, .btn-success, .btn-warning, .btn-danger, .nav-btn, .close 
     </div>
     <span class="counter" id="counter"></span>
     <button id="shuffle-btn" class="shuffle-btn" onclick="toggleShuffle()" title="Bật/tắt xáo trộn">🔀 Xáo trộn</button>
+<button id="fullscreen-btn" class="fullscreen-btn" onclick="toggleFullscreen()" title="Toàn màn hình">⛶</button>
+</div> class="shuffle-btn" onclick="toggleShuffle()" title="Bật/tắt xáo trộn">🔀 Xáo trộn</button>
   </div>
   <div class="flash-area">
     <button class="nav-btn" onclick="nav(-1)">⬅️</button>
@@ -7197,6 +7202,46 @@ window.renderList = function() {
 
 // Gọi lần đầu khi trang load
 setTimeout(updateSelectedBtn, 500);
+</script>
+
+<script>
+// ===== 🖥️ CHẾ ĐỘ TOÀN MÀN HÌNH =====
+function toggleFullscreen() {
+    const btn = document.getElementById('fullscreen-btn');
+    const isFullscreen = document.fullscreenElement || document.webkitFullscreenElement || document.mozFullScreenElement;
+    
+    if (!isFullscreen) {
+        // Vào fullscreen
+        const el = document.documentElement;
+        const req = el.requestFullscreen || el.webkitRequestFullscreen || el.mozRequestFullScreen || el.msRequestFullscreen;
+        if (req) req.call(el);
+    } else {
+        // Thoát fullscreen
+        const exit = document.exitFullscreen || document.webkitExitFullscreen || document.mozCancelFullScreen || document.msExitFullscreen;
+        if (exit) exit.call(document);
+    }
+}
+
+// Cập nhật trạng thái nút khi thay đổi fullscreen
+document.addEventListener('fullscreenchange', updateFullscreenBtn);
+document.addEventListener('webkitfullscreenchange', updateFullscreenBtn);
+document.addEventListener('mozfullscreenchange', updateFullscreenBtn);
+document.addEventListener('MSFullscreenChange', updateFullscreenBtn);
+
+function updateFullscreenBtn() {
+    const btn = document.getElementById('fullscreen-btn');
+    if (!btn) return;
+    const isFullscreen = document.fullscreenElement || document.webkitFullscreenElement || document.mozFullScreenElement;
+    if (isFullscreen) {
+        btn.classList.add('on');
+        btn.textContent = '⛶';
+        btn.title = 'Thoát toàn màn hình';
+    } else {
+        btn.classList.remove('on');
+        btn.textContent = '⛶';
+        btn.title = 'Toàn màn hình';
+    }
+}
 </script>
 	
 </body>
