@@ -1880,28 +1880,66 @@ body.fullscreen-mode .bomb-modal-content {
 </div>
 
 <div class="modal" id="edit-modal" onclick="if(event.target===this)closeEditModal()">
-  <div class="modal-content">
-    <span class="close" onclick="closeEditModal()">&times;</span>
-    <h2 id="edit-title" style="color:var(--accent); margin-top:0;">✏️ Chỉnh Sửa Từ</h2>
-    <form id="edit-form" onsubmit="saveEditWord(event)">
-      <div class="form-group" id="edit-word-group">
-        <label id="edit-word-label">Từ vựng (Word) *</label>
-        <div style="display:flex; gap:8px;">
-          <input type="text" id="edit-word" required style="width:100%;">
-          <button type="button" id="edit-arrow" class="edit-arrow" style="display:none;">▶</button>
-        </div>
-        <div id="edit-selected-list" class="edit-selected-list hidden"></div>
-      </div>
-      <div class="form-group" id="edit-def-group"><label>Định nghĩa & Tags *</label><textarea id="edit-def" rows="4" style="width:100%;"></textarea></div>
-      <div class="row" id="edit-row-group">
-        <div class="form-group"><label>IPA</label><input type="text" id="edit-ipa" style="width:100%;"></div>
-        <div class="form-group"><label>Loại từ</label><input type="text" id="edit-pos" style="width:100%;"></div>
-      </div>
-      <div class="form-group" id="edit-example-group"><label>Ví dụ</label><input type="text" id="edit-example" style="width:100%;"></div>
-      <div class="form-group" id="edit-synonym-group"><label>Từ đồng nghĩa</label><input type="text" id="edit-synonym" style="width:100%;"></div>
-      <button type="submit" class="btn-primary" style="width:100%; padding:15px;">💾 Cập Nhật Vũ Trụ</button>
-    </form>
-  </div>
+<div class="modal-content">
+<span class="close" onclick="closeEditModal()">&times;</span>
+<h2 id="edit-title" style="color:var(--accent); margin-top:0;">✏️ Chỉnh Sửa Từ</h2>
+<form id="edit-form" onsubmit="saveEditWord(event)">
+
+<!-- Multiverse đích -->
+<div class="form-group">
+<label>🌍 Multiverse đích</label>
+<div style="position:relative; display:flex; gap:4px;">
+<input type="text" id="edit-multi" placeholder="Chọn hoặc gõ multiverse mới..." style="flex:1;">
+<button type="button" class="tag-arrow" onclick="toggleMultiListForEdit()" style="background:var(--card-bg); color:var(--accent); border:1px solid var(--border); border-radius:8px; padding:6px 10px; cursor:pointer;">▾</button>
+<div id="edit-multi-dd" class="tag-dropdown" style="display:none; position:absolute; top:100%; left:0; right:0; background:var(--card-bg); border:1px solid var(--accent); border-radius:8px; max-height:160px; overflow-y:auto; z-index:60; margin-top:4px; box-shadow:0 10px 30px rgba(0,0,0,.5);"></div>
+</div>
+</div>
+
+<!-- Từ vựng -->
+<div class="form-group" id="edit-word-group">
+<label id="edit-word-label">Từ vựng (Word) *</label>
+<div style="display:flex; gap:8px;">
+<input type="text" id="edit-word" required style="width:100%;">
+<button type="button" id="edit-arrow" class="edit-arrow" style="display:none;">▶</button>
+</div>
+<div id="edit-selected-list" class="edit-selected-list hidden"></div>
+</div>
+
+<!-- Định nghĩa & Tags -->
+<div class="form-group">
+<label>Định nghĩa & Tags *</label>
+<div id="edit-def-list"></div>
+<div id="edit-def-err" style="display:none; margin-top:6px; padding:8px 12px; border-radius:8px; background:#ef4444; color:#fff; font-size:12px; font-weight:bold;">🚨 Chưa điền nghĩa nào!</div>
+<button type="button" onclick="addEditDefRow()" style="margin-top:8px; padding:8px 14px; font-size:13px; font-weight:bold; cursor:pointer; border:none; border-radius:8px; background:var(--accent); color:#0f172a;">➕ Thêm nghĩa</button>
+</div>
+
+<!-- IPA / Downstep / Loại từ -->
+<div class="row" style="align-items:flex-end;">
+<div class="form-group"><label>IPA/Phiên âm</label><input type="text" id="edit-ipa" style="width:100%;"></div>
+<div class="form-group" style="flex:0 0 150px;">
+<label style="font-size:10px; white-space:nowrap;">🔻 Hạt nhân/Downstep</label>
+<div style="position:relative;">
+<input type="text" id="edit-downstep" placeholder="–❹" style="width:100%; padding-right:30px;">
+<button type="button" class="tag-arrow" onclick="toggleEditDownstepList()" style="position:absolute; right:4px; top:50%; transform:translateY(-50%); background:transparent; color:var(--accent); border:none; cursor:pointer; padding:4px 6px; font-size:12px;">▾</button>
+<div id="edit-downstep-dd" class="tag-dropdown" style="display:none; position:absolute; top:100%; left:0; right:0; background:var(--card-bg); border:1px solid var(--accent); border-radius:8px; max-height:160px; overflow-y:auto; z-index:60; margin-top:4px;"></div>
+</div>
+</div>
+<div class="form-group"><label>Loại từ</label><input type="text" id="edit-pos" style="width:100%;"></div>
+</div>
+
+<!-- Ví dụ -->
+<div class="form-group"><label>Ví dụ</label><input type="text" id="edit-example" style="width:100%;"></div>
+
+<!-- Từ đồng nghĩa -->
+<div class="form-group"><label>Từ đồng nghĩa</label><input type="text" id="edit-synonym" style="width:100%;"></div>
+
+<!-- Etymology -->
+<div class="form-group"><label>🧬 Etymology (Nguồn gốc từ)</label><textarea id="edit-etym" rows="2" placeholder="vd: Gốc Latin 'rectus' nghĩa là 'thẳng'..." style="width:100%;"></textarea></div>
+
+<button type="submit" class="btn-primary" style="width:100%; padding:15px;">💾 Cập Nhật Vũ Trụ</button>
+<div id="edit-word-toast" style="display:none; margin-top:10px; padding:10px 14px; border-radius:8px; font-size:13px; font-weight:bold; color:#fff; text-align:center;"></div>
+</form>
+</div>
 </div>
 
 <div class="modal" id="profile-modal" onclick="if(event.target===this)closeProfileModal()">
@@ -2745,13 +2783,13 @@ $('del-ok').addEventListener('click', e=>{ e.stopPropagation(); const m=delConfi
 $('del-cancel').addEventListener('click', e=>{ e.stopPropagation(); closeDelConfirm(); });
 
 function setEditGroupsVisible(show){ ['edit-def-group','edit-row-group','edit-example-group','edit-synonym-group'].forEach(id=>{ $(id).style.display=show?'':'none'; }); }
-function fillEditFields(v){ $('edit-def').value=v.definition||''; $('edit-ipa').value=v.ipa||''; $('edit-pos').value=v.pos||''; $('edit-example').value=v.example||''; $('edit-synonym').value=v.synonym||''; }
+
 function collapseEditList(){ $('edit-selected-list').classList.add('hidden'); $('edit-arrow').textContent='▶'; }
 function renderSelectedList(){ const list=$('edit-selected-list'); list.innerHTML=''; vocab.forEach((v,i)=>{ if(selected.has(keyOf(v))){ const d=document.createElement('div'); d.className='edit-selected-item'; d.dataset.idx=i; d.textContent=v.word; list.appendChild(d); } }); }
 function chooseEditWord(idx){ if(idx==null||idx<0||idx>=vocab.length) return; editChosen=idx; const v=vocab[idx]; $('edit-word').value=v.word; fillEditFields(v); setEditGroupsVisible(true); collapseEditList(); }
 $('edit-arrow').addEventListener('click', ()=>{ const list=$('edit-selected-list'), arrow=$('edit-arrow'); if(list.classList.contains('hidden')){ renderSelectedList(); list.classList.remove('hidden'); arrow.textContent='▼'; } else collapseEditList(); });
 $('edit-selected-list').addEventListener('click', e=>{ const item=e.target.closest('.edit-selected-item'); if(!item) return; chooseEditWord(parseInt(item.dataset.idx,10)); });
-function openEditModal(idx,multi){ editMulti=multi; editChosen=null; const title=$('edit-title'), wInput=$('edit-word'), wLabel=$('edit-word-label'), arrow=$('edit-arrow'); if(multi){ editTarget=null; title.textContent='✏️ Chỉnh sửa '+selected.size+' từ đã chọn'; wLabel.textContent='Từ gốc'; wInput.value='chọn từ'; wInput.readOnly=true; wInput.required=false; $('edit-def').required=false; arrow.style.display=''; collapseEditList(); setEditGroupsVisible(false); } else { if(idx==null||idx<0||idx>=vocab.length) return; editTarget=idx; const v=vocab[idx]; title.textContent='✏️ Chỉnh Sửa Từ'; wLabel.textContent='Từ vựng (Word) *'; wInput.readOnly=false; wInput.required=true; $('edit-def').required=true; arrow.style.display='none'; collapseEditList(); setEditGroupsVisible(true); wInput.value=v.word||''; fillEditFields(v); } $('edit-modal').classList.add('active'); }
+function openEditModal(idx,multi){ editMulti=multi; editChosen=null; const title=$('edit-title'), wInput=$('edit-word'), wLabel=$('edit-word-label'), arrow=$('edit-arrow'); if(multi){ editTarget=null; title.textContent='✏️ Chỉnh sửa '+selected.size+' từ đã chọn'; wLabel.textContent='Từ gốc'; wInput.value='Chọn từ'; wInput.readOnly=true; wInput.required=false; $('edit-def').required=false; arrow.style.display=''; collapseEditList(); setEditGroupsVisible(false); } else { if(idx==null||idx<0||idx>=vocab.length) return; editTarget=idx; const v=vocab[idx]; title.textContent='✏️ Chỉnh Sửa Từ'; wLabel.textContent='Từ vựng (Word) *'; wInput.readOnly=false; wInput.required=true; $('edit-def').required=true; arrow.style.display='none'; collapseEditList(); setEditGroupsVisible(true); wInput.value=v.word||''; fillEditFields(v); } $('edit-modal').classList.add('active'); }
 function closeEditModal(){ $('edit-modal').classList.remove('active'); editTarget=null; editMulti=false; editChosen=null; }
 function saveEditWord(e){ e.preventDefault(); if(editMulti){ if(editChosen!=null){ const i=editChosen, ok=keyOf(vocab[i]); vocab[i]={...vocab[i], word:cleanInvisible($('edit-word').value)||vocab[i].word, definition:cleanInvisible($('edit-def').value), ipa:cleanInvisible($('edit-ipa').value), pos:cleanInvisible($('edit-pos').value), example:cleanInvisible($('edit-example').value), synonym:cleanInvisible($('edit-synonym').value)}; if(selected.has(ok)){selected.delete(ok); selected.add(keyOf(vocab[i]));} localStorage.setItem('langverse_data',JSON.stringify(vocab)); closeEditModal(); init(); } else closeEditModal(); return; } if(editTarget==null||editTarget<0||editTarget>=vocab.length) return; const ok=keyOf(vocab[editTarget]); vocab[editTarget]={...vocab[editTarget], word:cleanInvisible($('edit-word').value), definition:cleanInvisible($('edit-def').value), ipa:cleanInvisible($('edit-ipa').value), pos:cleanInvisible($('edit-pos').value), example:cleanInvisible($('edit-example').value), synonym:cleanInvisible($('edit-synonym').value)}; if(selected.has(ok)){selected.delete(ok); selected.add(keyOf(vocab[editTarget]));} localStorage.setItem('langverse_data',JSON.stringify(vocab)); closeEditModal(); init(); }
 
@@ -8084,4 +8122,329 @@ function updateBombBadge() {
   </div>
 </div>	
 </body>
+/* ===== EDIT MODAL - FORMAT MỚI ===== */
+const EDIT_DOWNSTEPS = ['⓿','❶','❷','❸','❹'];
+
+function toggleEditDownstepList(){
+  const dd = $('edit-downstep-dd');
+  if(dd.style.display === 'block'){ dd.style.display='none'; return; }
+  dd.innerHTML = '';
+  EDIT_DOWNSTEPS.forEach(n => {
+    const item = document.createElement('div');
+    item.textContent = n;
+    item.style.cssText = 'padding:8px 10px; cursor:pointer; font-size:16px; color:#cbd5e1; text-align:center;';
+    item.onmouseover = () => { item.style.background='var(--bg)'; item.style.color='var(--accent)'; };
+    item.onmouseout  = () => { item.style.background=''; item.style.color='#cbd5e1'; };
+    item.onclick = (e) => { e.stopPropagation(); $('edit-downstep').value = n; dd.style.display='none'; };
+    dd.appendChild(item);
+  });
+  dd.style.display = 'block';
+}
+
+function toggleMultiListForEdit(){
+  const dd = $('edit-multi-dd');
+  if(dd.style.display === 'block'){ dd.style.display='none'; return; }
+  const arr = getMultiverses();
+  dd.innerHTML = '';
+  if(!arr.length){
+    dd.innerHTML = '<div style="padding:8px 10px;color:#94a3b8;font-size:12px;">Chưa có multiverse — tạo ở nút 🌍 nha sếp.</div>';
+  }
+  arr.forEach(m => {
+    const item = document.createElement('div');
+    item.textContent = m.name;
+    item.style.cssText = 'padding:8px 10px; cursor:pointer; font-size:13px; color:#cbd5e1;';
+    item.onmouseover = () => { item.style.background='var(--bg)'; item.style.color='var(--accent)'; };
+    item.onmouseout  = () => { item.style.background=''; item.style.color='#cbd5e1'; };
+    item.onclick = (e) => {
+      e.stopPropagation();
+      $('edit-multi').value = m.name;
+      $('edit-multi').dataset.id = m.id;
+      dd.style.display = 'none';
+    };
+    dd.appendChild(item);
+  });
+  dd.style.display = 'block';
+}
+
+/* Parse định nghĩa cũ (có thể có ①②③ hoặc đơn giản) thành mảng {text, tags} */
+function parseEditDefToRows(def){
+  const raw = String(def || '').trim();
+  if(!raw) return [{text:'', tags:[]}];
+  // Tách theo ①②③ hoặc 1. 2.
+  const parts = raw.split(/(?=(?:[①-⑳]|\d{1,2}[.)]\s))/);
+  if(parts.length <= 1){
+    // Không có đánh số -> 1 dòng duy nhất, tách tag cuối nếu có
+    return splitDefAndTags(raw);
+  }
+  return parts.map(p => {
+    const cleaned = p.replace(/^(?:[①-]|\d{1,2}[.)])\s*/, '').trim();
+    return splitDefAndTags(cleaned);
+  }).filter(r => r.text);
+}
+
+function splitDefAndTags(text){
+  // Tách tag trong ngoặc cuối cùng
+  const m = text.match(/^(.*?)\s*\(([^)]+)\)\s*$/);
+  if(m){
+    const body = m[1].trim();
+    const tags = m[2].split(';').map(t => t.trim()).filter(Boolean);
+    return { text: body, tags };
+  }
+  return { text: text.trim(), tags: [] };
+}
+
+/* Render 1 dòng nghĩa trong edit modal */
+function addEditDefRow(defVal, tagVal, withRemove){
+  const list = $('edit-def-list');
+  const idx = list.children.length;
+  const wrap = document.createElement('div');
+  wrap.style.cssText = 'display:flex; gap:8px; margin-bottom:8px; align-items:flex-start;';
+
+  const d = document.createElement('input');
+  d.type = 'text'; d.className = 'edit-def-input'; d.style.flex = '2';
+  d.placeholder = 'Nghĩa ' + (idx + 1);
+  if(defVal) d.value = defVal;
+
+  const tagCol = document.createElement('div');
+  tagCol.style.cssText = 'flex:1;';
+  const tagsBox = document.createElement('div');
+  tagsBox.className = 'tags-box';
+  tagsBox.style.cssText = 'display:flex; flex-direction:column; gap:4px;';
+  tagsBox.appendChild(makeTagInputRow(tagVal, false));
+  tagCol.appendChild(tagsBox);
+
+  if(withRemove){
+    const del = document.createElement('button');
+    del.type = 'button'; del.textContent = '✕'; del.title = 'Xóa dòng này';
+    del.style.cssText = 'background:var(--card-bg); color:#ef4444; border:1px solid var(--border); border-radius:8px; padding:6px 10px; cursor:pointer; flex-shrink:0;';
+    del.onclick = () => { wrap.remove(); renumberEditDef(); };
+    wrap.appendChild(del);
+  }
+
+  wrap.appendChild(d); wrap.appendChild(tagCol);
+
+  const plus = document.createElement('button');
+  plus.type = 'button'; plus.textContent = '＋'; plus.title = 'Thêm tag cho nghĩa này';
+  plus.style.cssText = 'background:var(--card-bg); color:var(--accent); border:1px solid var(--border); border-radius:8px; padding:4px 9px; cursor:pointer; font-size:13px; flex-shrink:0;';
+  plus.onclick = (e) => { e.stopPropagation(); tagsBox.appendChild(makeTagInputRow('', true)); };
+  wrap.appendChild(plus);
+
+  list.appendChild(wrap);
+}
+
+function renumberEditDef(){
+  $('edit-def-list').querySelectorAll('.edit-def-input').forEach((inp,i) => {
+    inp.placeholder = 'Nghĩa ' + (i + 1);
+  });
+}
+
+function buildEditDef(){
+  const rows = [...$('edit-def-list').children];
+  const vals = [];
+  rows.forEach(r => {
+    const d = cleanInvisible(r.querySelector('.edit-def-input').value);
+    const tags = [...r.querySelectorAll('.new-tag-input')].map(i => cleanInvisible(i.value)).filter(Boolean);
+    if(!d) return;
+    vals.push(tags.length ? (d + ' (' + tags.join('; ') + ')') : d);
+  });
+  if(!vals.length) return '';
+  if(vals.length === 1) return vals[0];
+  return vals.map((v,i) => (i < SO_DEM.length ? SO_DEM[i] : (i+1) + '.') + ' ' + v).join('\n');
+}
+
+/* Điền dữ liệu từ vựng vào edit modal */
+function fillEditFieldsNew(v){
+  // Multiverse
+  const multiInput = $('edit-multi');
+  if(multiInput){
+    if(v.multi){
+      const m = getMultiverses().find(x => x.id === v.multi);
+      multiInput.value = m ? m.name : '';
+      multiInput.dataset.id = v.multi || '';
+    } else {
+      multiInput.value = '';
+      multiInput.dataset.id = '';
+    }
+  }
+  // Từ vựng
+  $('edit-word').value = v.word || '';
+  // IPA
+  $('edit-ipa').value = v.ipa || '';
+  // Downstep
+  $('edit-downstep').value = v.downstep || v.pitch || '';
+  // Loại từ
+  $('edit-pos').value = v.pos || '';
+  // Ví dụ
+  $('edit-example').value = v.example || '';
+  // Từ đồng nghĩa
+  $('edit-synonym').value = v.synonym || '';
+  // Etymology - tách từ cuối định nghĩa nếu có [...]
+  let defRaw = String(v.definition || '');
+  let etym = '';
+  const etyMatch = defRaw.match(/\s*\[([\s\S]*?)\]\s*$/);
+  if(etyMatch){
+    etym = etyMatch[1].trim();
+    defRaw = defRaw.slice(0, defRaw.lastIndexOf('[')).trim();
+  }
+  $('edit-etym').value = etym;
+
+  // Định nghĩa & Tags
+  $('edit-def-list').innerHTML = '';
+  const rows = parseEditDefToRows(defRaw);
+  rows.forEach((r, i) => {
+    const tagVal = r.tags.length ? r.tags[0] : '';
+    addEditDefRow(r.text, tagVal, i > 0);
+    // Thêm các tag còn lại
+    if(r.tags.length > 1){
+      const tagsBox = $('edit-def-list').lastElementChild.querySelector('.tags-box');
+      for(let t = 1; t < r.tags.length; t++){
+        tagsBox.appendChild(makeTagInputRow(r.tags[t], true));
+      }
+    }
+  });
+  if(rows.length === 0) addEditDefRow('', '', false);
+}
+
+/* Cập nhật openEditModal */
+function openEditModal(idx, multi){
+  editMulti = multi;
+  editChosen = null;
+  const title = $('edit-title');
+  const wInput = $('edit-word');
+  const wLabel = $('edit-word-label');
+  const arrow = $('edit-arrow');
+  const _err = $('edit-def-err'); if(_err) _err.style.display='none';
+  const _wt = $('edit-word-toast'); if(_wt) _wt.style.display='none';
+
+  if(multi){
+    editTarget = null;
+    title.textContent = '✏️ Chỉnh sửa ' + selected.size + ' từ đã chọn';
+    wLabel.textContent = 'Từ gốc';
+    wInput.value = 'chọn từ';
+    wInput.readOnly = true;
+    wInput.required = false;
+    arrow.style.display = '';
+    collapseEditList();
+    // Reset form
+    $('edit-multi').value = '';
+    $('edit-multi').dataset.id = '';
+    $('edit-ipa').value = '';
+    $('edit-downstep').value = '';
+    $('edit-pos').value = '';
+    $('edit-example').value = '';
+    $('edit-synonym').value = '';
+    $('edit-etym').value = '';
+    $('edit-def-list').innerHTML = '';
+    addEditDefRow('', '', false);
+  } else {
+    if(idx == null || idx < 0 || idx >= vocab.length) return;
+    editTarget = idx;
+    const v = vocab[idx];
+    title.textContent = '✏️ Chỉnh Sửa Từ';
+    wLabel.textContent = 'Từ vựng (Word) *';
+    wInput.readOnly = false;
+    wInput.required = true;
+    arrow.style.display = 'none';
+    collapseEditList();
+    fillEditFieldsNew(v);
+  }
+  $('edit-modal').classList.add('active');
+}
+
+/* Cập nhật saveEditWord */
+function saveEditWord(e){
+  e.preventDefault();
+  const def = buildEditDef();
+  const _derr = $('edit-def-err');
+  if(!def){ if(_derr) _derr.style.display='block'; return; }
+  if(_derr) _derr.style.display='none';
+
+  let finalDef = def;
+  const etym = cleanInvisible($('edit-etym').value);
+  if(etym) finalDef = def + '\n[' + etym + ']';
+
+  const newMultiId = resolveMultiForEdit();
+
+  if(editMulti){
+    // Edit nhiều từ
+    if(editChosen != null){
+      const i = editChosen;
+      const ok = keyOf(vocab[i]);
+      vocab[i] = {
+        ...vocab[i],
+        word: cleanInvisible($('edit-word').value) || vocab[i].word,
+        definition: finalDef,
+        ipa: cleanInvisible($('edit-ipa').value),
+        downstep: cleanInvisible($('edit-downstep').value),
+        pos: cleanInvisible($('edit-pos').value),
+        example: cleanInvisible($('edit-example').value),
+        synonym: cleanInvisible($('edit-synonym').value),
+        multi: newMultiId || vocab[i].multi
+      };
+      if(selected.has(ok)){ selected.delete(ok); selected.add(keyOf(vocab[i])); }
+      localStorage.setItem('langverse_data', JSON.stringify(vocab));
+      closeEditModal();
+      init();
+    } else {
+      closeEditModal();
+    }
+    return;
+  }
+
+  if(editTarget == null || editTarget < 0 || editTarget >= vocab.length) return;
+  const ok = keyOf(vocab[editTarget]);
+  vocab[editTarget] = {
+    ...vocab[editTarget],
+    word: cleanInvisible($('edit-word').value),
+    definition: finalDef,
+    ipa: cleanInvisible($('edit-ipa').value),
+    downstep: cleanInvisible($('edit-downstep').value),
+    pos: cleanInvisible($('edit-pos').value),
+    example: cleanInvisible($('edit-example').value),
+    synonym: cleanInvisible($('edit-synonym').value),
+    multi: newMultiId || vocab[editTarget].multi
+  };
+  if(selected.has(ok)){ selected.delete(ok); selected.add(keyOf(vocab[editTarget])); }
+  localStorage.setItem('langverse_data', JSON.stringify(vocab));
+
+  const _wt = $('edit-word-toast');
+  if(_wt){
+    _wt.textContent = '✅ Đã cập nhật từ "' + cleanInvisible($('edit-word').value) + '"!';
+    _wt.style.background = '#10b981';
+    _wt.style.display = 'block';
+  }
+  clearTimeout(window._editWordT);
+  window._editWordT = setTimeout(() => {
+    closeEditModal();
+    const w2 = $('edit-word-toast'); if(w2) w2.style.display='none';
+  }, 1400);
+  init();
+}
+
+function resolveMultiForEdit(){
+  const nm = $('edit-multi');
+  if(!nm) return undefined;
+  const name = cleanInvisible(nm.value);
+  const id = nm.dataset.id || '';
+  if(!name) return undefined;
+  const arr = getMultiverses();
+  if(id){
+    const m = arr.find(x => x.id === id);
+    if(m && m.name === name) return id;
+  }
+  const ex = arr.find(x => x.name === name);
+  if(ex) return ex.id;
+  const nid = 'm_' + Date.now();
+  arr.push({ id: nid, name: name, front: '', back: '' });
+  saveMultiverses(arr);
+  return nid;
+}
+
+// Hook input để ẩn lỗi
+document.addEventListener('input', e => {
+  if(e.target.classList && e.target.classList.contains('edit-def-input')){
+    const err = $('edit-def-err'); if(err) err.style.display='none';
+  }
+});
+	
 </html>
