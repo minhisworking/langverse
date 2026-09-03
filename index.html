@@ -858,6 +858,42 @@ button, .btn-primary, .btn-success, .btn-warning, .btn-danger, .nav-btn, .close 
     font-size: 12px;
     padding: 6px 8px;
 }
+
+
+/* Sửa popup Mặt trước/Mặt sau cho gọn gàng */
+.peek-pop {
+  position: fixed !important;
+  top: 50% !important;
+  left: 50% !important;
+  transform: translate(-50%, -50%) !important;
+  max-width: 90vw !important;
+  max-height: 70vh !important;
+  width: auto !important;
+  overflow-y: auto !important;
+  overflow-x: hidden !important;
+  box-sizing: border-box !important;
+  z-index: 9999 !important;
+}
+
+.peek-pop-title {
+  position: sticky;
+  top: 0;
+  background: var(--card-bg);
+  padding: 8px 10px;
+  border-bottom: 1px solid var(--border);
+  font-size: 13px;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.peek-pop-body {
+  max-height: calc(70vh - 40px);
+  overflow-y: auto;
+  overflow-x: hidden;
+  padding: 6px;
+}
+
 	
 }
 
