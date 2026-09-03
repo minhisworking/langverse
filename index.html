@@ -1172,27 +1172,31 @@ body.fullscreen-mode .rate-milestones > span {
 }
 
 /* Hàng nút điều hướng nằm trên thanh đánh giá */
+/* Hàng nút điều hướng nằm trên thanh đánh giá */
 .nav-row {
-  display: flex;
-  justify-content: center;
-  align-items: center;
-  gap: 16px;
-  margin: 12px auto 8px auto;
-  max-width: 720px;
+display: flex;
+justify-content: center;
+align-items: center;
+gap: 16px;
+margin: 12px auto 8px auto;
+max-width: 720px;
 }
 .nav-row .nav-btn {
-width: 52px;
-height: 42px;
+width: 48px;
+height: 40px;
 font-size: 22px;
-border-radius: 10px;
+border-radius: 8px;
 background: transparent;
 border: none;
 cursor: pointer;
-transition: all 0.2s;
+transition: background 0.2s, color 0.2s;
+display: flex;
+align-items: center;
+justify-content: center;
+padding: 0;
 }
 .nav-row .nav-btn:hover {
-background: var(--accent);
-color: var(--bg);
+background: rgba(56, 189, 248, 0.2);
 }
 
 /* Ẩn nút nav-btn cũ nếu còn sót trong flash-area (chế độ thường) */
@@ -1206,15 +1210,18 @@ body.fullscreen-mode .flash-area {
 }
 
 /* Bỏ nền đen & viền cho nút ️ ➡️ trong hàng nav-row khi fullscreen */
+/* Bỏ nền đen & viền cho nút ⬅️ ➡️ trong hàng nav-row khi fullscreen */
 body.fullscreen-mode .nav-row .nav-btn {
 background: transparent !important;
 border: none !important;
 box-shadow: none !important;
-padding: 8px !important;
+padding: 0 !important;
+width: 48px !important;
+height: 40px !important;
+border-radius: 8px !important;
 }
 body.fullscreen-mode .nav-row .nav-btn:hover {
-background: rgba(56, 189, 248, 0.15) !important; /* Hiệu ứng hover nhẹ màu xanh */
-border-radius: 8px !important;
+background: rgba(56, 189, 248, 0.2) !important;
 }
 	
 </style>
