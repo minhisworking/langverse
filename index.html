@@ -1521,6 +1521,11 @@ body.fullscreen-mode .bomb-modal-content {
   margin-top: 0;
 }
 
+	
+/* Khi popup ON/OFF đang mở → ẩn 2 nút mũi tên */
+.nav-row:has(.bomb-popup:not(.hidden)) .nav-btn {
+  display: none !important;
+}
 
 
 	
@@ -8101,11 +8106,14 @@ function startBombMode() {
   console.log('Dụng cụ:', bombTools);
 }
 
-// Đóng modal
-// Đóng modal
+// Chỉ đóng modal (không tắt mode)
 function closeBombModal() {
   document.getElementById('bomb-modal').classList.remove('active');
-  // Khi đóng modal (bấm X hoặc Huỷ), reset mode về Off
+}
+
+// Đóng modal VÀ tắt mode (dành cho nút X và nút Huỷ)
+function cancelBombMode() {
+  closeBombModal();
   setBombMode(false);
 }
 
@@ -8185,7 +8193,7 @@ function updateBombBadge() {
 
 <div id="bomb-modal" class="modal" onclick="if(event.target===this)closeBombModal()">
   <div class="modal-content bomb-modal-content">
-    <span class="close" onclick="closeBombModal()">&times;</span>
+    <span class="close" onclick="cancelBombMode()">&times;</span>
     
     <h2 class="bomb-modal-title">💥 Ôi không... Mode Nguy Hiểm đã được kích hoạt!</h2>
     
@@ -8211,7 +8219,7 @@ function updateBombBadge() {
     
     <div class="bomb-modal-actions">
       <button class="bomb-start-btn" onclick="startBombMode()">💪 Tôi sẵn sàng!</button>
-      <button class="bomb-cancel-btn" onclick="closeBombModal()">Huỷ</button>
+      <button class="bomb-cancel-btn" onclick="cancelBombMode()">Huỷ</button>
     </div>
   </div>
 </div>	
