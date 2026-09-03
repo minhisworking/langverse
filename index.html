@@ -1286,6 +1286,206 @@ body.fullscreen-mode .img-add-icon {
     border: none !important;
 }
 
+/* ===== BOMB MODE ===== */
+.bomb-btn {
+  background: transparent;
+  border: none;
+  font-size: 22px;
+  cursor: pointer;
+  padding: 6px 10px;
+  border-radius: 8px;
+  transition: all 0.2s;
+  position: relative;
+}
+.bomb-btn:hover {
+  background: rgba(239, 68, 68, 0.15);
+  animation: bombShake 0.5s ease-in-out;
+}
+.bomb-btn.active {
+  font-size: 24px;
+  filter: drop-shadow(0 0 6px rgba(239, 68, 68, 0.6));
+}
+
+/* Badge đếm số từ sắp bay màu */
+.bomb-btn .bomb-badge {
+  position: absolute;
+  top: -4px;
+  right: -4px;
+  background: #ef4444;
+  color: white;
+  font-size: 10px;
+  font-weight: bold;
+  min-width: 18px;
+  height: 18px;
+  border-radius: 9px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 0 4px;
+  box-shadow: 0 2px 4px rgba(239, 68, 68, 0.4);
+}
+
+@keyframes bombShake {
+  0%, 100% { transform: rotate(0deg); }
+  25% { transform: rotate(-10deg); }
+  75% { transform: rotate(10deg); }
+}
+
+/* Popup On/Off */
+.bomb-popup {
+  display: inline-flex;
+  gap: 6px;
+  margin-left: 8px;
+  padding: 4px;
+  background: var(--card-bg);
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  animation: popIn 0.2s ease-out;
+}
+.bomb-popup.hidden {
+  display: none;
+}
+
+.bomb-toggle-btn {
+  padding: 6px 16px;
+  font-size: 13px;
+  font-weight: 600;
+  border-radius: 6px;
+  border: 1px solid var(--border);
+  background: transparent;
+  color: #94a3b8;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+.bomb-toggle-btn.active {
+  background: #38bdf8;
+  color: white;
+  border-color: #38bdf8;
+}
+.bomb-toggle-btn.active.danger {
+  background: #ef4444;
+  border-color: #ef4444;
+}
+
+/* Bomb Modal */
+.bomb-modal-content {
+  max-width: 560px;
+  padding: 28px 32px;
+  border: 2px solid #ef4444;
+  box-shadow: 0 0 40px rgba(239, 68, 68, 0.3);
+}
+
+.bomb-modal-title {
+  color: #ef4444;
+  font-size: 22px;
+  margin-bottom: 20px;
+  animation: bombPulse 1.5s ease-in-out infinite;
+}
+
+@keyframes bombPulse {
+  0%, 100% { transform: scale(1); }
+  50% { transform: scale(1.02); }
+}
+
+.bomb-intro {
+  background: rgba(239, 68, 68, 0.08);
+  border-left: 4px solid #ef4444;
+  padding: 16px 20px;
+  border-radius: 8px;
+  margin-bottom: 24px;
+}
+.bomb-intro p {
+  margin: 10px 0;
+  font-size: 14px;
+  line-height: 1.6;
+  color: var(--text);
+}
+
+.bomb-tools-section h3 {
+  font-size: 16px;
+  margin-bottom: 16px;
+  color: var(--text);
+}
+.bomb-tools-subtitle {
+  font-size: 12px;
+  color: #94a3b8;
+  font-weight: normal;
+}
+
+.bomb-tools-grid {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 10px;
+  margin-bottom: 24px;
+}
+
+.bomb-tool-btn {
+  padding: 12px 16px;
+  font-size: 14px;
+  border-radius: 8px;
+  border: 1px solid var(--border);
+  background: #334155;
+  color: #94a3b8;
+  cursor: pointer;
+  transition: all 0.2s;
+  text-align: left;
+}
+.bomb-tool-btn:hover {
+  border-color: var(--accent);
+  color: var(--text);
+}
+.bomb-tool-btn.active {
+  background: #10b981;
+  color: white;
+  border-color: #10b981;
+}
+
+.bomb-modal-actions {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  align-items: center;
+}
+
+.bomb-start-btn {
+  width: 100%;
+  padding: 14px 28px;
+  font-size: 16px;
+  font-weight: bold;
+  color: white;
+  background: linear-gradient(135deg, #ef4444, #f97316);
+  border: none;
+  border-radius: 10px;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+.bomb-start-btn:hover {
+  transform: scale(1.03);
+  box-shadow: 0 4px 16px rgba(239, 68, 68, 0.4);
+}
+
+.bomb-cancel-btn {
+  background: transparent;
+  border: none;
+  color: #94a3b8;
+  font-size: 14px;
+  cursor: pointer;
+  padding: 8px 16px;
+}
+.bomb-cancel-btn:hover {
+  color: var(--text);
+}
+
+/* Responsive cho mobile */
+@media (max-width: 480px) {
+  .bomb-tools-grid {
+    grid-template-columns: 1fr;
+  }
+  .bomb-modal-content {
+    padding: 20px;
+  }
+}
+	
 	
 </style>
 </head>
@@ -1358,6 +1558,12 @@ body.fullscreen-mode .img-add-icon {
 
 </div> 
   </div>
+	<button id="shuffle-btn" class="shuffle-btn" onclick="toggleShuffle()" title="Bật/tắt xáo trộn">🔀 Xáo trộn</button>
+<button id="bomb-btn" class="bomb-btn" onclick="toggleBombPopup()" title="Mode Nguy Hiểm">💣</button>
+<div id="bomb-popup" class="bomb-popup hidden">
+  <button id="bomb-off-btn" class="bomb-toggle-btn active" onclick="setBombMode(false)">OFF</button>
+  <button id="bomb-on-btn" class="bomb-toggle-btn" onclick="setBombMode(true)">ON</button>
+</div>
   <div class="flash-area">
   <div class="flip-container" id="flip" onclick="setFlipped(!flipped)">
     <div class="flip-inner">
@@ -3169,8 +3375,11 @@ function init(){ renderFilterPop(); updateFilterLabel(); applyView(); }
 function setSort(v){ localStorage.setItem('langverse_sort',v); applyView(); }
 function toggleDir(){ sortDir=sortDir===1?-1:1; localStorage.setItem('langverse_sortdir',String(sortDir)); updateDirBtn(); applyView(); }
 function updateDirBtn(){ const b=$('sortdir'); if(b) b.classList.toggle('flip',sortDir===-1); }
-function applyView(){ const q=cleanInvisible($('search').value).toLowerCase().trim(); const mode=$('sort')?$('sort').value:'az'; const dir=sortDir; syncManualOrder();   const match=v=>{ const t=matchTier(v,q); if(t>=2) return false; if(!wordInMulti(v,getCurrentMulti())) return false; if(!inCurrentFilter(v)) return false; return true; }; if(mode==='manual'){ viewList=manualOrder.filter(i=>i<vocab.length&&match(vocab[i])); } else { const modeCmp=(a,b)=>{ if(mode==='recent') return b-a; if(mode==='pos'){ const pa=String(vocab[a].pos||'').toLowerCase(); const pb=String(vocab[b].pos||'').toLowerCase(); if(pa!==pb) return pa.localeCompare(pb,'vi'); } return wordKey(vocab[a]).localeCompare(wordKey(vocab[b]),'vi'); }; const pairs=[]; vocab.forEach((v,i)=>{ if(match(v)) pairs.push([matchTier(v,q),i]); }); pairs.sort((x,y)=>(x[0]-y[0])||(dir*modeCmp(x[1],y[1]))); viewList=pairs.map(p=>p[1]); } currentPos=0; resetShuffleCounts(); if(vocab.length===0){ $('empty-msg').style.display='block'; $('study-zone').style.display='none'; $('list-zone').style.display='none'; return; } $('empty-msg').style.display='none'; $('study-zone').style.display=viewList.length?'block':'none'; $('list-zone').style.display='block'; renderList(); showCard(); }
-function showCard(){
+function applyView(){ const q=cleanInvisible($('search').value).toLowerCase().trim(); const mode=$('sort')?$('sort').value:'az'; const dir=sortDir; syncManualOrder();   const match=v=>{ const t=matchTier(v,q); if(t>=2) return false; if(!wordInMulti(v,getCurrentMulti())) return false; if(!inCurrentFilter(v)) return false; return true; }; if(mode==='manual'){ viewList=manualOrder.filter(i=>i<vocab.length&&match(vocab[i])); } else { const modeCmp=(a,b)=>{ if(mode==='recent') return b-a; if(mode==='pos'){ const pa=String(vocab[a].pos||'').toLowerCase(); const pb=String(vocab[b].pos||'').toLowerCase(); if(pa!==pb) return pa.localeCompare(pb,'vi'); } return wordKey(vocab[a]).localeCompare(wordKey(vocab[b]),'vi'); }; const pairs=[]; vocab.forEach((v,i)=>{ if(match(v)) pairs.push([matchTier(v,q),i]); }); pairs.sort((x,y)=>(x[0]-y[0])||(dir*modeCmp(x[1],y[1]))); viewList=pairs.map(p=>p[1]); } currentPos=0; resetShuffleCounts(); if(vocab.length===0){ $('empty-msg').style.display='block'; $('study-zone').style.display='none'; $('list-zone').style.display='none'; return; } $('empty-msg').style.display='none'; $('study-zone').style.display=viewList.length?'block':'none'; $('list-zone').style.display='block'; renderList(); showCard();   
+					 
+					 if (typeof updateBombBadge === 'function') updateBombBadge(); }
+
+	function showCard(){
 	
 const flip = document.getElementById('flip');
   flip.classList.add('no-animation');	
@@ -3189,6 +3398,9 @@ setFlipped(false);
   setTimeout(() => {
     flip.classList.remove('no-animation');
   }, 50);
+
+if (typeof updateBombBadge === 'function') updateBombBadge();
+	
 }
 
 
@@ -3213,6 +3425,8 @@ function nav(d){
   } else currentPos=(currentPos+d+len)%len; 
   setFlipped(false);
   showCard(); 
+	  if (typeof updateBombBadge === 'function') updateBombBadge();
+
 }
 function setFlipped(b){ flipped=b; $('flip').classList.toggle('flipped',b); }
 function renderList(){
@@ -3969,7 +4183,46 @@ return null;
 }catch(e){ return null; }
 }
 
+// ===== CẬP NHẬT SM-2 CHO BOMB MODE =====
+function updateSM2(v, q) {
+  // v: từ vựng object, q: điểm chất lượng (0-5)
+  if (!v) return;
+  
+  // Khởi tạo biến SM-2 nếu chưa có
+  if (!v.n) v.n = 0;           // Số lần nhớ liên tiếp
+  if (!v.ef) v.ef = 2.5;       // Easiness Factor
+  if (!v.interval) v.interval = 0;
+  
+  // Cập nhật dựa trên điểm q
+  if (q >= 3) {
+    // Nhớ bài
+    v.n = v.n + 1;
+    if (v.n === 1) {
+      v.interval = 1;
+    } else if (v.n === 2) {
+      v.interval = 6;
+    } else {
+      v.interval = Math.round(v.interval * v.ef);
+    }
+    
+    // Cập nhật EF
+    v.ef = v.ef + (0.1 - (5 - q) * (0.08 + (5 - q) * 0.02));
+    if (v.ef < 1.3) v.ef = 1.3;
+  } else {
+    // Quên bài
+    v.n = 0;
+    v.interval = 1;
+  }
+  
+  // Tính nextReview timestamp
+  v.nextReview = Date.now() + (v.interval * 24 * 60 * 60 * 1000);
+  
+  // Lưu lại vào vocab
+  saveData();
+}
 
+
+	
 </script>
 <script>
 function lvReviewSpeak(btn){
@@ -7607,8 +7860,217 @@ function syncFullscreenState() {
         }
     };
 })();
-</script>
+
+// ===== BOMB MODE LOGIC =====
+let bombModeEnabled = false;
+let bombTools = ['definition', 'tag']; // Mặc định chọn Definition + Tag
+let bombStats = { defused: 0, exploded: 0 }; // Thống kê
+
+// Toggle popup on/off
+function toggleBombPopup() {
+  const popup = document.getElementById('bomb-popup');
+  popup.classList.toggle('hidden');
+  
+  // Cập nhật trạng thái nút
+  updateBombToggleButtons();
+}
+
+// Cập nhật trạng thái nút ON/OFF
+function updateBombToggleButtons() {
+  const offBtn = document.getElementById('bomb-off-btn');
+  const onBtn = document.getElementById('bomb-on-btn');
+  
+  if (bombModeEnabled) {
+    offBtn.classList.remove('active');
+    onBtn.classList.add('active', 'danger');
+  } else {
+    offBtn.classList.add('active');
+    onBtn.classList.remove('active', 'danger');
+  }
+}
+
+// Set bomb mode (ON/OFF)
+function setBombMode(enabled) {
+  bombModeEnabled = enabled;
+  updateBombToggleButtons();
+  
+  // Cập nhật icon nút 💣
+  const bombBtn = document.getElementById('bomb-btn');
+  if (enabled) {
+    bombBtn.textContent = '💥';
+    bombBtn.classList.add('active');
+    bombBtn.title = 'Tắt Mode Nguy Hiểm';
+    
+    // Hiện modal giới thiệu
+    setTimeout(() => {
+      document.getElementById('bomb-modal').classList.add('active');
+    }, 300);
+  } else {
+    bombBtn.textContent = '💣';
+    bombBtn.classList.remove('active');
+    bombBtn.title = 'Bật Mode Nguy Hiểm';
+    
+    // Tự đóng popup sau 1s
+    setTimeout(() => {
+      document.getElementById('bomb-popup').classList.add('hidden');
+    }, 1000);
+    
+    // Hiện thống kê nếu đã có dữ liệu
+    if (bombStats.defused > 0 || bombStats.exploded > 0) {
+      showBombStats();
+    }
+  }
+  
+  // Lưu trạng thái
+  localStorage.setItem('bomb_mode_enabled', enabled);
+}
+
+// Toggle dụng cụ gỡ bom
+function toggleBombTool(btn) {
+  const mode = btn.dataset.mode;
+  
+  if (bombTools.includes(mode)) {
+    bombTools = bombTools.filter(m => m !== mode);
+    btn.textContent = btn.textContent.replace('✅', '⬜');
+    btn.classList.remove('active');
+  } else {
+    bombTools.push(mode);
+    btn.textContent = btn.textContent.replace('', '✅');
+    btn.classList.add('active');
+  }
+  
+  // Lưu cấu hình
+  localStorage.setItem('bomb_tools', JSON.stringify(bombTools));
+}
+
+// Bắt đầu mode nguy hiểm
+function startBombMode() {
+  if (bombTools.length === 0) {
+    alert('⚠️ Phải chọn ít nhất 1 dụng cụ để gỡ bom!');
+    return;
+  }
+  
+  closeBombModal();
+  
+  // Reset thống kê
+  bombStats = { defused: 0, exploded: 0 };
+  
+  // Cập nhật UI
+  const bombBtn = document.getElementById('bomb-btn');
+  bombBtn.textContent = '💥';
+  bombBtn.classList.add('active');
+  
+  // Đóng popup on/off
+  document.getElementById('bomb-popup').classList.add('hidden');
+  
+  console.log('🔥 Bomb Mode đã được kích hoạt!');
+  console.log('Dụng cụ:', bombTools);
+}
+
+// Đóng modal
+function closeBombModal() {
+  document.getElementById('bomb-modal').classList.remove('active');
+}
+
+// Hiện thống kê sau khi tắt mode
+function showBombStats() {
+  const total = bombStats.defused + bombStats.exploded;
+  const successRate = total > 0 ? Math.round((bombStats.defused / total) * 100) : 0;
+  
+  alert(`🎯 Thống kê Mode Nguy Hiểm:\n\n✅ Gỡ thành công: ${bombStats.defused} bom\n💥 Để nổ: ${bombStats.exploded} bom\n📊 Tỷ lệ thành công: ${successRate}%`);
+}
+
+// ===== CẬP NHẬT BADGE TRÊN NÚT 💣 =====
+function updateBombBadge() {
+  const bombBtn = document.getElementById('bomb-btn');
+  if (!bombBtn) return;
+  
+  // Đếm số từ có nextReview <= thời gian hiện tại
+  const now = Date.now();
+  const atRiskCount = vocab.filter(v => v.nextReview && v.nextReview <= now).length;
+  
+  // Xóa badge cũ nếu có
+  const oldBadge = bombBtn.querySelector('.bomb-badge');
+  if (oldBadge) oldBadge.remove();
+  
+  // Tạo badge mới nếu có từ sắp quên VÀ bomb mode đang bật
+  if (atRiskCount > 0 && bombModeEnabled) {
+    const badge = document.createElement('span');
+    badge.className = 'bomb-badge';
+    badge.textContent = atRiskCount;
+    bombBtn.appendChild(badge);
+  }
+}
+
 
 	
+// Khởi tạo trạng thái khi load trang
+(function initBombMode() {
+  const saved = localStorage.getItem('bomb_mode_enabled');
+  if (saved === 'true') {
+    bombModeEnabled = true;
+    const bombBtn = document.getElementById('bomb-btn');
+    bombBtn.textContent = '💥';
+    bombBtn.classList.add('active');
+  }
+  
+  const savedTools = localStorage.getItem('bomb_tools');
+  if (savedTools) {
+    bombTools = JSON.parse(savedTools);
+    // Cập nhật UI toggle buttons
+    document.querySelectorAll('.bomb-tool-btn').forEach(btn => {
+      const mode = btn.dataset.mode;
+      if (bombTools.includes(mode)) {
+        btn.textContent = btn.textContent.replace('', '✅');
+        btn.classList.add('active');
+      }
+    });
+  }
+})();
+	
+</script>
+
+<div id="bomb-modal" class="modal" onclick="if(event.target===this)closeBombModal()">
+  <div class="modal-content bomb-modal-content">
+    <span class="close" onclick="closeBombModal()">&times;</span>
+    
+    <h2 class="bomb-modal-title">💥 Ôi không... Mode Nguy Hiểm đã được kích hoạt!</h2>
+    
+    <div class="bomb-intro">
+      <p>⚠️ <strong>CẢNH BÁO:</strong> Từ bây giờ, những từ bạn đang có nguy cơ quên sẽ bị "tiêm" ngẫu nhiên vào luồng học bình thường.</p>
+      <p>⏱️ Mỗi từ sẽ kèm theo một quả bom hẹn giờ (5-15 giây tùy độ thuộc). Bạn phải gõ đúng nghĩa trước khi bom nổ!</p>
+      <p>💥 <strong>Nếu bom nổ:</strong> Từ đó sẽ bị reset về ngày 1 (phải học lại từ đầu).</p>
+      <p>✅ <strong>Nếu gỡ thành công:</strong> Từ sẽ không xuất hiện bất ngờ nữa!</p>
+      <p>🎯 Không áp lực, không bắt buộc. Bạn có thể tắt mode này bất cứ lúc nào bằng nút 💣.</p>
+    </div>
+    
+    <div class="bomb-tools-section">
+      <h3>🧰 Chọn dụng cụ để gỡ bom: <span class="bomb-tools-subtitle">(Phần trăm càng nhiều, Bomb càng khó quay trở lại)</span></h3>
+      
+      <div class="bomb-tools-grid">
+        <button class="bomb-tool-btn active" data-mode="definition" onclick="toggleBombTool(this)">
+          ✅ Định nghĩa (50%)
+        </button>
+        <button class="bomb-tool-btn" data-mode="pronunciation" onclick="toggleBombTool(this)">
+          ⬜ Phiên âm (20%)
+        </button>
+        <button class="bomb-tool-btn active" data-mode="tag" onclick="toggleBombTool(this)">
+          ✅ Tag (15%)
+        </button>
+        <button class="bomb-tool-btn" data-mode="synonym" onclick="toggleBombTool(this)">
+          ⬜ Từ đồng nghĩa (10%)
+        </button>
+        <button class="bomb-tool-btn" data-mode="etymology" onclick="toggleBombTool(this)">
+          ⬜ Từ nguyên (5%)
+        </button>
+      </div>
+    </div>
+    
+    <div class="bomb-modal-actions">
+      <button class="bomb-start-btn" onclick="startBombMode()">💪 Tôi sẵn sàng!</button>
+      <button class="bomb-cancel-btn" onclick="closeBombModal()">Huỷ</button>
+    </div>
+  </div>
+</div>	
 </body>
 </html>
