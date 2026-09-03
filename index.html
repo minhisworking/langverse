@@ -7,24 +7,6 @@
 
 
 
-/* Đẩy nút bom sang lề phải của hàng điều hướng */
-.nav-row {
-  justify-content: space-between; /* Hoặc giữ center nếu dùng margin-left: auto ở wrapper */
-  position: relative;
-}
-
-.bomb-wrapper {
-  margin-left: auto; /* Đẩy toàn bộ wrapper sang tận cùng bên phải */
-  display: flex;
-  align-items: center;
-  position: relative;
-}
-
-/* Chỉnh popup bom cho gọn khi nằm ở dưới */
-.nav-row .bomb-popup {
-  margin-left: 8px;
-  margin-top: 0;
-}
 
 
 	
@@ -1517,6 +1499,28 @@ body.fullscreen-mode .modal {
 body.fullscreen-mode .bomb-modal-content {
   z-index: 10002 !important;
 }	
+
+/* Đẩy nút bom sang lề phải của hàng điều hướng */
+.nav-row {
+  justify-content: space-between; /* Hoặc giữ center nếu dùng margin-left: auto ở wrapper */
+  position: relative;
+}
+
+.bomb-wrapper {
+  margin-left: auto; /* Đẩy toàn bộ wrapper sang tận cùng bên phải */
+  display: flex;
+  align-items: center;
+  position: relative;
+}
+
+/* Chỉnh popup bom cho gọn khi nằm ở dưới */
+.nav-row .bomb-popup {
+  margin-left: 8px;
+  margin-top: 0;
+}
+
+
+
 	
 </style>
 </head>
