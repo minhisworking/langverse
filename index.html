@@ -1521,10 +1521,19 @@ body.fullscreen-mode .bomb-modal-content {
   margin-top: 0;
 }
 
-	
-/* Khi popup ON/OFF đang mở → ẩn 2 nút mũi tên */
-.nav-row:has(.bomb-popup:not(.hidden)) .nav-btn {
-  display: none !important;
+
+/* Khi popup Bom mở, đẩy 2 nút mũi tên sang sát lề trái */
+.nav-row.bomb-popup-open {
+  justify-content: flex-start !important;
+  padding-left: 20px; /* Chừa một khoảng nhỏ cho đẹp */
+}
+
+/* Trên mobile, căn chỉnh lại khoảng cách cho vừa vặn */
+@media (max-width: 768px) {
+  .nav-row.bomb-popup-open {
+    padding-left: 12px;
+    gap: 12px;
+  }
 }
 
 
@@ -8011,9 +8020,17 @@ let bombStats = { defused: 0, exploded: 0 }; // Thống kê
 // Toggle popup on/off
 function toggleBombPopup() {
   const popup = document.getElementById('bomb-popup');
+  const navRow = document.querySelector('.nav-row'); // ← Thêm dòng này
+  
   popup.classList.toggle('hidden');
   
-  // Cập nhật trạng thái nút
+  // Thêm/bớt class để đẩy nút mũi tên sang trái khi popup mở
+  if (!popup.classList.contains('hidden')) {
+    navRow.classList.add('bomb-popup-open');
+  } else {
+    navRow.classList.remove('bomb-popup-open');
+  }
+  
   updateBombToggleButtons();
 }
 
