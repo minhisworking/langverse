@@ -33,6 +33,7 @@ button:hover { opacity:.85; }
 .peek-btn { background:var(--card-bg); border:1px solid var(--border); color:var(--accent); border-radius:8px; padding:6px 12px; font-size:13px; cursor:pointer; }
 .peek-btn:hover { border-color:var(--accent); opacity:1; }
 .peek-bar { display:flex; align-items:center; gap:8px; background:var(--card-bg); border:1px solid var(--border); border-radius:999px; padding:6px 16px; }
+	
 .peek-bar.hidden { display:none; }
 .peek-wrap { position:relative; display:inline-block; }
 .peek-item { font-size:13px; color:#94a3b8; cursor:pointer; display:inline-block; transition:transform .15s ease, color .15s ease; }
@@ -1059,16 +1060,17 @@ button, .btn-primary, .btn-success, .btn-warning, .btn-danger, .nav-btn, .close 
 <div id="study-zone">
   <div class="counter-row">
     
+
+<button id="fullscreen-btn" class="fullscreen-btn" onclick="toggleFullscreen()" title="Toàn màn hình">⛶</button>
 	  
 	  <button id="peek-toggle" class="peek-btn" onclick="togglePeek()" title="Hiện / ẩn thanh mặt trước - mặt sau">Ẩn</button>
 
-<button id="fullscreen-btn" class="fullscreen-btn" onclick="toggleFullscreen()" title="Toàn màn hình">⛶</button>
+
 	  
     <div id="peek-bar" class="peek-bar hidden">
       <div class="peek-wrap"><span class="peek-item" data-face="front">mặt trước</span>
         <div class="peek-pop" id="pop-front"><div class="peek-pop-title">🃏 Mặt trước — tick để ẩn</div><div class="peek-pop-body" id="pop-front-body"></div></div>
       </div>
-      <span class="peek-sep">/</span>
       <div class="peek-wrap"><span class="peek-item" data-face="back">mặt sau</span>
         <div class="peek-pop" id="pop-back"><div class="peek-pop-title">📖 Mặt sau — tick để ẩn</div><div class="peek-pop-body" id="pop-back-body"></div></div>
       </div>
