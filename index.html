@@ -3558,6 +3558,11 @@ if (typeof updateBombBadge === 'function') updateBombBadge();
 
 	
 function nav(d){ 
+
+	if (bombAutoNavTimeout) {
+        clearTimeout(bombAutoNavTimeout);
+        bombAutoNavTimeout = null;
+    }
   const len=viewList.length; 
   if(!len) return; 
   if(shuffleOn&&len>1){ 
@@ -8031,8 +8036,9 @@ function syncFullscreenState() {
 
 // ===== BOMB MODE LOGIC =====
 let bombModeEnabled = false;
-let bombTools = []; 
+let bombTools = [];
 let bombStats = { defused: 0, exploded: 0 }; // Thống kê
+let bombAutoNavTimeout = null; // 🛡️ Lưu timeout tự động chuyển từ để clear khi user manual nav
 
 // Toggle popup on/off
 function toggleBombPopup() {
@@ -8856,42 +8862,55 @@ function startBombTimer(timeLimit) {
   }, 100);
 }
 
-// 4. Hàm gỡ bom (khi user gõ Enter)
+// 4. Hàm gỡ bom (khi user gõ Enter) - BẢN MỚI: Có dùng bombAutoNavTimeout
 function defuseBomb(userInput) {
-  // Clear timer
-  if (window.__bombTimerInterval) {
-    clearInterval(window.__bombTimerInterval);
-  }
-  
-  // Lấy từ vựng bom
-  const v = vocab[currentBombVocabIndex];
-  if (!v) return;
-  
-  // Chấm điểm
-  const q = calculateBombQ(userInput, v, bombTools);
-  
-  // Cập nhật SM-2
-  updateSM2(currentBombVocabIndex, q);
-  
-  // Cập nhật thống kê
-  if (q >= 3) {
-    bombStats.defused++;
-    showToast(`✅ Gỡ bom thành công! q=${q}/5 (Interval tăng lên)`);
-  } else {
-    bombStats.exploded++;
-    showToast(`❌ Gỡ bom thất bại! q=${q}/5 (Interval reset)`);
-  }
-  
-  // Reset cờ hiệu
-  isShowingBomb = false;
-  currentBombVocabIndex = -1;
-  
-  // Tự động chuyển từ sau 1.5s
-  setTimeout(() => {
-    nav(1);
-  }, 1500);
+    // 🛑 Bước 1: Dừng đồng hồ đếm ngược
+    if (window.__bombTimerInterval) {
+        clearInterval(window.__bombTimerInterval);
+        window.__bombTimerInterval = null;
+    }
+    
+    // 📦 Bước 2: Lấy từ vựng bom
+    const v = vocab[currentBombVocabIndex];
+    if (!v) return;
+    
+    // 🎯 Bước 3: Chấm điểm & cập nhật SM-2
+    const q = calculateBombQ(userInput, v, bombTools);
+    updateSM2(currentBombVocabIndex, q);
+    
+    // 📊 Bước 4: Cập nhật thống kê & thông báo
+    if (q >= 3) {
+        bombStats.defused++;
+        showToast(`✅ Gỡ bom thành công! q=${q}/5`);
+    } else {
+        bombStats.exploded++;
+        showToast(`❌ Gỡ bom thất bại! q=${q}/5`);
+    }
+    
+    // 🔓 Bước 5: Reset cờ bom
+    isShowingBomb = false;
+    currentBombVocabIndex = -1;
+    
+    // 🎴 Bước 6: Render flashcard bình thường
+    if (typeof originalShowCard === 'function') {
+        originalShowCard();
+    }
+    
+    // 🔄 Bước 7: Tự động lật mặt sau sau 150ms
+    setTimeout(() => {
+        flipped = true;
+        const flip = document.getElementById('flip');
+        if (flip) {
+            flip.classList.add('flipped');
+        }
+    }, 150);
+    
+    // ⏭️ Bước 8: Gán timeout 10s vào biến bombAutoNavTimeout
+    if (bombAutoNavTimeout) clearTimeout(bombAutoNavTimeout);
+    bombAutoNavTimeout = setTimeout(() => {
+        nav(1);
+    }, 10000);
 }
-
 // 5. Hàm bom nổ (khi hết giờ)
 function bombExplode() {
   // Chấm q = 0
