@@ -2140,7 +2140,10 @@ function saveProfile(){
 function getMultiverses(){ try { return JSON.parse(localStorage.getItem('langverse_multiverses')||'[]'); } catch(e){ return []; } }
 function saveMultiverses(arr){ localStorage.setItem('langverse_multiverses', JSON.stringify(arr)); }
 function getCurrentMulti(){ return localStorage.getItem('langverse_current_multi') || 'all'; }
-function setCurrentMulti(id){ localStorage.setItem('langverse_current_multi', id); }
+function setCurrentMulti(id) {
+  currentMulti = id || 'all';
+  localStorage.setItem('langverse_current_multi', currentMulti); // ← THÊM DÒNG NÀY
+}
 function multiNameById(id){
   if(id==='all') return 'Tất cả Multiverse';
   const m = getMultiverses().find(x=>x.id===id);
