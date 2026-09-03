@@ -8601,6 +8601,317 @@ function tryInjectBomb() {
 }
 
 
+
+
+// ===== BƯỚC 3: GIAO DIỆN & LOGIC QUẢ BOM =====
+
+// 1. Sửa hàm showCard() để render giao diện bom khi isShowingBomb = true
+const originalShowCard = window.showCard;
+window.showCard = function() {
+  // Nếu đang hiển thị bom → render giao diện bom
+  if (isShowingBomb && currentBombVocabIndex >= 0) {
+    renderBombCard();
+    return;
+  }
+  
+  // Ngược lại → render flashcard bình thường
+  if (originalShowCard) originalShowCard();
+}
+
+// 2. Hàm render giao diện quả bom
+function renderBombCard() {
+  const v = vocab[currentBombVocabIndex];
+  if (!v) return;
+  
+  // Tính thời gian thông minh dựa trên interval
+  const timeLimit = getBombTime(v.interval || 0);
+  
+  // Render mặt trước (front) với giao diện bom
+  const frontHTML = `
+    <div class="bomb-container" style="text-align:center; padding:20px;">
+      <div class="bomb-word" style="font-size:42px; font-weight:bold; color:var(--accent); margin-bottom:20px;">
+        ${esc(v.word)}
+      </div>
+      
+      <div class="bomb-timer-container" style="margin:20px 0;">
+        <div class="bomb-timer-bar" style="width:100%; height:8px; background:var(--card-bg); border-radius:4px; overflow:hidden;">
+          <div id="bomb-timer-fill" style="width:100%; height:100%; background:linear-gradient(90deg, #10b981, #f59e0b, #ef4444); transition:width 0.1s linear;"></div>
+        </div>
+        <div id="bomb-timer-text" style="margin-top:8px; font-size:18px; font-weight:bold; color:#f59e0b;">
+          ⏱️ ${timeLimit}s
+        </div>
+      </div>
+      
+      <div class="bomb-input-section" style="margin:20px 0;">
+        <input type="text" id="bomb-input" 
+          placeholder="Gõ nghĩa rồi nhấn Enter..." 
+          style="width:100%; padding:12px; font-size:16px; border:2px solid var(--border); border-radius:8px; background:var(--card-bg); color:var(--text);"
+          autocomplete="off">
+        <div style="margin-top:8px; font-size:12px; color:#94a3b8;">
+          Dụng cụ: ${bombTools.map(t => {
+            const names = {definition:'Định nghĩa', pronunciation:'Phiên âm', tag:'Tag', synonym:'Đồng nghĩa', etymology:'Từ nguyên'};
+            return names[t] || t;
+          }).join(', ')}
+        </div>
+      </div>
+      
+      <div id="bomb-warning" style="margin-top:16px; padding:12px; background:rgba(239,68,68,0.1); border-left:4px solid #ef4444; border-radius:6px; font-size:13px; color:#f87171;">
+        💣 Bom nổ sau ${timeLimit} giây!
+      </div>
+    </div>
+  `;
+  
+  // Render mặt sau (back) - để trống hoặc hiện hint
+  const backHTML = `
+    <div style="text-align:center; padding:20px; color:#94a3b8;">
+      <div style="font-size:16px; margin-bottom:10px;">📖 Đáp án:</div>
+      <div style="font-size:20px; color:var(--accent); font-weight:bold;">${esc(v.definition)}</div>
+      ${v.ipa ? `<div style="margin-top:8px; color:#64748b;">${esc(v.ipa)}</div>` : ''}
+    </div>
+  `;
+  
+  // Cập nhật DOM
+  const front = $('front');
+  const back = $('back');
+  if (front) front.innerHTML = frontHTML;
+  if (back) back.innerHTML = backHTML;
+  
+  // Reset flipped (luôn hiện mặt trước)
+  setFlipped(false);
+  
+  // Focus vào input
+  setTimeout(() => {
+    const input = document.getElementById('bomb-input');
+    if (input) input.focus();
+  }, 100);
+  
+  // Bắt đầu countdown
+  startBombTimer(timeLimit);
+  
+  // Bắt sự kiện Enter
+  setTimeout(() => {
+    const input = document.getElementById('bomb-input');
+    if (input) {
+      input.addEventListener('keypress', (e) => {
+        if (e.key === 'Enter') {
+          const userInput = input.value.trim();
+          if (userInput) {
+            defuseBomb(userInput);
+          }
+        }
+      });
+    }
+  }, 150);
+}
+
+// 3. Hàm countdown
+function startBombTimer(timeLimit) {
+  let timeLeft = timeLimit;
+  const timerFill = document.getElementById('bomb-timer-fill');
+  const timerText = document.getElementById('bomb-timer-text');
+  const warning = document.getElementById('bomb-warning');
+  
+  if (!timerFill || !timerText) return;
+  
+  // Clear interval cũ nếu có
+  if (window.__bombTimerInterval) {
+    clearInterval(window.__bombTimerInterval);
+  }
+  
+  // Update UI mỗi giây
+  window.__bombTimerInterval = setInterval(() => {
+    timeLeft -= 0.1; // Update 10 lần/giây cho mượt
+    
+    const percentage = Math.max(0, (timeLeft / timeLimit) * 100);
+    timerFill.style.width = percentage + '%';
+    
+    // Đổi màu khi sắp hết giờ
+    if (timeLeft <= 3) {
+      timerText.style.color = '#ef4444';
+      timerText.textContent = `⏱️ ${timeLeft.toFixed(1)}s`;
+      if (warning) {
+        warning.innerHTML = '💥 Bom nổ SẮP xảy ra!';
+        warning.style.background = 'rgba(239,68,68,0.2)';
+      }
+    } else if (timeLeft <= 6) {
+      timerText.style.color = '#f59e0b';
+      timerText.textContent = `⏱️ ${timeLeft.toFixed(1)}s`;
+    } else {
+      timerText.textContent = `⏱️ ${Math.ceil(timeLeft)}s`;
+    }
+    
+    if (timeLeft <= 0) {
+      clearInterval(window.__bombTimerInterval);
+      bombExplode();
+    }
+  }, 100);
+}
+
+// 4. Hàm gỡ bom (khi user gõ Enter)
+function defuseBomb(userInput) {
+  // Clear timer
+  if (window.__bombTimerInterval) {
+    clearInterval(window.__bombTimerInterval);
+  }
+  
+  // Lấy từ vựng bom
+  const v = vocab[currentBombVocabIndex];
+  if (!v) return;
+  
+  // Chấm điểm
+  const q = calculateBombQ(userInput, v, bombTools);
+  
+  // Cập nhật SM-2
+  updateSM2(currentBombVocabIndex, q);
+  
+  // Cập nhật thống kê
+  if (q >= 3) {
+    bombStats.defused++;
+    showToast(`✅ Gỡ bom thành công! q=${q}/5 (Interval tăng lên)`);
+  } else {
+    bombStats.exploded++;
+    showToast(`❌ Gỡ bom thất bại! q=${q}/5 (Interval reset)`);
+  }
+  
+  // Reset cờ hiệu
+  isShowingBomb = false;
+  currentBombVocabIndex = -1;
+  
+  // Tự động chuyển từ sau 1.5s
+  setTimeout(() => {
+    nav(1);
+  }, 1500);
+}
+
+// 5. Hàm bom nổ (khi hết giờ)
+function bombExplode() {
+  // Chấm q = 0
+  updateSM2(currentBombVocabIndex, 0);
+  
+  // Cập nhật thống kê
+  bombStats.exploded++;
+  
+  // Hiện thông báo
+  showToast('💥 BOM NỔ! Từ này sẽ ôn lại ngày mai');
+  
+  // Hiện đáp án đúng 10 giây
+  const back = $('back');
+  const front = $('front');
+  if (back && front) {
+    const v = vocab[currentBombVocabIndex];
+    front.innerHTML = `
+      <div style="text-align:center; padding:20px;">
+        <div style="font-size:48px; margin-bottom:16px;">💥</div>
+        <div style="font-size:24px; color:#ef4444; font-weight:bold; margin-bottom:20px;">
+          BOM NỔ!
+        </div>
+        <div style="font-size:16px; color:#94a3b8; margin-bottom:12px;">
+          Đáp án đúng:
+        </div>
+        <div style="font-size:28px; color:var(--accent); font-weight:bold;">
+          ${esc(v.definition)}
+        </div>
+        ${v.ipa ? `<div style="margin-top:8px; color:#64748b; font-size:16px;">${esc(v.ipa)}</div>` : ''}
+        <div style="margin-top:20px; padding:12px; background:rgba(239,68,68,0.1); border-radius:8px; font-size:14px; color:#f87171;">
+           Ngâm cứu trong 10 giây rồi qua từ tiếp theo...
+        </div>
+      </div>
+    `;
+    back.innerHTML = front.innerHTML; // Giống nhau
+  }
+  
+  // Reset cờ hiệu
+  isShowingBomb = false;
+  currentBombVocabIndex = -1;
+  
+  // Đợi 10 giây rồi chuyển từ
+  setTimeout(() => {
+    nav(1);
+  }, 10000);
+}
+
+// 6. Hàm tính thời gian thông minh (đã có ở Bước 2, nhưng nhắc lại cho dễ tìm)
+function getBombTime(interval) {
+  // Công thức liên tục: 15 - log2(interval + 1) * 2.5
+  // Clamp từ 5 giây đến 15 giây
+  const time = 15 - Math.log2(interval + 1) * 2.5;
+  return Math.max(5, Math.min(15, Math.round(time)));
+}
+
+// 7. Hàm tính điểm q (0.0 đến 5.0) - đã đề xuất ở phần thiết kế
+function calculateBombQ(userInput, word, selectedModes) {
+  // Hàm chuẩn hóa text
+  const normalize = (s) => s.toLowerCase()
+    .replace(/[.,;:!?'"()]/g, ' ')
+    .replace(/\s+/g, ' ')
+    .trim();
+  
+  // Hàm tính độ khớp (0.0 đến 1.0)
+  const calculateMatchRatio = (input, target) => {
+    if (!target || target.trim() === '') return 0;
+    const normInput = normalize(input);
+    const normTarget = normalize(target);
+    
+    // Tách từ khóa
+    const keywords = normTarget.split(/[,;]/)
+      .map(k => k.trim())
+      .filter(k => k.length > 1);
+    
+    if (keywords.length === 0) return 0;
+    
+    // Đếm từ khóa trùng
+    let matched = 0;
+    keywords.forEach(kw => {
+      if (normInput.includes(kw)) matched++;
+    });
+    
+    return matched / keywords.length;
+  };
+  
+  // Lấy điểm từng mode
+  const scores = {
+    definition: calculateMatchRatio(userInput, word.definition || ''),
+    pronunciation: calculateMatchRatio(userInput, word.ipa || ''),
+    tag: calculateMatchRatio(userInput, word.definition || ''), // Tag nằm trong definition
+    synonym: calculateMatchRatio(userInput, word.synonym || ''),
+    etymology: calculateMatchRatio(userInput, word.etymology || '')
+  };
+  
+  // Trọng số
+  const weights = { 
+    definition: 0.5, 
+    pronunciation: 0.2, 
+    tag: 0.15, 
+    synonym: 0.1, 
+    etymology: 0.05 
+  };
+  
+  // Tính điểm trung bình có trọng số
+  let totalWeight = 0;
+  let weightedScore = 0;
+  
+  selectedModes.forEach(mode => {
+    if (weights[mode] !== undefined) {
+      weightedScore += scores[mode] * weights[mode];
+      totalWeight += weights[mode];
+    }
+  });
+  
+  let finalRatio = totalWeight > 0 ? (weightedScore / totalWeight) : 0;
+  
+  // Luật bất thành văn: Nếu chọn Definition mà sai bét (<30%) → phạt
+  if (selectedModes.includes('definition') && scores.definition < 0.3) {
+    finalRatio = Math.min(finalRatio, 0.4); // Tối đa 2.0/5.0
+  }
+  
+  // Quy đổi ra q (0.0 đến 5.0)
+  let q = finalRatio * 5;
+  return Math.round(q * 10) / 10; // Làm tròn 1 chữ số thập phân
+}
+
+
+
+	
 	
 </script>	
 </body>
