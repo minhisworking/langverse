@@ -31,9 +31,14 @@ button:hover { opacity:.85; }
 	
 	/* ===== CHẾ ĐỘ TOÀN MÀN HÌNH ===== */
 body.fullscreen-mode header,
-body.fullscreen-mode #list-zone,
+body.fullscreen-mode .list-head,
+body.fullscreen-mode .word-list,
 body.fullscreen-mode .test-zone {
   display: none !important;
+}
+
+body.fullscreen-mode #list-zone {
+  display: block !important;
 }
 
 body.fullscreen-mode #study-zone {
@@ -44,7 +49,7 @@ body.fullscreen-mode #study-zone {
   bottom: 0;
   z-index: 9998;
   background: var(--bg);
-  display: flex;
+  display: flex !important;
   flex-direction: column;
   padding: 10px;
   overflow: hidden;
@@ -91,7 +96,9 @@ body.fullscreen-mode .ipa-big {
   font-size: 22px !important;
 }
 	
-	.fullscreen-btn:hover { border-color:var(--accent); opacity:1; }.fullscreen-btn.on { background:var(--accent); color:#0f172a; border-color:var(--accent); }
+	.fullscreen-btn:hover { border-color:var(--accent); opacity:1; }
+	
+	.fullscreen-btn.on { background:var(--accent); color:#0f172a; border-color:var(--accent); }
 	
 .shuffle-btn.on { background:var(--accent); color:#0f172a; border-color:var(--accent); }
 .peek-btn { background:var(--card-bg); border:1px solid var(--border); color:var(--accent); border-radius:8px; padding:6px 12px; font-size:13px; cursor:pointer; }
@@ -1144,7 +1151,6 @@ button, .btn-primary, .btn-success, .btn-warning, .btn-danger, .nav-btn, .close 
       <div class="peek-wrap"><span class="peek-item" data-face="front">mặt trước</span>
         <div class="peek-pop" id="pop-front"><div class="peek-pop-title">🃏 Mặt trước — tick để ẩn</div><div class="peek-pop-body" id="pop-front-body"></div></div>
       </div>
-		   <span class="peek-sep">/</span>
       <div class="peek-wrap"><span class="peek-item" data-face="back">mặt sau</span>
         <div class="peek-pop" id="pop-back"><div class="peek-pop-title">📖 Mặt sau — tick để ẩn</div><div class="peek-pop-body" id="pop-back-body"></div></div>
       </div>
@@ -7315,12 +7321,12 @@ function updateFullscreenBtn() {
     if (!btn) return;
     const isFullscreen = document.fullscreenElement || document.webkitFullscreenElement || document.mozFullScreenElement;
     if (isFullscreen) {
-        document.body.classList.add('fullscreen-mode');
+        document.body.classList.add('fullscreen-mode');  // ← Dòng này phải có
         btn.classList.add('on');
         btn.textContent = '⛶';
         btn.title = 'Thoát toàn màn hình';
     } else {
-        document.body.classList.remove('fullscreen-mode');
+        document.body.classList.remove('fullscreen-mode');  // ← Dòng này phải có
         btn.classList.remove('on');
         btn.textContent = '⛶';
         btn.title = 'Toàn màn hình';
