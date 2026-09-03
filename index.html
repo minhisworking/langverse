@@ -5,6 +5,29 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=5.0, user-scalable=yes">
 <title>LangVerse 🌌</title>
 
+
+
+/* Đẩy nút bom sang lề phải của hàng điều hướng */
+.nav-row {
+  justify-content: space-between; /* Hoặc giữ center nếu dùng margin-left: auto ở wrapper */
+  position: relative;
+}
+
+.bomb-wrapper {
+  margin-left: auto; /* Đẩy toàn bộ wrapper sang tận cùng bên phải */
+  display: flex;
+  align-items: center;
+  position: relative;
+}
+
+/* Chỉnh popup bom cho gọn khi nằm ở dưới */
+.nav-row .bomb-popup {
+  margin-left: 8px;
+  margin-top: 0;
+}
+
+
+	
 <style>
 :root { --bg:#0f172a; --card-bg:#1e293b; --text:#f8fafc; --accent:#38bdf8; --border:#334155; --subtopic:#818cf8; }
 * { box-sizing:border-box; }
@@ -1563,11 +1586,7 @@ body.fullscreen-mode .bomb-modal-content {
     </div>
     <span class="counter" id="counter"></span>
     <button id="shuffle-btn" class="shuffle-btn" onclick="toggleShuffle()" title="Bật/tắt xáo trộn">🔀 Xáo trộn</button>
-<button id="bomb-btn" class="bomb-btn" onclick="toggleBombPopup()" title="Mode Nguy Hiểm">💣</button>
-<div id="bomb-popup" class="bomb-popup hidden">
-  <button id="bomb-off-btn" class="bomb-toggle-btn active" onclick="setBombMode(false)">OFF</button>
-  <button id="bomb-on-btn" class="bomb-toggle-btn" onclick="setBombMode(true)">ON</button>
-</div>
+
 
 </div> 
   </div>
@@ -1585,6 +1604,16 @@ body.fullscreen-mode .bomb-modal-content {
 <div class="nav-row">
 <button class="nav-btn" onclick="nav(-1)">️⬅️</button>
 <button class="nav-btn" onclick="nav(1)">➡️</button>
+
+<div class="bomb-wrapper">
+    <button id="bomb-btn" class="bomb-btn" onclick="toggleBombPopup()" title="Mode Nguy Hiểm">💣</button>
+    <div id="bomb-popup" class="bomb-popup hidden">
+      <button id="bomb-off-btn" class="bomb-toggle-btn active" onclick="setBombMode(false)">OFF</button>
+      <button id="bomb-on-btn" class="bomb-toggle-btn" onclick="setBombMode(true)">ON</button>
+    </div>
+  </div>
+
+	
 </div>
   <div class="rate-zone">
     <div class="rate-zone-label"><span>🎚 Đánh giá mức độ nhớ</span></div>
