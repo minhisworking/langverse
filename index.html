@@ -1251,6 +1251,41 @@ body.fullscreen-mode .nav-row .nav-btn:hover {
 .flip-container.no-animation .flip-inner {
   transition: none !important;
 }
+
+
+/* ===== FULLSCREEN: ẨN NÚT THÊM ẢNH, GIỮ NÚT XEM ẢNH ===== */
+body.fullscreen-mode .img-add-label {
+    display: none !important; /* Ẩn chữ "Thêm ảnh" */
+}
+body.fullscreen-mode .img-add-trigger {
+    top: 16px !important;
+    right: 16px !important;
+    padding: 8px !important;
+    width: 42px !important;
+    height: 42px !important;
+    border-radius: 50% !important; /* Làm thành nút tròn */
+    background: rgba(30, 41, 59, 0.85) !important;
+    backdrop-filter: blur(6px);
+    border: 1px solid var(--border) !important;
+    justify-content: center !important;
+    gap: 0 !important;
+    transition: all 0.2s ease;
+}
+body.fullscreen-mode .img-add-trigger:hover {
+    background: var(--accent) !important;
+    color: var(--bg) !important;
+    border-color: var(--accent) !important;
+    transform: scale(1.05);
+}
+body.fullscreen-mode .img-add-icon {
+    font-size: 20px !important;
+    margin: 0 !important;
+    width: auto !important;
+    height: auto !important;
+    background: transparent !important;
+    border: none !important;
+}
+
 	
 </style>
 </head>
@@ -7553,6 +7588,27 @@ function syncFullscreenState() {
 
 	
 </script>
+
+
+<script>
+(function(){
+    if (window.__lvFullscreenImgPatch) return;
+    window.__lvFullscreenImgPatch = true;
+    
+    const origOpenImgModal = window.openImgModal;
+    window.openImgModal = function(){
+        // Chặn mở modal thêm ảnh khi đang ở chế độ Fullscreen
+        if (document.body.classList.contains('fullscreen-mode')) {
+            return; 
+        }
+        // Các mode khác vẫn hoạt động bình thường
+        if (typeof origOpenImgModal === 'function') {
+            origOpenImgModal.apply(this, arguments);
+        }
+    };
+})();
+</script>
+
 	
 </body>
 </html>
