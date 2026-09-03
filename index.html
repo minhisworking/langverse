@@ -1015,6 +1015,30 @@ button, .btn-primary, .btn-success, .btn-warning, .btn-danger, .nav-btn, .close 
 
 <div id="empty-msg" style="display:none;">🌌 Vũ trụ đang trống trơn...<br>Bấm <b style="color:var(--accent)">📂 Import</b> để nạp data, hoặc <b style="color:var(--accent)">➕ Thêm</b> để sinh "em bé" đầu tiên!</div>
 
+
+
+<div id="list-zone">
+  <div class="list-head">
+    <div class="list-title" id="list-title"></div>
+    <label class="sort-wrap">Sắp xếp:
+      <select id="sort" onchange="setSort(this.value)">
+        <option value="az">A-Z</option><option value="recent">Mới thêm</option><option value="pos">Loại từ</option><option value="manual">Thủ công</option>
+      </select>
+      <button id="sortdir" class="dir-btn" onclick="toggleDir()" title="Đảo thứ tự sắp xếp">🔃</button>
+<button id="dup-btn" class="dir-btn dup-disabled" onclick="openDupModal()" title="Phát hiện trùng lặp" style="margin-left:6px;">👯 Trùng lặp (0)</button>
+    </label>
+  </div>
+  <div class="word-list" id="word-list"></div>
+  <div class="test-zone">
+    <button class="btn-warning" onclick="openProfileModal()">🪪 Hồ sơ người học</button>
+    <div id="profile-toast" class="profile-toast">✅ Đã lưu hồ sơ người học!</div>
+    <button class="btn-primary" onclick="openPretest('nghe')">🎧 Nghe</button>
+    <button class="btn-primary" onclick="openPretest('noi')">🗣️ Nói</button>
+    <button class="btn-primary" onclick="openPretest('doc')">📖 Đọc</button>
+    <button class="btn-primary" onclick="openPretest('viet')">✍️ Viết</button>
+  </div>
+</div>
+
 <div id="study-zone">
   <div class="counter-row">
     <button id="peek-toggle" class="peek-btn" onclick="togglePeek()" title="Hiện / ẩn thanh mặt trước - mặt sau">Ẩn</button>
@@ -1052,29 +1076,7 @@ button, .btn-primary, .btn-success, .btn-warning, .btn-danger, .nav-btn, .close 
 </div>
   </div>
 </div>
-
-<div id="list-zone">
-  <div class="list-head">
-    <div class="list-title" id="list-title"></div>
-    <label class="sort-wrap">Sắp xếp:
-      <select id="sort" onchange="setSort(this.value)">
-        <option value="az">A-Z</option><option value="recent">Mới thêm</option><option value="pos">Loại từ</option><option value="manual">Thủ công</option>
-      </select>
-      <button id="sortdir" class="dir-btn" onclick="toggleDir()" title="Đảo thứ tự sắp xếp">🔃</button>
-<button id="dup-btn" class="dir-btn dup-disabled" onclick="openDupModal()" title="Phát hiện trùng lặp" style="margin-left:6px;">👯 Trùng lặp (0)</button>
-    </label>
-  </div>
-  <div class="word-list" id="word-list"></div>
-  <div class="test-zone">
-    <button class="btn-warning" onclick="openProfileModal()">🪪 Hồ sơ người học</button>
-    <div id="profile-toast" class="profile-toast">✅ Đã lưu hồ sơ người học!</div>
-    <button class="btn-primary" onclick="openPretest('nghe')">🎧 Nghe</button>
-    <button class="btn-primary" onclick="openPretest('noi')">🗣️ Nói</button>
-    <button class="btn-primary" onclick="openPretest('doc')">📖 Đọc</button>
-    <button class="btn-primary" onclick="openPretest('viet')">✍️ Viết</button>
-  </div>
-</div>
-
+	
 <div id="dot-menu" class="dot-menu hidden">
 <button class="dot-menu-item" data-act="delete">️ Xóa từ này</button>
 <button class="dot-menu-item" data-act="edit">️ Chỉnh sửa từ</button>
@@ -2854,7 +2856,7 @@ function showCard(){ if(!viewList.length){ $('counter').textContent='🃏 0 / 0 
 function nav(d){ const len=viewList.length; if(!len) return; if(shuffleOn&&len>1){ if(appearCount.length!==len) resetShuffleCounts(); if(d>0){ let pool=[]; for(let i=0;i<len;i++) if(i!==currentPos&&appearCount[i]<2) pool.push(i); if(!pool.length){ appearCount=new Array(len).fill(0); for(let i=0;i<len;i++) if(i!==currentPos) pool.push(i); } const next=pool[Math.floor(Math.random()*pool.length)]; shuffleHistory.push(currentPos); currentPos=next; appearCount[next]++; } else if(shuffleHistory.length) currentPos=shuffleHistory.pop(); } else currentPos=(currentPos+d+len)%len; showCard(); }
 function setFlipped(b){ flipped=b; $('flip').classList.toggle('flipped',b); }
 function renderList(){
-    $('list-title').textContent='📚 Danh sách vũ trụ ('+viewList.length+' từ)';
+   
     const wrap=$('word-list');
     wrap.innerHTML='';
     
