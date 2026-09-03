@@ -2622,15 +2622,21 @@ function collectAllVocabTags(mId){
   const t=new Set(); src.forEach(v=>getAllTags(v.definition).forEach(x=>t.add(x))); return [...t].sort((a,b)=>a.localeCompare(b,'vi'));
 }
 function renderFilterPop(){
-const body=$('filter-pop-body'); if(!body) return;
-const all=collectAllVocabTags();
-getCustomVerses().forEach(t=>{ if(!all.includes(t)) all.push(t); });
-let html='<label class="chk-row"><input type="checkbox" data-f="__all" '+(filterSet.size===0?'checked':'')+'><span>☀️ Tất cả vũ trụ</span></label>';
-html+='<div class="multi-item multi-add" onclick="openAddVerseModal()">➕ Thêm vũ trụ</div>';
-all.forEach(t=>{
-html+='<label class="chk-row" style="position:relative;"><input type="checkbox" data-f="'+esc(t)+'" '+(filterSet.has(t)?'checked':'')+'><span>'+esc(t)+'</span><button class="verse-dot-btn" data-vtag="'+esc(t)+'" onclick="event.stopPropagation(); openVerseDotMenu(this, this.dataset.vtag)">⋮</button></label>';
-});
-body.innerHTML=html;
+    const body=$('filter-pop-body'); if(!body) return;
+    const all=collectAllVocabTags();
+    getCustomVerses().forEach(t=>{ if(!all.includes(t)) all.push(t); });
+    
+    // Sắp xếp: vũ trụ được chọn lên đầu
+    const selected = [...all].filter(t => filterSet.has(t));
+    const unselected = [...all].filter(t => !filterSet.has(t));
+    const sorted = [...selected, ...unselected];
+    
+    let html='<label class="chk-row"><input type="checkbox" data-f="__all" '+(filterSet.size===0?'checked':'')+'><span>☀️ Tất cả vũ trụ</span></label>';
+    html+='<div class="multi-item multi-add" onclick="openAddVerseModal()">➕ Thêm vũ trụ</div>';
+    sorted.forEach(t=>{
+        html+='<label class="chk-row" style="position:relative;"><input type="checkbox" data-f="'+esc(t)+'" '+(filterSet.has(t)?'checked':'')+'><span>'+esc(t)+'</span><button class="verse-dot-btn" data-vtag="'+esc(t)+'" onclick="event.stopPropagation(); openVerseDotMenu(this, this.dataset.vtag)">⋮</button></label>';
+    });
+    body.innerHTML=html;
 }
 function updateFilterLabel(){
   const el=$('filter-label');
