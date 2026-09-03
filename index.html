@@ -8572,34 +8572,44 @@ function getAtRiskWords() {
 
 // 2. Hàm quyết định có "tiêm bom" hay không
 function tryInjectBomb() {
-  if (!bombModeEnabled) return false; // Mode nguy hiểm đang tắt
-  if (isShowingBomb) return false;    // Đang dính bom rồi, không tiêm chồng lên nhau
+  console.log('🔍 tryInjectBomb() được gọi');
+  console.log('  - bombModeEnabled:', bombModeEnabled);
+  console.log('  - isShowingBomb:', isShowingBomb);
+  
+  if (!bombModeEnabled) {
+    console.log('  ❌ Mode nguy hiểm đang tắt');
+    return false;
+  }
+  if (isShowingBomb) {
+    console.log('  ❌ Đang dính bom rồi');
+    return false;
+  }
 
   const atRiskWords = getAtRiskWords();
-  if (atRiskWords.length === 0) return false; // Không có từ nào sắp quên
-
-  // Tăng bộ đếm
-  cardsSinceLastBomb++;
+  console.log('  - Số từ sắp quên:', atRiskWords.length);
   
-  // Luật tiêm: 30% ngẫu nhiên HOẶC cứ lướt 5 thẻ là chắc chắn gặp 1 quả bom
+  if (atRiskWords.length === 0) {
+    console.log('  ❌ Không có từ nào sắp quên');
+    return false;
+  }
+
+  cardsSinceLastBomb++;
+  console.log('  - cardsSinceLastBomb:', cardsSinceLastBomb);
+  
   const shouldInject = Math.random() < 0.3 || cardsSinceLastBomb >= 5;
+  console.log('  - shouldInject:', shouldInject);
 
   if (shouldInject) {
-    // Chọn ngẫu nhiên 1 từ trong danh sách sắp quên
     const randomWord = atRiskWords[Math.floor(Math.random() * atRiskWords.length)];
     currentBombVocabIndex = vocab.indexOf(randomWord);
-    
-    // Kích hoạt cờ hiệu và reset bộ đếm
     isShowingBomb = true;
-    cardsSinceLastBomb = 0; 
-    
+    cardsSinceLastBomb = 0;
     console.log(`💣 BOM INJECTED: "${randomWord.word}" (Interval: ${randomWord.interval} ngày)`);
-    return true; // Báo hiệu: Đã tiêm bom thành công!
+    return true;
   }
   
   return false;
 }
-
 
 
 
