@@ -2789,7 +2789,7 @@ function renderSelectedList(){ const list=$('edit-selected-list'); list.innerHTM
 function chooseEditWord(idx){ if(idx==null||idx<0||idx>=vocab.length) return; editChosen=idx; const v=vocab[idx]; $('edit-word').value=v.word; fillEditFields(v); setEditGroupsVisible(true); collapseEditList(); }
 $('edit-arrow').addEventListener('click', ()=>{ const list=$('edit-selected-list'), arrow=$('edit-arrow'); if(list.classList.contains('hidden')){ renderSelectedList(); list.classList.remove('hidden'); arrow.textContent='▼'; } else collapseEditList(); });
 $('edit-selected-list').addEventListener('click', e=>{ const item=e.target.closest('.edit-selected-item'); if(!item) return; chooseEditWord(parseInt(item.dataset.idx,10)); });
-function openEditModal(idx,multi){ editMulti=multi; editChosen=null; const title=$('edit-title'), wInput=$('edit-word'), wLabel=$('edit-word-label'), arrow=$('edit-arrow'); if(multi){ editTarget=null; title.textContent='✏️ Chỉnh sửa '+selected.size+' từ đã chọn'; wLabel.textContent='Từ gốc'; wInput.value='Chọn từ'; wInput.readOnly=true; wInput.required=false; $('edit-def').required=false; arrow.style.display=''; collapseEditList(); setEditGroupsVisible(false); } else { if(idx==null||idx<0||idx>=vocab.length) return; editTarget=idx; const v=vocab[idx]; title.textContent='✏️ Chỉnh Sửa Từ'; wLabel.textContent='Từ vựng (Word) *'; wInput.readOnly=false; wInput.required=true; $('edit-def').required=true; arrow.style.display='none'; collapseEditList(); setEditGroupsVisible(true); wInput.value=v.word||''; fillEditFields(v); } $('edit-modal').classList.add('active'); }
+function openEditModal(idx,multi){ editMulti=multi; editChosen=null; const title=$('edit-title'), wInput=$('edit-word'), wLabel=$('edit-word-label'), arrow=$('edit-arrow'); if(multi){ editTarget=null; title.textContent='✏️ Chỉnh sửa '+selected.size+' từ đã chọn'; wLabel.textContent='Từ gốc'; wInput.value='chọn từ'; wInput.readOnly=true; wInput.required=false; $('edit-def').required=false; arrow.style.display=''; collapseEditList(); setEditGroupsVisible(false); } else { if(idx==null||idx<0||idx>=vocab.length) return; editTarget=idx; const v=vocab[idx]; title.textContent='✏️ Chỉnh Sửa Từ'; wLabel.textContent='Từ vựng (Word) *'; wInput.readOnly=false; wInput.required=true; $('edit-def').required=true; arrow.style.display='none'; collapseEditList(); setEditGroupsVisible(true); wInput.value=v.word||''; fillEditFields(v); } $('edit-modal').classList.add('active'); }
 function closeEditModal(){ $('edit-modal').classList.remove('active'); editTarget=null; editMulti=false; editChosen=null; }
 function saveEditWord(e){ e.preventDefault(); if(editMulti){ if(editChosen!=null){ const i=editChosen, ok=keyOf(vocab[i]); vocab[i]={...vocab[i], word:cleanInvisible($('edit-word').value)||vocab[i].word, definition:cleanInvisible($('edit-def').value), ipa:cleanInvisible($('edit-ipa').value), pos:cleanInvisible($('edit-pos').value), example:cleanInvisible($('edit-example').value), synonym:cleanInvisible($('edit-synonym').value)}; if(selected.has(ok)){selected.delete(ok); selected.add(keyOf(vocab[i]));} localStorage.setItem('langverse_data',JSON.stringify(vocab)); closeEditModal(); init(); } else closeEditModal(); return; } if(editTarget==null||editTarget<0||editTarget>=vocab.length) return; const ok=keyOf(vocab[editTarget]); vocab[editTarget]={...vocab[editTarget], word:cleanInvisible($('edit-word').value), definition:cleanInvisible($('edit-def').value), ipa:cleanInvisible($('edit-ipa').value), pos:cleanInvisible($('edit-pos').value), example:cleanInvisible($('edit-example').value), synonym:cleanInvisible($('edit-synonym').value)}; if(selected.has(ok)){selected.delete(ok); selected.add(keyOf(vocab[editTarget]));} localStorage.setItem('langverse_data',JSON.stringify(vocab)); closeEditModal(); init(); }
 
@@ -8121,7 +8121,7 @@ function updateBombBadge() {
     </div>
   </div>
 </div>	
-</body>
+
 /* ===== EDIT MODAL - FORMAT MỚI ===== */
 const EDIT_DOWNSTEPS = ['⓿','❶','❷','❸','❹'];
 
@@ -8447,4 +8447,5 @@ document.addEventListener('input', e => {
   }
 });
 	
+</body>
 </html>
