@@ -8159,18 +8159,87 @@ function toggleMultiListForEdit(){
 }
 
 function parseEditDefToRows(def){
-  const raw = String(def || '').trim();
-  if(!raw) return [{text:'', tags:[]}];
-  const parts = raw.split(/(?=(?:[①-⑳]|\d{1,2}[.)]\s))/);
-  if(parts.length <= 1){
-    return splitDefAndTags(raw);
-  }
-  return parts.map(p => {
-    const cleaned = p.replace(/^(?:[①-]|\d{1,2}[.)])\s*/, '').trim();
-    return splitDefAndTags(cleaned);
-  }).filter(r => r.text);
+    const raw = String(def || '').trim();
+    if(!raw) return [{text:'', tags:[]}];
+    const parts = raw.split(/(?=(?:[①-⑳]|\d{1,2}[.)]\s))/);
+    if(parts.length <= 1){
+        return [splitDefAndTags(raw)]; // ✅ FIX: Bọc lại thành Array để forEach không bị lỗi
+    }
+    return parts.map(p => {
+        const cleaned = p.replace(/^(?:[①-⑳]|\d{1,2}[.)])\s*/, '').trim(); // ✅ FIX: Sửa lỗi regex [①-] thành [①-⑳]
+        return splitDefAndTags(cleaned);
+    }).filter(r => r.text);
 }
 
+
+function collapseEditList() {
+    const list = $('edit-selected-list');
+    if (list) {
+        // Nếu đang chế độ sửa nhiều từ -> Hiện danh sách để chọn
+        if (editMulti && selected.size > 0) {
+            let html = '';
+            selected.forEach(key => {
+                const v = vocab.find(x => keyOf(x) === key);
+                if (v) {
+                    html += `<div class="edit-selected-item" onclick="chooseEditWord(this, '${esc(key)}')">${esc(v.word)}</div>`;
+                }
+            });
+            list.innerHTML = html;
+            list.classList.remove('hidden'); 
+        } else {
+            list.innerHTML = '';
+            list.classList.add('hidden');
+        }
+    }
+}
+
+function chooseEditWord(el, key) {
+    const idx = vocab.findIndex(v => keyOf(v) === key);
+    if (idx !== -1) {
+        editChosen = idx;
+        const v = vocab[idx];
+        
+        // Đổ dữ liệu vào các ô input
+        $('edit-word').value = v.word;
+        $('edit-ipa').value = v.ipa || '';
+        $('edit-downstep').value = v.downstep || v.pitch || '';
+        $('edit-pos').value = v.pos || '';
+        $('edit-example').value = v.example || '';
+        $('edit-synonym').value = v.synonym || '';
+        
+        // Tách Etymology và Definition
+        let defRaw = String(v.definition || '');
+        let etym = '';
+        const etyMatch = defRaw.match(/\s*\[([\s\S]*?)\]\s*$/);
+        if(etyMatch){
+            etym = etyMatch[1].trim();
+            defRaw = defRaw.slice(0, defRaw.lastIndexOf('[')).trim();
+        }
+        $('edit-etym').value = etym;
+        
+        // Render lại phần Định nghĩa & Tags
+        $('edit-def-list').innerHTML = '';
+        const rows = parseEditDefToRows(defRaw);
+        rows.forEach((r, i) => {
+            const tagVal = r.tags.length ? r.tags[0] : '';
+            addEditDefRow(r.text, tagVal, i > 0);
+            if(r.tags.length > 1){
+                const tagsBox = $('edit-def-list').lastElementChild.querySelector('.tags-box');
+                for(let t = 1; t < r.tags.length; t++){
+                    tagsBox.appendChild(makeTagInputRow(r.tags[t], true));
+                }
+            }
+        });
+        if(rows.length === 0) addEditDefRow('', '', false);
+        
+        // Highlight từ đang được chọn trong list
+        document.querySelectorAll('.edit-selected-item').forEach(item => item.style.background = '');
+        el.style.background = 'var(--bg)';
+    }
+}
+
+
+	
 function splitDefAndTags(text){
   const m = text.match(/^(.*?)\s*\(([^)]+)\)\s*$/);
   if(m){
