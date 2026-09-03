@@ -151,6 +151,87 @@ button:hover { opacity:.85; }
 .gif-badge { position:absolute; top:4px; right:4px; background:#ef4444; color:#fff; font-size:9px; font-weight:bold; padding:2px 5px; border-radius:4px; pointer-events:none; }
 .img-suggest-status { grid-column:1/-1; font-size:12px; color:#94a3b8; text-align:center; padding:8px; }
 .list-head { display:flex; justify-content:space-between; align-items:center; gap:10px; margin-bottom:10px; flex-wrap:wrap; }
+
+/* Nút Đã chọn */
+.selected-btn {
+    background: var(--card-bg);
+    border: 1px solid var(--border);
+    color: #64748b;
+    border-radius: 8px;
+    padding: 6px 12px;
+    font-size: 13px;
+    font-weight: bold;
+    cursor: not-allowed;
+    opacity: 0.5;
+    transition: all 0.2s;
+    flex-shrink: 0;
+}
+.selected-btn.active {
+    background: var(--accent);
+    color: #0f172a;
+    border-color: var(--accent);
+    cursor: pointer;
+    opacity: 1;
+    box-shadow: 0 0 12px rgba(56, 189, 248, 0.4);
+}
+.selected-btn.active:hover {
+    filter: brightness(1.1);
+}
+/* Popup danh sách đã chọn */
+.selected-popup {
+    position: absolute;
+    top: calc(100% + 6px);
+    left: 0;
+    background: var(--card-bg);
+    border: 1px solid var(--accent);
+    border-radius: 10px;
+    padding: 8px;
+    min-width: 200px;
+    max-width: 300px;
+    max-height: 300px;
+    overflow-y: auto;
+    z-index: 60;
+    box-shadow: 0 10px 30px rgba(0,0,0,0.5);
+    display: none;
+}
+.selected-popup.show { display: block; }
+.selected-popup-item {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 6px 8px;
+    border-radius: 6px;
+    font-size: 13px;
+    color: var(--text);
+    cursor: pointer;
+    transition: background 0.15s;
+}
+.selected-popup-item:hover {
+    background: var(--bg);
+    color: var(--accent);
+}
+.selected-popup-item .sp-word {
+    font-weight: bold;
+    color: var(--accent);
+    word-break: break-word;
+}
+.selected-popup-item .sp-remove {
+    color: #ef4444;
+    font-size: 14px;
+    padding: 2px 6px;
+    border-radius: 4px;
+    flex-shrink: 0;
+}
+.selected-popup-item .sp-remove:hover {
+    background: rgba(239,68,68,0.15);
+}
+.selected-popup-empty {
+    text-align: center;
+    color: #94a3b8;
+    font-size: 12px;
+    padding: 10px;
+}
+	
 .list-title { font-size:16px; color:#94a3b8; }
 .sort-wrap { display:flex; align-items:center; gap:6px; font-size:13px; color:#94a3b8; }
 #sort { padding:6px 10px; font-size:13px; border-radius:8px; }
@@ -1030,7 +1111,8 @@ button, .btn-primary, .btn-success, .btn-warning, .btn-danger, .nav-btn, .close 
 
 
 <div id="list-zone">
-  <div class="list-head">
+ <div class="list-head">
+    <button id="selected-btn" class="selected-btn" onclick="toggleSelectedPopup()" disabled>Đã chọn</button>
     <div class="list-title" id="list-title"></div>
     <label class="sort-wrap">Sắp xếp:
       <select id="sort" onchange="setSort(this.value)">
@@ -1041,6 +1123,10 @@ button, .btn-primary, .btn-success, .btn-warning, .btn-danger, .nav-btn, .close 
     </label>
   </div>
   <div class="word-list" id="word-list"></div>
+
+
+<div id="selected-popup" class="selected-popup"></div>
+	
 
 <div id="study-zone">
   <div class="counter-row">
@@ -2264,7 +2350,19 @@ if(vdm&&vdm.classList.contains('show')&&!e.target.closest('#verse-dot-menu')&&!e
   const mdm=$('multi-dot-menu');
 if(mdm&&mdm.classList.contains('show')&&!e.target.closest('#multi-dot-menu')&&!e.target.closest('.multi-dot-btn')) closeMultiDotMenu();
   const mpop=$('multi-pop');
-  if(mpop.classList.contains('show')&&!e.target.closest('#multi-pop')&&!e.target.closest('#multi-btn')) mpop.classList.remove('show'); });
+  if(mpop.classList.contains('show')&&!e.target.closest('#multi-pop')&&!e.target.closest('#multi-btn')) mpop.classList.remove('show'); 
+									  
+	
+									  
+		const spop = document.getElementById('selected-popup');
+if(spop && spop.classList.contains('show') && !e.target.closest('#selected-popup') && !e.target.closest('#selected-btn')) spop.classList.remove('show');							  
+									  
+									  
+									  
+									  });
+
+
+	
 $('dot-menu').addEventListener('click', e=>{
   const btn=e.target.closest('.dot-menu-item');
   if(!btn) return;
@@ -2869,7 +2967,7 @@ function showCard(){ if(!viewList.length){ $('counter').textContent='🃏 0 / 0 
 function nav(d){ const len=viewList.length; if(!len) return; if(shuffleOn&&len>1){ if(appearCount.length!==len) resetShuffleCounts(); if(d>0){ let pool=[]; for(let i=0;i<len;i++) if(i!==currentPos&&appearCount[i]<2) pool.push(i); if(!pool.length){ appearCount=new Array(len).fill(0); for(let i=0;i<len;i++) if(i!==currentPos) pool.push(i); } const next=pool[Math.floor(Math.random()*pool.length)]; shuffleHistory.push(currentPos); currentPos=next; appearCount[next]++; } else if(shuffleHistory.length) currentPos=shuffleHistory.pop(); } else currentPos=(currentPos+d+len)%len; showCard(); }
 function setFlipped(b){ flipped=b; $('flip').classList.toggle('flipped',b); }
 function renderList(){
-    $('list-title').textContent='📚 Danh sách vũ trụ ('+viewList.length+' từ)';
+    $('list-title').textContent='Danh sách vũ trụ ('+viewList.length+' từ)';
     const wrap=$('word-list');
     wrap.innerHTML='';
     
@@ -2893,7 +2991,60 @@ function renderList(){
     }
     // --- KẾT THÚC ĐOẠN THÊM ---
 
-    viewList.forEach((origIdx,pos)=>{ const v=vocab[origIdx]; const item=document.createElement('div'); item.className='list-item'+(selected.has(keyOf(v))?' selected':''); item.id='li-'+pos; item.dataset.pos=pos; item.innerHTML='<span class="li-word">'+esc(v.word)+'</span><button class="dot-btn" data-idx="'+origIdx+'" title="Thao tác">⋮</button>'; wrap.appendChild(item); }); highlightList(); }
+    viewList.forEach((origIdx,pos)=>{ const v=vocab[origIdx]; const item=document.createElement('div'); item.className='list-item'+(selected.has(keyOf(v))?' selected':''); item.id='li-'+pos; item.dataset.pos=pos; item.innerHTML='<span class="li-word">'+esc(v.word)+'</span><button class="dot-btn" data-idx="'+origIdx+'" title="Thao tác">⋮</button>'; wrap.appendChild(item); }); 
+	
+	updateSelectedBtn();
+	
+	
+	highlightList(); }
+
+
+function updateSelectedBtn(){
+    const btn = document.getElementById('selected-btn');
+    if(!btn) return;
+    const count = selected.size;
+    if(count === 0){
+        btn.disabled = true;
+        btn.classList.remove('active');
+        btn.textContent = 'Đã chọn';
+    } else {
+        btn.disabled = false;
+        btn.classList.add('active');
+        btn.textContent = 'Đã chọn (' + count + ')';
+    }
+}
+
+function toggleSelectedPopup(){
+    if(selected.size === 0) return;
+    const popup = document.getElementById('selected-popup');
+    if(!popup) return;
+    if(popup.classList.contains('show')){
+        popup.classList.remove('show');
+        return;
+    }
+    let html = '';
+    vocab.forEach((v, idx) => {
+        if(selected.has(keyOf(v))){
+            html += '<div class="selected-popup-item" onclick="event.stopPropagation(); removeSelected(\'' + esc(keyOf(v)) + '\')">' +
+                    '<span class="sp-word">' + esc(v.word) + '</span>' +
+                    '<span class="sp-remove" title="Bỏ chọn">✕</span></div>';
+        }
+    });
+    if(!html) html = '<div class="selected-popup-empty">Chưa chọn từ nào</div>';
+    popup.innerHTML = html;
+    popup.classList.add('show');
+}
+
+function removeSelected(k){
+    selected.delete(k);
+    renderList();
+    const popup = document.getElementById('selected-popup');
+    if(popup && selected.size === 0) popup.classList.remove('show');
+}
+
+
+
+	
 function highlightList(){ document.querySelectorAll('.list-item.active').forEach(el=>el.classList.remove('active')); const el=$('li-'+currentPos); if(!el) return; el.classList.add('active'); const wrap=$('word-list'), wr=wrap.getBoundingClientRect(), er=el.getBoundingClientRect(); if(er.top<wr.top) wrap.scrollTop+=er.top-wr.top; else if(er.bottom>wr.bottom) wrap.scrollTop+=er.bottom-wr.bottom; }
 function makeTagInputRow(tagVal, withRemove){
   const row=document.createElement('div');
