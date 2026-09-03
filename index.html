@@ -8386,6 +8386,22 @@ function openEditModal(idx, multi){
   $('edit-modal').classList.add('active');
 }
 
+
+function closeEditModal() {
+    // 1. Ẩn modal chỉnh sửa
+    const modal = $('edit-modal');
+    if (modal) {
+        modal.classList.remove('active');
+    }
+    
+    // 2. Ẩn luôn cái toast thông báo "✅ Đã cập nhật từ..." cho sạch sẽ
+    const toast = $('edit-word-toast');
+    if (toast) {
+        toast.style.display = 'none';
+    }
+}
+
+	
 function saveEditWord(e){
   e.preventDefault();
   const def = buildEditDef();
