@@ -7990,9 +7990,25 @@ function updateBombBadge() {
   const bombBtn = document.getElementById('bomb-btn');
   if (!bombBtn) return;
   
+  // Lấy multiverse đang được chọn
+  const currentMulti = getCurrentMulti();
+  
   // Đếm số từ có nextReview <= thời gian hiện tại
   const now = Date.now();
-  const atRiskCount = vocab.filter(v => v.nextReview && v.nextReview <= now).length;
+  
+  let atRiskCount;
+  
+  if (currentMulti === 'all') {
+    // Nếu đang xem "Tất cả Multiverse" → đếm tất cả
+    atRiskCount = vocab.filter(v => v.nextReview && v.nextReview <= now).length;
+  } else {
+    // Nếu đang xem 1 multiverse cụ thể → chỉ đếm trong multiverse đó
+    atRiskCount = vocab.filter(v => 
+      v.multi === currentMulti && 
+      v.nextReview && 
+      v.nextReview <= now
+    ).length;
+  }
   
   // Xóa badge cũ nếu có
   const oldBadge = bombBtn.querySelector('.bomb-badge');
@@ -8054,7 +8070,7 @@ function updateBombBadge() {
       
       <div class="bomb-tools-grid">
         <button class="bomb-tool-btn" data-mode="definition" onclick="toggleBombTool(this)">⬜ Định nghĩa (50%)</button>
-<button class="bomb-tool-btn" data-mode="pronunciation" onclick="toggleBombTool(this)"> Phiên âm (20%)</button>
+<button class="bomb-tool-btn" data-mode="pronunciation" onclick="toggleBombTool(this)">⬜ Phiên âm (20%)</button>
 <button class="bomb-tool-btn" data-mode="tag" onclick="toggleBombTool(this)">⬜ Tag (15%)</button>
 <button class="bomb-tool-btn" data-mode="synonym" onclick="toggleBombTool(this)">⬜ Từ đồng nghĩa (10%)</button>
 <button class="bomb-tool-btn" data-mode="etymology" onclick="toggleBombTool(this)">⬜ Từ nguyên (5%)</button>
