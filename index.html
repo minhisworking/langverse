@@ -1062,7 +1062,7 @@ button, .btn-primary, .btn-success, .btn-warning, .btn-danger, .nav-btn, .close 
 .selected-popup-item .remove-btn { color: #ef4444; cursor: pointer; font-size: 16px; padding: 0 4px; }	
 
 
-/* ===== FULLSCREEN MODE - TỐI ƯU PC & MOBILE ===== */
+/* ===== FULLSCREEN MODE - BẢN CÂN ĐỐI ===== */
 body.fullscreen-mode header { display: none !important; }
 body.fullscreen-mode .list-head,
 body.fullscreen-mode .word-list,
@@ -1104,7 +1104,7 @@ body.fullscreen-mode .peek-btn {
   font-size: 14px !important;
 }
 
-/* Khu vực flashcard - chiếm phần lớn không gian giữa */
+/* Khu vực flashcard - chiếm phần giữa, không quá to */
 body.fullscreen-mode .flash-area {
   flex: 1 !important;
   display: flex !important;
@@ -1112,141 +1112,18 @@ body.fullscreen-mode .flash-area {
   justify-content: center !important;
   min-height: 0 !important;
   gap: 20px !important;
-  padding: 10px !important;
+  padding: 0 10px !important;
 }
 
-/* Nút điều hướng trái/phải */
+/* Nút điều hướng trái/phải rõ hơn */
 body.fullscreen-mode .nav-btn {
   font-size: 28px !important;
   padding: 12px !important;
-  background: transparent !important;
-  border: none !important;
-  color: var(--accent) !important;
+  background: var(--card-bg) !important;
+  border: 1px solid var(--border) !important;
+  border-radius: 10px !important;
   flex-shrink: 0 !important;
-  opacity: 0.7;
 }
-body.fullscreen-mode .nav-btn:hover {
-  opacity: 1 !important;
-}
-
-/* Thẻ flashcard - TO, dễ nhìn */
-body.fullscreen-mode .flip-container {
-  width: 100% !important;
-  max-width: 900px !important;
-  height: auto !important;
-  max-height: 70vh !important;
-  min-height: 400px !important;
-}
-body.fullscreen-mode .face {
-  padding: 32px 36px !important;
-}
-body.fullscreen-mode .big-word {
-  font-size: 48px !important;
-}
-body.fullscreen-mode .def {
-  font-size: 24px !important;
-}
-
-/* Thanh đánh giá mức độ nhớ */
-body.fullscreen-mode .rate-zone {
-  flex-shrink: 0;
-  margin-top: 12px;
-  max-width: 900px !important;
-  width: 100% !important;
-  margin-left: auto !important;
-  margin-right: auto !important;
-  padding: 16px 24px !important;
-}
-body.fullscreen-mode .rate-zone-label {
-  font-size: 15px !important;
-  margin-bottom: 12px !important;
-}
-body.fullscreen-mode #recall-slider {
-  height: 10px !important;
-  cursor: pointer;
-}
-body.fullscreen-mode .rate-milestones {
-  font-size: 12px !important;
-  margin-top: 8px !important;
-}
-body.fullscreen-mode .rate-milestones > span {
-  line-height: 1.4;
-}
-
-/* ===== MOBILE OPTIMIZATION ===== */
-@media (max-width: 768px) {
-  body.fullscreen-mode #list-zone {
-    padding: 12px 16px !important;
-  }
-  
-  body.fullscreen-mode .flash-area {
-    padding: 8px !important;
-    gap: 12px !important;
-  }
-  
-  body.fullscreen-mode .nav-btn {
-    font-size: 24px !important;
-    padding: 8px !important;
-  }
-  
-  body.fullscreen-mode .flip-container {
-    max-width: 100% !important;
-    max-height: 60vh !important;
-    min-height: 300px !important;
-  }
-  
-  body.fullscreen-mode .face {
-    padding: 20px 24px !important;
-  }
-  
-  body.fullscreen-mode .big-word {
-    font-size: 32px !important;
-  }
-  
-  body.fullscreen-mode .def {
-    font-size: 18px !important;
-  }
-  
-  body.fullscreen-mode .rate-zone {
-    padding: 12px 16px !important;
-  }
-  
-  body.fullscreen-mode .rate-zone-label {
-    font-size: 13px !important;
-  }
-  
-  body.fullscreen-mode .rate-milestones {
-    font-size: 10px !important;
-  }
-}
-
-@media (max-width: 480px) {
-  body.fullscreen-mode #list-zone {
-    padding: 8px 12px !important;
-  }
-  
-  body.fullscreen-mode .flip-container {
-    max-height: 55vh !important;
-    min-height: 250px !important;
-  }
-  
-  body.fullscreen-mode .face {
-    padding: 16px 18px !important;
-  }
-  
-  body.fullscreen-mode .big-word {
-    font-size: 26px !important;
-  }
-  
-  body.fullscreen-mode .def {
-    font-size: 16px !important;
-  }
-  
-  body.fullscreen-mode .nav-btn {
-    font-size: 20px !important;
-    padding: 6px !important;
-  }
-
 body.fullscreen-mode .nav-btn:hover {
   background: var(--accent) !important;
   color: var(--bg) !important;
@@ -1256,10 +1133,10 @@ body.fullscreen-mode .nav-btn:hover {
 /* Thẻ flashcard - kích thước hợp lý */
 body.fullscreen-mode .flip-container {
   width: 100% !important;
-  max-width: 720px !important;
-  height: auto !important;
-  max-height: 55vh !important;
-  min-height: 380px !important;
+  max-width: 800px !important;
+  height: calc(100vh - 220px) !important;
+  max-height: 650px !important;
+  min-height: 400px !important;
 }
 body.fullscreen-mode .face {
   padding: 24px 28px !important;
@@ -1295,31 +1172,27 @@ body.fullscreen-mode .rate-milestones > span {
 }
 
 /* Hàng nút điều hướng nằm trên thanh đánh giá */
-/* Hàng nút điều hướng nằm trên thanh đánh giá */
 .nav-row {
-display: flex;
-justify-content: center;
-align-items: center;
-gap: 16px;
-margin: 12px auto 8px auto;
-max-width: 720px;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  gap: 16px;
+  margin: 12px auto 8px auto;
+  max-width: 720px;
 }
 .nav-row .nav-btn {
-width: 48px;
-height: 40px;
+width: 52px;
+height: 42px;
 font-size: 22px;
-border-radius: 8px;
+border-radius: 10px;
 background: transparent;
 border: none;
 cursor: pointer;
-transition: background 0.2s, color 0.2s;
-display: flex;
-align-items: center;
-justify-content: center;
-padding: 0;
+transition: all 0.2s;
 }
 .nav-row .nav-btn:hover {
-background: rgba(56, 189, 248, 0.2);
+background: var(--accent);
+color: var(--bg);
 }
 
 /* Ẩn nút nav-btn cũ nếu còn sót trong flash-area (chế độ thường) */
@@ -1333,19 +1206,45 @@ body.fullscreen-mode .flash-area {
 }
 
 /* Bỏ nền đen & viền cho nút ️ ➡️ trong hàng nav-row khi fullscreen */
-/* Bỏ nền đen & viền cho nút ⬅️ ➡️ trong hàng nav-row khi fullscreen */
 body.fullscreen-mode .nav-row .nav-btn {
 background: transparent !important;
 border: none !important;
 box-shadow: none !important;
-padding: 0 !important;
-width: 48px !important;
-height: 40px !important;
-border-radius: 8px !important;
+padding: 8px !important;
 }
 body.fullscreen-mode .nav-row .nav-btn:hover {
-background: rgba(56, 189, 248, 0.2) !important;
+background: rgba(56, 189, 248, 0.15) !important; /* Hiệu ứng hover nhẹ màu xanh */
+border-radius: 8px !important;
 }
+
+
+/* Fullscreen trên Mobile - Flashcard to hơn */
+@media (max-width: 768px) {
+  body.fullscreen-mode .flip-container {
+    max-width: 95% !important;
+    height: calc(100vh - 240px) !important;
+    max-height: 500px !important;
+    min-height: 320px !important;
+  }
+  body.fullscreen-mode .face {
+    padding: 16px 18px !important;
+  }
+  body.fullscreen-mode .big-word {
+    font-size: 32px !important;
+  }
+}
+
+@media (max-width: 480px) {
+  body.fullscreen-mode .flip-container {
+    height: calc(100vh - 260px) !important;
+    max-height: 420px !important;
+    min-height: 280px !important;
+  }
+  body.fullscreen-mode .big-word {
+    font-size: 26px !important;
+  }
+}
+
 	
 </style>
 </head>
