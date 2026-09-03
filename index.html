@@ -3461,9 +3461,14 @@ function nav(d){
     } else if(shuffleHistory.length) currentPos=shuffleHistory.pop(); 
   } else currentPos=(currentPos+d+len)%len; 
   setFlipped(false);
+	if (d > 0 && tryInjectBomb()) {
+    showCard(); // showCard sẽ tự động render giao diện Bom ở Bước 3
+    return;     // Dừng lại, không chạy tiếp xuống dưới
+  }
   showCard(); 
 	  if (typeof updateBombBadge === 'function') updateBombBadge();
 
+	
 }
 function setFlipped(b){ flipped=b; $('flip').classList.toggle('flipped',b); }
 function renderList(){
@@ -8544,6 +8549,58 @@ function updateSM2(vocabIndex, q) {
 // ⚠️ QUAN TRỌNG: Gọi hàm khởi tạo ngay khi trang load xong
 // Tìm hàm init() hoặc đoạn code chạy đầu tiên, thêm dòng này vào:
 initSM2Data(); 
+
+
+// ===== BƯỚC 2: CƠ CHẾ TIÊM BOM (BOMB INJECTION) =====
+
+let isShowingBomb = false;          // Cờ hiệu: đang hiển thị quả bom
+let currentBombVocabIndex = -1;     // Lưu vị trí từ vựng làm bom trong mảng vocab
+let cardsSinceLastBomb = 0;         // Đếm số thẻ đã lướt qua kể từ quả bom cuối
+
+// 1. Hàm lấy danh sách từ "sắp bay màu" trong Multiverse hiện tại
+function getAtRiskWords() {
+  const now = Date.now();
+  const currentMulti = getCurrentMulti();
+  
+  return vocab.filter(v => {
+    // Lọc theo Multiverse đang chọn
+    if (currentMulti !== 'all' && v.multi !== currentMulti) return false;
+    // Chỉ lấy từ đã có dữ liệu SM-2 và đã đến hạn ôn (nextReview <= hiện tại)
+    return v.nextReview !== undefined && v.nextReview <= now;
+  });
+}
+
+// 2. Hàm quyết định có "tiêm bom" hay không
+function tryInjectBomb() {
+  if (!bombModeEnabled) return false; // Mode nguy hiểm đang tắt
+  if (isShowingBomb) return false;    // Đang dính bom rồi, không tiêm chồng lên nhau
+
+  const atRiskWords = getAtRiskWords();
+  if (atRiskWords.length === 0) return false; // Không có từ nào sắp quên
+
+  // Tăng bộ đếm
+  cardsSinceLastBomb++;
+  
+  // Luật tiêm: 30% ngẫu nhiên HOẶC cứ lướt 5 thẻ là chắc chắn gặp 1 quả bom
+  const shouldInject = Math.random() < 0.3 || cardsSinceLastBomb >= 5;
+
+  if (shouldInject) {
+    // Chọn ngẫu nhiên 1 từ trong danh sách sắp quên
+    const randomWord = atRiskWords[Math.floor(Math.random() * atRiskWords.length)];
+    currentBombVocabIndex = vocab.indexOf(randomWord);
+    
+    // Kích hoạt cờ hiệu và reset bộ đếm
+    isShowingBomb = true;
+    cardsSinceLastBomb = 0; 
+    
+    console.log(`💣 BOM INJECTED: "${randomWord.word}" (Interval: ${randomWord.interval} ngày)`);
+    return true; // Báo hiệu: Đã tiêm bom thành công!
+  }
+  
+  return false;
+}
+
+
 	
 </script>	
 </body>
