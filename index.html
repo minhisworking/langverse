@@ -8923,7 +8923,20 @@ function calculateBombQ(userInput, word, selectedModes) {
 }
 
 
-
+// 🔄 AUTO-UPDATE BOMB BADGE EVERY 2 SECONDS
+(function startBombBadgeWatchdog() {
+  // Update ngay khi load trang
+  if (typeof updateBombBadge === 'function') {
+    updateBombBadge();
+  }
+  
+  // Update mỗi 2 giây
+  setInterval(function() {
+    if (typeof updateBombBadge === 'function') {
+      updateBombBadge();
+    }
+  }, 2000);
+})();
 	
 	
 </script>	
