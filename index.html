@@ -8353,13 +8353,14 @@ function openEditModal(idx, multi){
   const _err = $('edit-def-err'); if(_err) _err.style.display='none';
   const _wt = $('edit-word-toast'); if(_wt) _wt.style.display='none';
   if(multi){
-    editTarget = null;
-    title.textContent = '✏️ Chỉnh sửa ' + selected.size + ' từ đã chọn';
-    wLabel.textContent = 'Từ gốc';
-    wInput.value = 'chọn từ';
-    wInput.readOnly = true;
-    wInput.required = false;
-    arrow.style.display = '';
+editTarget = null;
+title.textContent = '️ Chỉnh sửa ' + selected.size + ' từ đã chọn';
+wLabel.textContent = 'Từ gốc';
+wInput.value = '';
+wInput.placeholder = 'Chọn từ';
+wInput.readOnly = true;
+wInput.required = false;
+arrow.style.display = 'none';
     collapseEditList();
     $('edit-multi').value = '';
     $('edit-multi').dataset.id = '';
