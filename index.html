@@ -1246,6 +1246,11 @@ body.fullscreen-mode .nav-row .nav-btn:hover {
   }
 }
 
+/* Tắt animation lật khi chuyển từ */
+.flip-container.no-animation,
+.flip-container.no-animation .flip-inner {
+  transition: none !important;
+}
 	
 </style>
 </head>
@@ -3130,8 +3135,50 @@ function setSort(v){ localStorage.setItem('langverse_sort',v); applyView(); }
 function toggleDir(){ sortDir=sortDir===1?-1:1; localStorage.setItem('langverse_sortdir',String(sortDir)); updateDirBtn(); applyView(); }
 function updateDirBtn(){ const b=$('sortdir'); if(b) b.classList.toggle('flip',sortDir===-1); }
 function applyView(){ const q=cleanInvisible($('search').value).toLowerCase().trim(); const mode=$('sort')?$('sort').value:'az'; const dir=sortDir; syncManualOrder();   const match=v=>{ const t=matchTier(v,q); if(t>=2) return false; if(!wordInMulti(v,getCurrentMulti())) return false; if(!inCurrentFilter(v)) return false; return true; }; if(mode==='manual'){ viewList=manualOrder.filter(i=>i<vocab.length&&match(vocab[i])); } else { const modeCmp=(a,b)=>{ if(mode==='recent') return b-a; if(mode==='pos'){ const pa=String(vocab[a].pos||'').toLowerCase(); const pb=String(vocab[b].pos||'').toLowerCase(); if(pa!==pb) return pa.localeCompare(pb,'vi'); } return wordKey(vocab[a]).localeCompare(wordKey(vocab[b]),'vi'); }; const pairs=[]; vocab.forEach((v,i)=>{ if(match(v)) pairs.push([matchTier(v,q),i]); }); pairs.sort((x,y)=>(x[0]-y[0])||(dir*modeCmp(x[1],y[1]))); viewList=pairs.map(p=>p[1]); } currentPos=0; resetShuffleCounts(); if(vocab.length===0){ $('empty-msg').style.display='block'; $('study-zone').style.display='none'; $('list-zone').style.display='none'; return; } $('empty-msg').style.display='none'; $('study-zone').style.display=viewList.length?'block':'none'; $('list-zone').style.display='block'; renderList(); showCard(); }
-function showCard(){ if(!viewList.length){ $('counter').textContent='🃏 0 / 0 · 🎯 '+calcMastery()+'%'; return; } const v=vocab[viewList[currentPos]]; if(!v){ $('counter').textContent='🃏 0 / 0 · 🎯 '+calcMastery()+'%'; return; } resetRecallSlider(); try{ currentWordText=cleanInvisible(v.word); const def=String(v.definition||''); const allTags=getAllTags(def); const defParts=def.split(/\[|\]/); const defNoEtym=defParts[0]; const etym=defParts[1]?defParts[1].trim():''; const senses=parseSenses(defNoEtym); const hidF=k=>hideFront.includes(k); const hidB=k=>hideBack.includes(k); let orderedSenses=senses; if(filterSet.size>0&&senses.length>=2){ orderedSenses=senses.map((s,idx)=>[s,idx]).sort((a,b)=>{ const ta=(a[0].tags.length?a[0].tags:allTags).some(tg=>filterSet.has(tg))?0:1; const tb=(b[0].tags.length?b[0].tags:allTags).some(tg=>filterSet.has(tg))?0:1; return (ta-tb)||(a[1]-b[1]); }).map(p=>p[0]); } $('front').innerHTML=buildImgArea(v.img)+'<div class="face-top">🃏 Từ gốc</div><div class="front-main">'+(!hidF('word')?'<div class="big-word">'+esc(v.word)+'</div>':'')+'<div class="ipa-row" style="margin-bottom:4px;">'+(!hidF('ipa')&&v.ipa?'<span class="ipa-big">'+esc(v.ipa)+'</span>':'')+(v.pitch?'<span class="ipa-big">'+esc(v.pitch)+'</span>':'')+(v.downstep?'<span class="ipa-big">'+esc(v.downstep)+'</span>':'')+'</div><div class="ipa-row">'+(!hidF('tts')?'<button class="tts-btn" title="Nghe phát âm">🔊</button>':'')+(!hidF('tts')?'<input type="range" class="rate-slider" min="0.1" max="2" step="0.1" value="'+ttsRate+'" title="Tốc độ đọc"><span class="rate-val">'+ttsRate.toFixed(1)+'×</span>':'')+'</div>'+(!hidF('pos')&&v.pos?'<div style="color:#94a3b8; margin-top:4px;">'+esc(v.pos)+'</div>':'')+(!hidF('tags')&&allTags.length?'<div class="tags">'+esc(allTags.join('; '))+'</div>':'')+'</div>'+(!hidF('example')&&v.example?'<div class="front-example">💡 '+esc(v.example)+'</div>':'')+'<div class="flip-hint">👆 Chạm card (hoặc phím Space) để lật</div>'; let backHtml=buildImgArea(v.img)+'<div class="face-top">📖 Định nghĩa</div>'; if(orderedSenses.length>=2){ if(!hidB('def')){ backHtml+='<div class="back-main">'+orderedSenses.map((s,i)=>{ const tl=s.tags.length?s.tags:allTags; return '<div class="sense"><div class="sense-line"><span class="sense-num">'+(i+1)+'</span><span class="sense-text">'+esc(s.text)+'</span></div>'+(!hidB('tags')&&tl.length?'<div class="sense-tags">'+esc(tl.join('; '))+'</div>':'')+'</div>'; }).join('')+'</div>'; } const infoLines=[]; if(!hidB('pos')&&v.pos) infoLines.push('<b>Loại từ:</b> '+esc(v.pos)); if(!hidB('example')&&v.example) infoLines.push('💡 <b>Ví dụ:</b> '+esc(v.example)); if(!hidB('synonym')&&v.synonym) infoLines.push('🔄 <b>Đồng nghĩa:</b> '+esc(v.synonym)); if(infoLines.length) backHtml+='<div class="info-box">'+infoLines.join('<br>')+'</div>'; } else { const mainDef=defNoEtym.replace(/\(([^)]*)\)/g,(m,c)=>isSubtopicTag(c)?'':m).replace(new RegExp('^\\s*(?:\\d+[.)]|['+CIRC+'])\\s*'),'').replace(/\s+/g,' ').trim(); const metaParts=[]; if(!hidB('pos')&&v.pos) metaParts.push('<span>'+esc(v.pos)+'</span>'); backHtml+='<div class="back-main">'+(!hidB('def')?'<div class="def">'+esc(mainDef)+'</div>':'')+(metaParts.length?'<div class="back-meta">'+metaParts.join(' <span style="color:#475569;">•</span> ')+'</div>':'')+(!hidB('tags')&&allTags.length?'<div class="tags">'+esc(allTags.join('; '))+'</div>':'')+'</div>'; const infoLines=[]; if(!hidB('example')) infoLines.push('💡 <b>Ví dụ:</b> '+esc(v.example||'Chưa có')); if(!hidB('synonym')) infoLines.push('🔄 <b>Đồng nghĩa:</b> '+esc(v.synonym||'Chưa có')); if(infoLines.length) backHtml+='<div class="info-box">'+infoLines.join('<br>')+'</div>'; } if(etym) backHtml+='<div class="etym"><b>Etymology:</b><br>'+esc(etym)+'</div>'; $('back').innerHTML=backHtml; attachImgTriggers(); updateCounter(); setFlipped(false); highlightList(); }catch(err){ $('front').innerHTML='<div class="face-top">🃏 Từ gốc</div><div class="front-main"><div class="big-word">'+esc(v.word)+'</div></div>'; $('back').innerHTML='<div class="face-top">📖 Lỗi render</div><div class="back-main"><div class="def" style="color:#ef4444;">⚠️ '+esc(String(err&&err.message||err))+'</div></div>'; updateCounter(); setFlipped(false); highlightList(); } }
-function nav(d){ const len=viewList.length; if(!len) return; if(shuffleOn&&len>1){ if(appearCount.length!==len) resetShuffleCounts(); if(d>0){ let pool=[]; for(let i=0;i<len;i++) if(i!==currentPos&&appearCount[i]<2) pool.push(i); if(!pool.length){ appearCount=new Array(len).fill(0); for(let i=0;i<len;i++) if(i!==currentPos) pool.push(i); } const next=pool[Math.floor(Math.random()*pool.length)]; shuffleHistory.push(currentPos); currentPos=next; appearCount[next]++; } else if(shuffleHistory.length) currentPos=shuffleHistory.pop(); } else currentPos=(currentPos+d+len)%len; showCard(); }
+function showCard(){
+	
+const flip = document.getElementById('flip');
+  flip.classList.add('no-animation');	
+	
+	if(!viewList.length){ $('counter').textContent='🃏 0 / 0 · 🎯 '+calcMastery()+'%'; return; } const v=vocab[viewList[currentPos]]; if(!v){ $('counter').textContent='🃏 0 / 0 · 🎯 '+calcMastery()+'%'; return; } resetRecallSlider(); try{ currentWordText=cleanInvisible(v.word); const def=String(v.definition||''); const allTags=getAllTags(def); const defParts=def.split(/\[|\]/); const defNoEtym=defParts[0]; const etym=defParts[1]?defParts[1].trim():''; const senses=parseSenses(defNoEtym); const hidF=k=>hideFront.includes(k); const hidB=k=>hideBack.includes(k); let orderedSenses=senses; if(filterSet.size>0&&senses.length>=2){ orderedSenses=senses.map((s,idx)=>[s,idx]).sort((a,b)=>{ const ta=(a[0].tags.length?a[0].tags:allTags).some(tg=>filterSet.has(tg))?0:1; const tb=(b[0].tags.length?b[0].tags:allTags).some(tg=>filterSet.has(tg))?0:1; return (ta-tb)||(a[1]-b[1]); }).map(p=>p[0]); } $('front').innerHTML=buildImgArea(v.img)+'<div class="face-top">🃏 Từ gốc</div><div class="front-main">'+(!hidF('word')?'<div class="big-word">'+esc(v.word)+'</div>':'')+'<div class="ipa-row" style="margin-bottom:4px;">'+(!hidF('ipa')&&v.ipa?'<span class="ipa-big">'+esc(v.ipa)+'</span>':'')+(v.pitch?'<span class="ipa-big">'+esc(v.pitch)+'</span>':'')+(v.downstep?'<span class="ipa-big">'+esc(v.downstep)+'</span>':'')+'</div><div class="ipa-row">'+(!hidF('tts')?'<button class="tts-btn" title="Nghe phát âm">🔊</button>':'')+(!hidF('tts')?'<input type="range" class="rate-slider" min="0.1" max="2" step="0.1" value="'+ttsRate+'" title="Tốc độ đọc"><span class="rate-val">'+ttsRate.toFixed(1)+'×</span>':'')+'</div>'+(!hidF('pos')&&v.pos?'<div style="color:#94a3b8; margin-top:4px;">'+esc(v.pos)+'</div>':'')+(!hidF('tags')&&allTags.length?'<div class="tags">'+esc(allTags.join('; '))+'</div>':'')+'</div>'+(!hidF('example')&&v.example?'<div class="front-example">💡 '+esc(v.example)+'</div>':'')+'<div class="flip-hint">👆 Chạm card (hoặc phím Space) để lật</div>'; let backHtml=buildImgArea(v.img)+'<div class="face-top">📖 Định nghĩa</div>'; if(orderedSenses.length>=2){ if(!hidB('def')){ backHtml+='<div class="back-main">'+orderedSenses.map((s,i)=>{ const tl=s.tags.length?s.tags:allTags; return '<div class="sense"><div class="sense-line"><span class="sense-num">'+(i+1)+'</span><span class="sense-text">'+esc(s.text)+'</span></div>'+(!hidB('tags')&&tl.length?'<div class="sense-tags">'+esc(tl.join('; '))+'</div>':'')+'</div>'; }).join('')+'</div>'; } const infoLines=[]; if(!hidB('pos')&&v.pos) infoLines.push('<b>Loại từ:</b> '+esc(v.pos)); if(!hidB('example')&&v.example) infoLines.push('💡 <b>Ví dụ:</b> '+esc(v.example)); if(!hidB('synonym')&&v.synonym) infoLines.push('🔄 <b>Đồng nghĩa:</b> '+esc(v.synonym)); if(infoLines.length) backHtml+='<div class="info-box">'+infoLines.join('<br>')+'</div>'; } else { const mainDef=defNoEtym.replace(/\(([^)]*)\)/g,(m,c)=>isSubtopicTag(c)?'':m).replace(new RegExp('^\\s*(?:\\d+[.)]|['+CIRC+'])\\s*'),'').replace(/\s+/g,' ').trim(); const metaParts=[]; if(!hidB('pos')&&v.pos) metaParts.push('<span>'+esc(v.pos)+'</span>'); backHtml+='<div class="back-main">'+(!hidB('def')?'<div class="def">'+esc(mainDef)+'</div>':'')+(metaParts.length?'<div class="back-meta">'+metaParts.join(' <span style="color:#475569;">•</span> ')+'</div>':'')+(!hidB('tags')&&allTags.length?'<div class="tags">'+esc(allTags.join('; '))+'</div>':'')+'</div>'; const infoLines=[]; if(!hidB('example')) infoLines.push('💡 <b>Ví dụ:</b> '+esc(v.example||'Chưa có')); if(!hidB('synonym')) infoLines.push('🔄 <b>Đồng nghĩa:</b> '+esc(v.synonym||'Chưa có')); if(infoLines.length) backHtml+='<div class="info-box">'+infoLines.join('<br>')+'</div>'; } if(etym) backHtml+='<div class="etym"><b>Etymology:</b><br>'+esc(etym)+'</div>'; $('back').innerHTML=backHtml; attachImgTriggers(); updateCounter(); setFlipped(false); highlightList(); }catch(err){ 
+		
+	
+	$('front').innerHTML='<div class="face-top">🃏 Từ gốc</div><div class="front-main"><div class="big-word">'+esc(v.word)+'</div></div>'; 
+		
+		$('back').innerHTML='<div class="face-top">📖 Lỗi render</div><div class="back-main"><div class="def" style="color:#ef4444;">⚠️ '+esc(String(err&&err.message||err))+'</div></div>'; updateCounter(); setFlipped(false); highlightList(); } 
+
+
+
+setFlipped(false);
+  
+  setTimeout(() => {
+    flip.classList.remove('no-animation');
+  }, 50);
+}
+
+
+	
+function nav(d){ 
+  const len=viewList.length; 
+  if(!len) return; 
+  if(shuffleOn&&len>1){ 
+    if(appearCount.length!==len) resetShuffleCounts(); 
+    if(d>0){ 
+      let pool=[]; 
+      for(let i=0;i<len;i++) if(i!==currentPos&&appearCount[i]<2) pool.push(i); 
+      if(!pool.length){ 
+        appearCount=new Array(len).fill(0); 
+        for(let i=0;i<len;i++) if(i!==currentPos) pool.push(i); 
+      } 
+      const next=pool[Math.floor(Math.random()*pool.length)]; 
+      shuffleHistory.push(currentPos); 
+      currentPos=next; 
+      appearCount[next]++; 
+    } else if(shuffleHistory.length) currentPos=shuffleHistory.pop(); 
+  } else currentPos=(currentPos+d+len)%len; 
+  setFlipped(false);
+  showCard(); 
+}
 function setFlipped(b){ flipped=b; $('flip').classList.toggle('flipped',b); }
 function renderList(){
     $('list-title').textContent='📚 Danh sách vũ trụ ('+viewList.length+' từ)';
