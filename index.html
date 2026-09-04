@@ -8722,6 +8722,7 @@ window.showCard = function() {
 // 2. Hàm render giao diện quả bom
 function renderBombCard() {
     const v = vocab[currentBombVocabIndex];
+    
     // 🛡️ VAN AN TOÀN: Nếu không tìm thấy từ, tự động giải phóng bom để tránh kẹt UI
     if (!v) {
         isShowingBomb = false;
@@ -8730,49 +8731,30 @@ function renderBombCard() {
         return;
     }
 
-    // Tính thời gian thông minh dựa trên interval
     const timeLimit = getBombTime(v.interval || 0);
 
-    // Render mặt trước (front) với giao diện bom
     const frontHTML = `
     <div class="bomb-container" style="text-align:center; padding:20px;">
-        <div class="bomb-word" style="font-size:42px; font-weight:bold; color:var(--accent); margin-bottom:20px;">
-            ${esc(v.word)}
-        </div>
+        <div class="bomb-word" style="font-size:42px; font-weight:bold; color:var(--accent); margin-bottom:20px;">${esc(v.word)}</div>
         <div class="bomb-timer-container" style="margin:20px 0;">
             <div class="bomb-timer-bar" style="width:100%; height:8px; background:var(--card-bg); border-radius:4px; overflow:hidden;">
                 <div id="bomb-timer-fill" style="width:100%; height:100%; background:linear-gradient(90deg, #10b981, #f59e0b, #ef4444); transition:width 0.1s linear;"></div>
             </div>
-            <div id="bomb-timer-text" style="margin-top:8px; font-size:18px; font-weight:bold; color:#f59e0b;">
-                ⏱️ ${timeLimit}s
-            </div>
+            <div id="bomb-timer-text" style="margin-top:8px; font-size:18px; font-weight:bold; color:#f59e0b;">⏱️ ${timeLimit}s</div>
         </div>
         <div class="bomb-input-section" style="margin:20px 0;">
-            <input type="text" id="bomb-input"
-                placeholder="Gõ nghĩa rồi nhấn Enter..."
-                style="width:100%; padding:12px; font-size:16px; border:2px solid var(--border); border-radius:8px; background:var(--card-bg); color:var(--text);"
-                autocomplete="off">
-            <div style="margin-top:8px; font-size:12px; color:#94a3b8;">
-                Dụng cụ: ${bombTools.map(t => {
-                    const names = {definition:'Định nghĩa', pronunciation:'Phiên âm', tag:'Tag', synonym:'Đồng nghĩa', etymology:'Từ nguyên'};
-                    return names[t] || t;
-                }).join(', ')}
-            </div>
+            <input type="text" id="bomb-input" placeholder="Gõ nghĩa rồi nhấn Enter..." style="width:100%; padding:12px; font-size:16px; border:2px solid var(--border); border-radius:8px; background:var(--card-bg); color:var(--text);" autocomplete="off">
+            <div style="margin-top:8px; font-size:12px; color:#94a3b8;">Dụng cụ: ${bombTools.map(t => ({definition:'Định nghĩa', pronunciation:'Phiên âm', tag:'Tag', synonym:'Đồng nghĩa', etymology:'Từ nguyên'}[t] || t)).join(', ')}</div>
         </div>
-        <div id="bomb-warning" style="margin-top:16px; padding:12px; background:rgba(239,68,68,0.1); border-left:4px solid #ef4444; border-radius:6px; font-size:13px; color:#f87171;">
-            💣 Bom nổ sau ${timeLimit} giây!
-        </div>
-    </div>
-    `;
+        <div id="bomb-warning" style="margin-top:16px; padding:12px; background:rgba(239,68,68,0.1); border-left:4px solid #ef4444; border-radius:6px; font-size:13px; color:#f87171;">💣 Bom nổ sau ${timeLimit} giây!</div>
+    </div>`;
 
-    // Render mặt sau (back)
     const backHTML = `
     <div style="text-align:center; padding:20px; color:#94a3b8;">
         <div style="font-size:16px; margin-bottom:10px;">📖 Đáp án:</div>
         <div style="font-size:20px; color:var(--accent); font-weight:bold;">${esc(v.definition)}</div>
         ${v.ipa ? `<div style="margin-top:8px; color:#64748b;">${esc(v.ipa)}</div>` : ''}
-    </div>
-    `;
+    </div>`;
 
     const front = $('front');
     const back = $('back');
@@ -8781,7 +8763,6 @@ function renderBombCard() {
 
     setFlipped(false);
 
-    // Focus vào input & Bắt sự kiện Enter
     setTimeout(() => {
         const input = document.getElementById('bomb-input');
         if (input) {
@@ -8893,7 +8874,7 @@ function defuseBomb(userInput) {
         }
         if (!v) {
             showToast('⚠️ Lỗi: Không tìm thấy từ vựng!', true);
-            showCard(); // Render lại flashcard bình thường
+            showCard(); // Vẽ lại flashcard bình thường
             return;
         }
 
@@ -8901,7 +8882,7 @@ function defuseBomb(userInput) {
         const safeTools = Array.isArray(bombTools) && bombTools.length > 0 ? bombTools : ['definition'];
         const q = calculateBombQ(userInput, v, safeTools);
 
-        // 4. Cập nhật SM-2
+        // 4. Cập nhật SM-2 (Dùng đúng hàm updateSM2(index, q) ở trên)
         if (typeof updateSM2 === 'function') {
             updateSM2(targetIdx >= 0 ? targetIdx : currentPos, q);
         }
@@ -8964,7 +8945,7 @@ function bombExplode() {
     }
 
     setTimeout(() => {
-        showCard(); 
+        showCard(); // Vẽ lại flashcard bình thường
         setTimeout(() => {
             nav(1);
         }, 3000);
