@@ -1505,19 +1505,46 @@ body.fullscreen-mode .bomb-modal-content {
 }	
 
 /* Đẩy nút bom sang lề phải của hàng điều hướng */
+/* Hàng điều hướng: 2 nút mũi tên luôn ở giữa */
 .nav-row {
-  justify-content: center; /* Giữ 2 nút mũi tên ở giữa */
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  gap: 16px;
   position: relative;
+  width: 100%;
 }
 
+/* Nút 💣 và popup ON/OFF luôn sát lề phải */
 .bomb-wrapper {
   position: absolute;
-  right: 0;
+  right: 10px;
   top: 50%;
   transform: translateY(-50%);
   display: flex;
   align-items: center;
+  gap: 8px;
 }
+
+/* Khi popup ON/OFF mở: đẩy 2 nút mũi tên sang sát lề trái */
+.nav-row.bomb-popup-open {
+  justify-content: flex-start !important;
+  padding-left: 12px !important;
+}
+.nav-row.bomb-popup-open .nav-btn {
+  margin-right: 8px;
+}
+
+/* Trên mobile */
+@media (max-width: 768px) {
+  .bomb-wrapper {
+    right: 6px;
+  }
+  .nav-row.bomb-popup-open {
+    padding-left: 8px !important;
+  }
+}
+
 /* Chỉnh popup bom cho gọn khi nằm ở dưới */
 .nav-row .bomb-popup {
   margin-left: 8px;
@@ -1528,9 +1555,11 @@ body.fullscreen-mode .bomb-modal-content {
 /* Khi popup Bom mở, đẩy 2 nút mũi tên sang sát lề trái */
 /* Khi popup Bom mở, đẩy 2 nút mũi tên sang sát lề trái */
 .nav-row.bomb-popup-open {
-    justify-content: flex-start !important;
-    padding-left: 10px !important; /* Sát lề trái cho gọn gàng */
-    padding-right: 50px !important; /* Vẫn giữ chỗ cho nút Bomb bên phải */
+  justify-content: flex-start !important;
+  padding-left: 10px !important;
+}
+.nav-row.bomb-popup-open .bomb-wrapper {
+  margin-left: 12px !important; /* Khoảng cách giữa nút mũi tên và nút bomb khi popup mở */
 }
 
 /* Trên mobile, căn chỉnh lại khoảng cách cho vừa vặn */
@@ -1628,16 +1657,16 @@ body.fullscreen-mode .bomb-modal-content {
 
 <!-- Hàng nút điều hướng mới -->
 <div class="nav-row">
-<button class="nav-btn" onclick="nav(-1)">️⬅️</button>
-<button class="nav-btn" onclick="nav(1)">➡️</button>
-
-<div class="bomb-wrapper">
+  <button class="nav-btn" onclick="nav(-1, true)">⬅️</button>
+  <button class="nav-btn" onclick="nav(1, true)">➡️</button>
+  <div class="bomb-wrapper">
     <button id="bomb-btn" class="bomb-btn" onclick="toggleBombPopup()" title="Mode Nguy Hiểm">💣</button>
     <div id="bomb-popup" class="bomb-popup hidden">
       <button id="bomb-off-btn" class="bomb-toggle-btn active" onclick="setBombMode(false)">OFF</button>
       <button id="bomb-on-btn" class="bomb-toggle-btn" onclick="setBombMode(true)">ON</button>
     </div>
   </div>
+</div>
 
 	
 </div>
@@ -2109,6 +2138,9 @@ let shuffleOn=false, appearCount=[], shuffleHistory=[];
 let dotMenuTarget=null, delConfirmTarget=null, delConfirmMulti=false;
 let editTarget=null, editMulti=false, editChosen=null, imgModalWord=null;
 let selected=new Set(), filterSet=new Set(), sliderTouched=false;
+
+
+
 const $ = id => document.getElementById(id);
 
 const INVISIBLE_RE = /[\uFEFF\u200B\u200C\u200D\u2060\u200E\u200F\u00A0\u180E\u2061\u2062\u2063\u2064]/g;
@@ -3531,8 +3563,23 @@ function applyView(){ const q=cleanInvisible($('search').value).toLowerCase().tr
 					 
 					 if (typeof updateBombBadge === 'function') updateBombBadge(); }
 
+
+let isShowingBomb = false;
+let currentBombVocabIndex = -1;
+let cardsSinceLastBomb = 0;
+
+
+
 	function showCard(){
-	
+	  console.log(' showCard() - isShowingBomb:', isShowingBomb, 'currentBombVocabIndex:', currentBombVocabIndex);
+
+ // Nếu đang hiển thị bom → render giao diện bom
+  if (isShowingBomb && currentBombVocabIndex >= 0) {
+    console.log('✅ Gọi renderBombCard()');
+    renderBombCard();
+    return;
+  }
+
 const flip = document.getElementById('flip');
   flip.classList.add('no-animation');	
 	
@@ -3557,7 +3604,21 @@ if (typeof updateBombBadge === 'function') updateBombBadge();
 
 
 	
-function nav(d){ 
+function nav(d, isManual = false) {
+  console.log('🔍 nav() được gọi - d:', d, 'isManual:', isManual, 'isShowingBomb:', isShowingBomb);
+
+   // 🛑 CHẶN điều hướng khi đang có bom
+  if (isShowingBomb) {
+    console.log('⛔ BỊ CHẶN: isShowingBomb = true');
+    return;
+
+  }
+  
+  // 1. Dọn dẹp timer cũ nếu có
+  if (typeof bombAutoNavTimeout !== 'undefined' && bombAutoNavTimeout) {
+    clearTimeout(bombAutoNavTimeout);
+    bombAutoNavTimeout = null;
+  }
 
 	if (bombAutoNavTimeout) {
         clearTimeout(bombAutoNavTimeout);
@@ -3580,16 +3641,22 @@ function nav(d){
       appearCount[next]++; 
     } else if(shuffleHistory.length) currentPos=shuffleHistory.pop(); 
   } else currentPos=(currentPos+d+len)%len; 
-  setFlipped(false);
-	if (d > 0 && tryInjectBomb()) {
-renderBombCard(); // Gọi trực tiếp renderBombCard
-return;
-}
-  showCard(); 
-	  if (typeof updateBombBadge === 'function') updateBombBadge();
 
-	
+  setFlipped(false);
+	 // 🚨 SỬA ĐIỀU KIỆN: Chỉ tiêm bom khi là thao tác thủ công (bấm nút) và là nút Next (d > 0)
+  // Nếu bạn muốn cả nút Prev (d < 0) cũng có bom, hãy đổi 'd > 0' thành 'd !== 0'
+  if (isManual && d > 0 && typeof tryInjectBomb === 'function' && tryInjectBomb()) {
+    showCard();
+    if (typeof updateBombBadge === 'function') updateBombBadge();
+    return;
+  }
+
+  showCard();
+  if (typeof updateBombBadge === 'function') updateBombBadge();
 }
+
+
+
 function setFlipped(f) {
     flipped = f;
     const flip = $('flip');
@@ -3597,7 +3664,7 @@ function setFlipped(f) {
         if (f) flip.classList.add('flipped');
         else flip.classList.remove('flipped');
     }
-}(b){ 
+}(b) => {
     if (isShowingBomb) return; // 🛡️ Chặn lật thẻ khi đang có Bom
     flipped=b; 
     $('flip').classList.toggle('flipped',b); 
@@ -8008,8 +8075,13 @@ function syncFullscreenState() {
 // ===== BOMB MODE LOGIC =====
 let bombModeEnabled = false;
 let bombTools = [];
-let bombStats = { defused: 0, exploded: 0 }; // Thống kê
-let bombAutoNavTimeout = null; // 🛡️ Lưu timeout tự động chuyển từ để clear khi user manual nav
+let bombStats = { defused: 0, exploded: 0 };
+let bombAutoNavTimeout = null;
+
+
+
+
+
 
 // ✅ THÊM HÀM SHOWTOAST GENERIC ĐỂ BÁO KẾT QUẢ GỠ BOM
 function showToast(msg, isError = false) {
@@ -8133,20 +8205,20 @@ function startBombMode() {
   }
   
   closeBombModal();
-  
-  // Reset thống kê
   bombStats = { defused: 0, exploded: 0 };
   
-  // Cập nhật UI
   const bombBtn = document.getElementById('bomb-btn');
   bombBtn.textContent = '💥';
   bombBtn.classList.add('active');
   
-  // Đóng popup on/off
+  // Ẩn popup on/off
   document.getElementById('bomb-popup').classList.add('hidden');
   
+  // ✅ THÊM 2 DÒNG NÀY: Bỏ class đẩy nút sang trái để 2 nút ⬅️️ quay về giữa
+  const navRow = document.querySelector('.nav-row');
+  if (navRow) navRow.classList.remove('bomb-popup-open');
+  
   console.log('🔥 Bomb Mode đã được kích hoạt!');
-  console.log('Dụng cụ:', bombTools);
 }
 
 // Chỉ đóng modal (không tắt mode)
@@ -8649,11 +8721,7 @@ document.addEventListener('input', e => {
 
 
 
-// ===== BƯỚC 2: CƠ CHẾ TIÊM BOM (BOMB INJECTION) =====
 
-let isShowingBomb = false;          // Cờ hiệu: đang hiển thị quả bom
-let currentBombVocabIndex = -1;     // Lưu vị trí từ vựng làm bom trong mảng vocab
-let cardsSinceLastBomb = 0;         // Đếm số thẻ đã lướt qua kể từ quả bom cuối
 
 // 1. Hàm lấy danh sách từ "sắp bay màu" trong Multiverse hiện tại
 function getAtRiskWords() {
@@ -8718,10 +8786,19 @@ function tryInjectBomb() {
 
 // 2. Hàm render giao diện quả bom
 function renderBombCard() {
+  console.log(' renderBombCard() được gọi');
+  
+  const v = vocab[currentBombVocabIndex];
+  console.log('  - Từ bom:', v ? v.word : 'NULL');
+  
+  if (!v) {
+    console.error('❌ currentBombVocabIndex không hợp lệ!');
+    isShowingBomb = false;
+    currentBombVocabIndex = -1;
+    showCard(); // Render flashcard bình thường
+    return;
+  }
 
-
-	
-    const v = vocab[currentBombVocabIndex];
     
     // 🛡️ VAN AN TOÀN: Nếu không tìm thấy từ, tự động giải phóng bom để tránh kẹt UI
     if (!v) {
@@ -8890,19 +8967,24 @@ function defuseBomb(userInput) {
         // 5. Bắn thông báo
         if (q >= 3) {
             bombStats.defused++;
-            showToast(`✅ Gỡ bom thành công! q=${q}/5`);
+            showToast(`✅ Gỡ bom thành công!, q=${q}/5≥3`);
         } else {
             bombStats.exploded++;
-            showToast(`❌ Gỡ bom thất bại! q=${q}/5`, true);
+            showToast(`❌ Gỡ bom thất bại!, q=${q}/5<3`);
         }
 
         // 6. Render lại flashcard bình thường ngay
-        showCard();
+        const viewIdx = viewList.indexOf(targetIdx);
+if (viewIdx >= 0) {
+  currentPos = viewIdx; // Đặt currentPos về từ bom
+}
+showCard();
+setFlipped(true); // Lật sẵn mặt sau
 
-        // 7. Tự động chuyển từ sau 1.5s
+        // 7. Tự động chuyển từ sau 10s
         setTimeout(() => {
-            nav(1);
-        }, 1500);
+  nav(1);
+}, 10000);
     } catch (err) {
         console.error('Lỗi defuseBomb:', err);
         showToast('⚠️ Lỗi hệ thống: ' + err.message, true);
@@ -8911,45 +8993,30 @@ function defuseBomb(userInput) {
 }
 // 5. Hàm bom nổ (khi hết giờ)
 function bombExplode() {
-    // 🛡️ GIẢI PHÓNG UI NGAY LẬP TỨC
-    isShowingBomb = false;
-    const targetIdx = currentBombVocabIndex;
-    currentBombVocabIndex = -1;
+  // ️ GIẢI PHÓNG UI NGAY LẬP TỨC
+  isShowingBomb = false;
+  const targetIdx = currentBombVocabIndex;
+  currentBombVocabIndex = -1;
+  
+  // Chấm q = 0
+  if (targetIdx >= 0 && typeof updateSM2 === 'function') {
+    updateSM2(targetIdx, 0);
+  }
+  bombStats.exploded++;
+  showToast('❌ Gỡ bom thất bại!, q=0/5<3');
+  
+  // Hiện flashcard gốc của từ bom ở MẶT SAU (ngắn gọn, dùng lại render có sẵn)
+const viewIdx = viewList.indexOf(targetIdx);
+if (viewIdx >= 0) {
+  currentPos = viewIdx;
+}
+showCard();
+setFlipped(true); // Lật sẵn mặt sau để người học "ngâm cứu"
 
-    // Chấm q = 0
-    if (targetIdx >= 0 && typeof updateSM2 === 'function') {
-        updateSM2(targetIdx, 0);
-    }
-    
-    bombStats.exploded++;
-    showToast('💥 BOM NỔ! Từ này sẽ ôn lại ngày mai', true);
-
-    // Hiện đáp án đúng 5 giây
-    const back = $('back');
-    const front = $('front');
-    if (back && front && targetIdx >= 0) {
-        const v = vocab[targetIdx];
-        if (v) {
-            const explodeHTML = `
-            <div style="text-align:center; padding:20px;">
-                <div style="font-size:48px; margin-bottom:16px;">💥</div>
-                <div style="font-size:24px; color:#ef4444; font-weight:bold; margin-bottom:20px;">BOM NỔ!</div>
-                <div style="font-size:16px; color:#94a3b8; margin-bottom:12px;">Đáp án đúng:</div>
-                <div style="font-size:28px; color:var(--accent); font-weight:bold;">${esc(v.definition)}</div>
-                ${v.ipa ? `<div style="margin-top:8px; color:#64748b; font-size:16px;">${esc(v.ipa)}</div>` : ''}
-                <div style="margin-top:20px; padding:12px; background:rgba(239,68,68,0.1); border-radius:8px; font-size:14px; color:#f87171;">Ngâm cứu trong 5 giây...</div>
-            </div>`;
-            front.innerHTML = explodeHTML;
-            back.innerHTML = explodeHTML;
-        }
-    }
-
-    setTimeout(() => {
-        showCard(); // Vẽ lại flashcard bình thường
-        setTimeout(() => {
-            nav(1);
-        }, 3000);
-    }, 5000);
+// Đợi 10 giây rồi chuyển từ
+setTimeout(() => {
+  nav(1);
+}, 10000);
 }
 // 6. Hàm tính thời gian thông minh (đã có ở Bước 2, nhưng nhắc lại cho dễ tìm)
 function getBombTime(interval) {
@@ -8960,45 +9027,71 @@ function getBombTime(interval) {
 }
 
 // 7. Hàm tính điểm q (0.0 đến 5.0) - đã đề xuất ở phần thiết kế
+// ===== HÀM CHẤM ĐIỂM KHÁCH QUAN V2 =====
 function calculateBombQ(userInput, word, selectedModes) {
-  // Hàm chuẩn hóa text
-  const normalize = (s) => s.toLowerCase()
-    .replace(/[.,;:!?'"()]/g, ' ')
-    .replace(/\s+/g, ' ')
-    .trim();
-  
-  // Hàm tính độ khớp (0.0 đến 1.0)
-  const calculateMatchRatio = (input, target) => {
-    if (!target || target.trim() === '') return 0;
-    const normInput = normalize(input);
-    const normTarget = normalize(target);
+  // 1. Danh sách từ đệm cần loại bỏ (Tiếng Việt + Tiếng Anh + Nhật cơ bản)
+  const STOP_WORDS = new Set(['là','của','và','để','cho','với','từ','bị','được','các','những','một','những','như','ở','tại','bằng','the','a','an','is','are','to','in','on','at','of','for','と','の','は','が','を','に']);
+
+  // 2. Hàm chuẩn hóa và tách từ chuẩn xác (Word Boundary)
+  const getWords = (text) => {
+    if (!text) return [];
+    return text.toLowerCase()
+      .replace(/[.,;:!?'"()\-]/g, ' ') // Bỏ dấu câu, ngoặc, gạch ngang
+      .replace(/\s+/g, ' ')
+      .trim()
+      .split(' ')
+      .filter(w => w.length > 1 && !STOP_WORDS.has(w)); // Loại từ đệm và từ quá ngắn
+  };
+
+  // 3. Hàm trích xuất Tag từ định nghĩa (Format: nghĩa (tag1; tag2))
+  const extractTags = (def) => {
+    if (!def) return '';
+    const matches = def.match(/\(([^)]+)\)/g); // Tìm tất cả cụm trong ngoặc ()
+    if (!matches) return '';
+    return matches.map(m => m.replace(/[()]/g, '')).join(' ');
+  };
+
+  // 4. Hàm tính độ khớp thông minh
+  const calculateMatchRatio = (input, target, isShortField = false) => {
+    if (!target || !target.trim()) return 0;
     
-    // Tách từ khóa
-    const keywords = normTarget.split(/[,;]/)
-      .map(k => k.trim())
-      .filter(k => k.length > 1);
+    const inputWords = getWords(input);
     
-    if (keywords.length === 0) return 0;
-    
-    // Đếm từ khóa trùng
-    let matched = 0;
-    keywords.forEach(kw => {
-      if (normInput.includes(kw)) matched++;
+    //  TRƯỜNG HỢP 1: Trường ngắn (IPA, Từ đồng nghĩa 1 từ) -> Dùng Levenshtein (Fuzzy Match)
+    // App của bạn đã có sẵn hàm scoreTyped hoặc lev, ta tận dụng nó cho chính xác
+    if (isShortField && target.length < 15) {
+      if (typeof scoreTyped === 'function') return scoreTyped(input, target) / 100;
+      // Fallback nếu không có scoreTyped: so sánh trực tiếp
+      return input.toLowerCase().trim() === target.toLowerCase().trim() ? 1 : 0; 
+    }
+
+    // 🎯 TRƯỜNG HỢP 2: Trường dài (Định nghĩa, Tag, Từ nguyên) -> So sánh giao thoa tập hợp từ (Set Intersection)
+    const targetWords = getWords(target);
+    if (targetWords.length === 0) return 0;
+
+    let matchedCount = 0;
+    targetWords.forEach(tw => {
+      if (inputWords.includes(tw)) matchedCount++;
     });
-    
-    return matched / keywords.length;
+
+    return matchedCount / targetWords.length;
   };
-  
-  // Lấy điểm từng mode
+
+  // 5. Lấy dữ liệu thô
+  const rawDef = word.definition || '';
+  const rawTags = extractTags(rawDef); // Chỉ lấy chữ trong ngoặc ()
+  const defWithoutTags = rawDef.replace(/\([^)]*\)/g, '').trim(); // Định nghĩa sạch không có tag
+
+  // 6. Tính điểm từng Mode
   const scores = {
-    definition: calculateMatchRatio(userInput, word.definition || ''),
-    pronunciation: calculateMatchRatio(userInput, word.ipa || ''),
-    tag: calculateMatchRatio(userInput, word.definition || ''), // Tag nằm trong definition
-    synonym: calculateMatchRatio(userInput, word.synonym || ''),
-    etymology: calculateMatchRatio(userInput, word.etymology || '')
+    definition: calculateMatchRatio(userInput, defWithoutTags), // Chấm phần nghĩa thuần túy
+    tag: calculateMatchRatio(userInput, rawTags),              // Chấm riêng phần Tag trong ngoặc
+    pronunciation: calculateMatchRatio(userInput, word.ipa || '', true), // IPA dùng Fuzzy Match
+    synonym: calculateMatchRatio(userInput, word.synonym || '', true),   // Đồng nghĩa dùng Fuzzy Match
+    etymology: calculateMatchRatio(userInput, word.etymology || '')      // Từ nguyên
   };
-  
-  // Trọng số
+
+  // 7. Trọng số (Giữ nguyên như bạn chốt)
   const weights = { 
     definition: 0.5, 
     pronunciation: 0.2, 
@@ -9006,8 +9099,8 @@ function calculateBombQ(userInput, word, selectedModes) {
     synonym: 0.1, 
     etymology: 0.05 
   };
-  
-  // Tính điểm trung bình có trọng số
+
+  // 8. Tính trung bình có trọng số
   let totalWeight = 0;
   let weightedScore = 0;
   
@@ -9019,15 +9112,15 @@ function calculateBombQ(userInput, word, selectedModes) {
   });
   
   let finalRatio = totalWeight > 0 ? (weightedScore / totalWeight) : 0;
-  
-  // Luật bất thành văn: Nếu chọn Definition mà sai bét (<30%) → phạt
+
+  // 9. Luật bất thành văn: Sai Định nghĩa (Tier 1) thì điểm trần bị cắt
   if (selectedModes.includes('definition') && scores.definition < 0.3) {
-    finalRatio = Math.min(finalRatio, 0.4); // Tối đa 2.0/5.0
+    finalRatio = Math.min(finalRatio, 0.4); // Tối đa q = 2.0
   }
-  
-  // Quy đổi ra q (0.0 đến 5.0)
+
+  // 10. Quy đổi ra q (0.0 đến 5.0)
   let q = finalRatio * 5;
-  return Math.round(q * 10) / 10; // Làm tròn 1 chữ số thập phân
+  return Math.round(q * 10) / 10; 
 }
 
 
