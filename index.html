@@ -3582,9 +3582,9 @@ function nav(d){
   } else currentPos=(currentPos+d+len)%len; 
   setFlipped(false);
 	if (d > 0 && tryInjectBomb()) {
-    showCard(); // showCard sẽ tự động render giao diện Bom ở Bước 3
-    return;     // Dừng lại, không chạy tiếp xuống dưới
-  }
+renderBombCard(); // Gọi trực tiếp renderBombCard
+return;
+}
   showCard(); 
 	  if (typeof updateBombBadge === 'function') updateBombBadge();
 
@@ -8707,20 +8707,13 @@ function tryInjectBomb() {
 // ===== BƯỚC 3: GIAO DIỆN & LOGIC QUẢ BOM =====
 
 // 1. Sửa hàm showCard() để render giao diện bom khi isShowingBomb = true
-const originalShowCard = window.showCard;
-window.showCard = function() {
-  // Nếu đang hiển thị bom → render giao diện bom
-  if (isShowingBomb && currentBombVocabIndex >= 0) {
-    renderBombCard();
-    return;
-  }
-  
-  // Ngược lại → render flashcard bình thường
-  if (originalShowCard) originalShowCard();
-}
+
 
 // 2. Hàm render giao diện quả bom
 function renderBombCard() {
+
+
+	
     const v = vocab[currentBombVocabIndex];
     
     // 🛡️ VAN AN TOÀN: Nếu không tìm thấy từ, tự động giải phóng bom để tránh kẹt UI
