@@ -3590,7 +3590,14 @@ return;
 
 	
 }
-function setFlipped(b){ 
+function setFlipped(f) {
+    flipped = f;
+    const flip = $('flip');
+    if (flip) {
+        if (f) flip.classList.add('flipped');
+        else flip.classList.remove('flipped');
+    }
+}(b){ 
     if (isShowingBomb) return; // 🛡️ Chặn lật thẻ khi đang có Bom
     flipped=b; 
     $('flip').classList.toggle('flipped',b); 
@@ -8801,7 +8808,7 @@ setTimeout(() => {
         });
     }
 }, 150);
-}
+
 
 // 3. Hàm countdown
 function startBombTimer(timeLimit) {
