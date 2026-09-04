@@ -8785,10 +8785,28 @@ function renderBombCard() {
   setFlipped(false);
   
   // Focus vào input
-  setTimeout(() => {
+ // Bắt sự kiện Enter (Bản mới: chống duplicate listener & dùng keydown)
+setTimeout(() => {
     const input = document.getElementById('bomb-input');
-    if (input) input.focus();
-  }, 100);
+    if (input) {
+        // 🛡️ Clone node để xóa sạch listener cũ, tránh bị gọi 2-3 lần gây crash
+        const newInput = input.cloneNode(true);
+        input.parentNode.replaceChild(newInput, input);
+        
+        newInput.focus(); // Tự động focus vào ô input
+        
+        // Dùng keydown thay cho keypress để tương thích mọi trình duyệt/mobile
+        newInput.addEventListener('keydown', (e) => {
+            if (e.key === 'Enter') {
+                e.preventDefault(); // Chặn hành vi mặc định (như submit form)
+                const userInput = newInput.value.trim();
+                if (userInput) {
+                    defuseBomb(userInput);
+                }
+            }
+        });
+    }
+}, 150);
   
   // Bắt đầu countdown
   startBombTimer(timeLimit);
@@ -8864,36 +8882,56 @@ function startBombTimer(timeLimit) {
 
 // 4. Hàm gỡ bom (khi user gõ Enter)
 function defuseBomb(userInput) {
-    // Clear timer
-    if (window.__bombTimerInterval) {
-        clearInterval(window.__bombTimerInterval);
-    }
-    // Lấy từ vựng bom
-    const v = vocab[currentBombVocabIndex];
-    if (!v) return;
-    // Chấm điểm
-    const q = calculateBombQ(userInput, v, bombTools);
-    // Cập nhật SM-2
-    updateSM2(currentBombVocabIndex, q);
-    // Cập nhật thống kê
-    if (q >= 3) {
-        bombStats.defused++;
-        showToast(`✅ Gỡ bom thành công! q=${q}/5 (Interval tăng lên)`);
-    } else {
-        bombStats.exploded++;
-        showToast(`❌ Gỡ bom thất bại! q=${q}/5 (Interval reset)`);
-    }
-    // Reset cờ hiệu
-    isShowingBomb = false;
-    // ⚠️ SỬA: Hiển thị flashcard gốc TRƯỚC khi chuyển từ
-    setTimeout(() => {
+    try {
+        // 1. Dừng timer ngay lập tức
+        if (window.__bombTimerInterval) {
+            clearInterval(window.__bombTimerInterval);
+            window.__bombTimerInterval = null;
+        }
+
+        // 2. Lấy từ vựng (có fallback nếu index bị lỗi)
+        let v = vocab[currentBombVocabIndex];
+        if (!v && currentPos >= 0 && currentPos < vocab.length) {
+            v = vocab[currentPos]; // Fallback về từ hiện tại
+        }
+        if (!v) {
+            showToast('️ Lỗi: Không tìm thấy từ vựng!');
+            return;
+        }
+
+        // 3. Chấm điểm (chặn lỗi nếu bombTools bị undefined)
+        const safeTools = Array.isArray(bombTools) && bombTools.length > 0 ? bombTools : ['definition'];
+        const q = calculateBombQ(userInput, v, safeTools);
+
+        // 4. Cập nhật SM-2
+        const targetIdx = currentBombVocabIndex >= 0 ? currentBombVocabIndex : currentPos;
+        if (typeof updateSM2 === 'function') {
+            updateSM2(targetIdx, q);
+        }
+
+        // 5. Bắn thông báo kết quả (Cam kết 100% sẽ hiện)
+        if (q >= 3) {
+            bombStats.defused++;
+            showToast(`✅ Gỡ bom thành công! q=${q}/5`);
+        } else {
+            bombStats.exploded++;
+            showToast(`❌ Gỡ bom thất bại! q=${q}/5`);
+        }
+
+        // 6. Reset cờ bom
+        isShowingBomb = false;
         currentBombVocabIndex = -1;
-        showCard(); // ← Hiển thị flashcard gốc
-        // Tự động chuyển từ sau 3 giây
+
+        // 7. Tự động chuyển từ sau 1.5s (Sếp có thể đổi thành 5000 nếu muốn xem flashcard lâu hơn)
         setTimeout(() => {
             nav(1);
-        }, 3000);
-    }, 1500);
+        }, 1500);
+
+    } catch (err) {
+        // Nếu có lỗi gì đi nữa, vẫn phải báo cho sếp biết!
+        console.error('Lỗi defuseBomb:', err);
+        showToast('⚠️ Lỗi hệ thống: ' + err.message);
+    }
 }
 // 5. Hàm bom nổ (khi hết giờ)
 function bombExplode() {
