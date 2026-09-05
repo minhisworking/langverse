@@ -3200,8 +3200,27 @@ function peekShow(face){ clearTimeout(peekHideTimer); document.querySelectorAll(
 function peekHideSoon(face,delay){ clearTimeout(peekHideTimer); peekHideTimer=setTimeout(()=>{ const pop=$('pop-'+face); if(pop) pop.classList.remove('show'); if(peekPinned===face) peekPinned=null; },delay); }
 ['front','back'].forEach(face=>{ const label=document.querySelector('.peek-item[data-face="'+face+'"]'); const pop=$('pop-'+face); if(!label||!pop) return; label.addEventListener('mouseenter',()=>peekShow(face)); label.addEventListener('mouseleave',()=>{ if(peekPinned!==face) peekHideSoon(face,150); }); label.addEventListener('click',()=>{ peekPinned=face; peekShow(face); }); pop.addEventListener('mouseenter',()=>clearTimeout(peekHideTimer)); pop.addEventListener('mouseleave',()=>peekHideSoon(face,120)); });
 
-const FRONT_PARTS=[{key:'word',label:'Từ gốc'},{key:'ipa',label:'Phiên âm'},{key:'tts',label:'Loa phát âm'},{key:'pos',label:'Loại từ'},{key:'tags',label:'Tag'},{key:'example',label:'Ví dụ'}];
-const BACK_PARTS=[{key:'def',label:'Định nghĩa'},{key:'pos',label:'Loại từ'},{key:'tags',label:'Tag'},{key:'example',label:'Ví dụ'},{key:'synonym',label:'Đồng nghĩa'}];
+const FRONT_PARTS=[
+  {key:'word',label:'Từ gốc'},
+  {key:'ipa',label:'Phiên âm'},
+  {key:'tts',label:'Loa phát âm'},
+  {key:'pos',label:'Loại từ'},
+  {key:'tags',label:'Tag'},
+  {key:'example',label:'Ví dụ'},
+  {key:'synonym',label:'Đồng nghĩa'},
+  {key:'etym',label:'Etymology/Từ nguyên'}
+];
+
+const BACK_PARTS=[
+  {key:'word',label:'Từ gốc'},
+  {key:'def',label:'Định nghĩa'}, // Vẫn giữ lại phòng khi bạn cần ôn nghĩa
+  {key:'pos',label:'Loại từ'},
+  {key:'tags',label:'Tag'},
+  {key:'example',label:'Ví dụ'},
+  {key:'synonym',label:'Đồng nghĩa'},
+  {key:'etym',label:'Etymology/Từ nguyên'}
+];
+
 function renderChecklist(id,parts,store){ const body=$(id); if(!body) return; body.innerHTML=parts.map(p=>'<label class="chk-row"><input type="checkbox" data-part="'+p.key+'"'+(store.includes(p.key)?' checked':'')+'><span>'+p.label+'</span></label>').join(''); }
 function renderFrontChecklist(){ renderChecklist('pop-front-body',FRONT_PARTS,hideFront); }
 function renderBackChecklist(){ renderChecklist('pop-back-body',BACK_PARTS,hideBack); }
@@ -4003,35 +4022,109 @@ let cardsSinceLastBomb = 0;
 
 
 	function showCard(){
-	  console.log(' showCard() - isShowingBomb:', isShowingBomb, 'currentBombVocabIndex:', currentBombVocabIndex);
+    console.log(' showCard() - isShowingBomb:', isShowingBomb, 'currentBombVocabIndex:', currentBombVocabIndex);
+    // Nếu đang hiển thị bom → render giao diện bom
+    if (isShowingBomb && currentBombVocabIndex >= 0) {
+        console.log('✅ Gọi renderBombCard()');
+        renderBombCard();
+        return;
+    }
+    const flip = document.getElementById('flip');
+    flip.classList.add('no-animation');
+    if(!viewList.length){ $('counter').textContent='🃏 0 / 0 · 🎯 '+calcMastery()+'%'; return; } 
+    const v=vocab[viewList[currentPos]]; 
+    if(!v){ $('counter').textContent='🃏 0 / 0 · 🎯 '+calcMastery()+'%'; return; } 
+    resetRecallSlider(); 
+    try{ 
+        currentWordText=cleanInvisible(v.word); 
+        const def=String(v.definition||''); 
+        const allTags=getAllTags(def); 
+        const defParts=def.split(/\[|\]/); 
+        const defNoEtym=defParts[0]; 
+        const etym=defParts[1]?defParts[1].trim():''; 
+        const senses=parseSenses(defNoEtym); 
+        const hidF=k=>hideFront.includes(k); 
+        const hidB=k=>hideBack.includes(k); 
+        
+        let orderedSenses=senses; 
+        if(filterSet.size>0&&senses.length>=2){ 
+            orderedSenses=senses.map((s,idx)=>[s,idx]).sort((a,b)=>{ 
+                const ta=(a[0].tags.length?a[0].tags:allTags).some(tg=>filterSet.has(tg))?0:1; 
+                const tb=(b[0].tags.length?b[0].tags:allTags).some(tg=>filterSet.has(tg))?0:1; 
+                return (ta-tb)||(a[1]-b[1]); 
+            }).map(p=>p[0]); 
+        } 
+        
+        // ================= MẶT TRƯỚC =================
+        let frontHtml = buildImgArea(v.img)+'<div class="face-top">🃏 Từ gốc</div><div class="front-main">';
+        frontHtml += (!hidF('word')?'<div class="big-word">'+esc(v.word)+'</div>':'');
+        
+        frontHtml += '<div class="ipa-row">';
+        frontHtml += (!hidF('ipa')&&v.ipa?'<span class="ipa-big">'+esc(v.ipa)+'</span>':'');
+        frontHtml += (!hidF('tts')?'<button class="tts-btn" title="Nghe phát âm">🔊</button>':'');
+        frontHtml += (!hidF('tts')?'<input type="range" class="rate-slider" min="0.1" max="2" step="0.1" value="'+ttsRate+'" title="Tốc độ đọc"><span class="rate-val">'+ttsRate.toFixed(1)+'×</span>':'');
+        frontHtml += (!hidF('tts')?'<button class="tts-btn mic-btn" id="flashcard-mic-btn" title="Ghi âm & Nhận diện">🎙️</button><span class="transcript-display" id="flashcard-transcript"></span>':'');
+        frontHtml += '</div>';
+        
+        frontHtml += (!hidF('pos')&&v.pos?'<div style="color:#94a3b8; margin-top:4px;">'+esc(v.pos)+'</div>':'');
+        frontHtml += (!hidF('tags')&&allTags.length?'<div class="tags">'+esc(allTags.join('; '))+'</div>':'');
+        frontHtml += '</div>'; // Đóng front-main
+        
+        // Các phần mở rộng ở mặt trước
+        frontHtml += (!hidF('example')&&v.example?'<div class="front-example">💡 '+esc(v.example)+'</div>':'');
+        frontHtml += (!hidF('synonym')&&v.synonym?'<div class="front-example">🔄 <b>Đồng nghĩa:</b> '+esc(v.synonym)+'</div>':'');
+        frontHtml += (!hidF('etym')&&etym?'<div class="etym" style="margin-top:8px;"><b>Etymology:</b><br>'+esc(etym)+'</div>':'');
+        frontHtml += '<div class="flip-hint">👆 Chạm card (hoặc phím Space) để lật</div>';
+        $('front').innerHTML = frontHtml;
 
- // Nếu đang hiển thị bom → render giao diện bom
-  if (isShowingBomb && currentBombVocabIndex >= 0) {
-    console.log('✅ Gọi renderBombCard()');
-    renderBombCard();
-    return;
-  }
-
-const flip = document.getElementById('flip');
-  flip.classList.add('no-animation');	
-	
-	if(!viewList.length){ $('counter').textContent='🃏 0 / 0 · 🎯 '+calcMastery()+'%'; return; } const v=vocab[viewList[currentPos]]; if(!v){ $('counter').textContent='🃏 0 / 0 · 🎯 '+calcMastery()+'%'; return; } resetRecallSlider(); try{ currentWordText=cleanInvisible(v.word); const def=String(v.definition||''); const allTags=getAllTags(def); const defParts=def.split(/\[|\]/); const defNoEtym=defParts[0]; const etym=defParts[1]?defParts[1].trim():''; const senses=parseSenses(defNoEtym); const hidF=k=>hideFront.includes(k); const hidB=k=>hideBack.includes(k); let orderedSenses=senses; if(filterSet.size>0&&senses.length>=2){ orderedSenses=senses.map((s,idx)=>[s,idx]).sort((a,b)=>{ const ta=(a[0].tags.length?a[0].tags:allTags).some(tg=>filterSet.has(tg))?0:1; const tb=(b[0].tags.length?b[0].tags:allTags).some(tg=>filterSet.has(tg))?0:1; return (ta-tb)||(a[1]-b[1]); }).map(p=>p[0]); } $('front').innerHTML=buildImgArea(v.img)+'<div class="face-top">🃏 Từ gốc</div><div class="front-main">'+(!hidF('word')?'<div class="big-word">'+esc(v.word)+'</div>':'')+'<div class="ipa-row">'+(!hidF('tts')?'<button class="tts-btn" title="Nghe phát âm">🔊</button>':'')+(!hidF('tts')?'<input type="range" class="rate-slider" min="0.1" max="2" step="0.1" value="'+ttsRate+'" title="Tốc độ đọc"><span class="rate-val">'+ttsRate.toFixed(1)+'×</span>':'')+(!hidF('tts')?'<button class="tts-btn mic-btn" id="flashcard-mic-btn" title="Ghi âm & Nhận diện">🎙️</button><span class="transcript-display" id="flashcard-transcript"></span>':'')+'</div>'+(!hidF('pos')&&v.pos?'<div style="color:#94a3b8; margin-top:4px;">'+esc(v.pos)+'</div>':'')+(!hidF('tags')&&allTags.length?'<div class="tags">'+esc(allTags.join('; '))+'</div>':'')+'</div>'+(!hidF('example')&&v.example?'<div class="front-example">💡 '+esc(v.example)+'</div>':'')+'<div class="flip-hint">👆 Chạm card (hoặc phím Space) để lật</div>'; let backHtml=buildImgArea(v.img)+'<div class="face-top">📖 Định nghĩa</div>'; if(orderedSenses.length>=2){ if(!hidB('def')){ backHtml+='<div class="back-main">'+orderedSenses.map((s,i)=>{ const tl=s.tags.length?s.tags:allTags; return '<div class="sense"><div class="sense-line"><span class="sense-num">'+(i+1)+'</span><span class="sense-text">'+esc(s.text)+'</span></div>'+(!hidB('tags')&&tl.length?'<div class="sense-tags">'+esc(tl.join('; '))+'</div>':'')+'</div>'; }).join('')+'</div>'; } const infoLines=[]; if(!hidB('pos')&&v.pos) infoLines.push('<b>Loại từ:</b> '+esc(v.pos)); if(!hidB('example')&&v.example) infoLines.push('💡 <b>Ví dụ:</b> '+esc(v.example)); if(!hidB('synonym')&&v.synonym) infoLines.push('🔄 <b>Đồng nghĩa:</b> '+esc(v.synonym)); if(infoLines.length) backHtml+='<div class="info-box">'+infoLines.join('<br>')+'</div>'; } else { const mainDef=defNoEtym.replace(/\(([^)]*)\)/g,(m,c)=>isSubtopicTag(c)?'':m).replace(new RegExp('^\\s*(?:\\d+[.)]|['+CIRC+'])\\s*'),'').replace(/\s+/g,' ').trim(); const metaParts=[]; if(!hidB('pos')&&v.pos) metaParts.push('<span>'+esc(v.pos)+'</span>'); backHtml+='<div class="back-main">'+(!hidB('def')?'<div class="def">'+esc(mainDef)+'</div>':'')+(metaParts.length?'<div class="back-meta">'+metaParts.join(' <span style="color:#475569;">•</span> ')+'</div>':'')+(!hidB('tags')&&allTags.length?'<div class="tags">'+esc(allTags.join('; '))+'</div>':'')+'</div>'; const infoLines=[]; if(!hidB('example')) infoLines.push('💡 <b>Ví dụ:</b> '+esc(v.example||'Chưa có')); if(!hidB('synonym')) infoLines.push('🔄 <b>Đồng nghĩa:</b> '+esc(v.synonym||'Chưa có')); if(infoLines.length) backHtml+='<div class="info-box">'+infoLines.join('<br>')+'</div>'; } if(etym) backHtml+='<div class="etym"><b>Etymology:</b><br>'+esc(etym)+'</div>'; $('back').innerHTML=backHtml; attachImgTriggers(); updateCounter(); setFlipped(false); highlightList(); }catch(err){ 
-		
-	
-	$('front').innerHTML='<div class="face-top">🃏 Từ gốc</div><div class="front-main"><div class="big-word">'+esc(v.word)+'</div></div>'; 
-		
-		$('back').innerHTML='<div class="face-top">📖 Lỗi render</div><div class="back-main"><div class="def" style="color:#ef4444;">⚠️ '+esc(String(err&&err.message||err))+'</div></div>'; updateCounter(); setFlipped(false); highlightList(); } 
-
-
-
-setFlipped(false);
-  
-  setTimeout(() => {
-    flip.classList.remove('no-animation');
-  }, 50);
-
-if (typeof updateBombBadge === 'function') updateBombBadge();
-	
+        // ================= MẶT SAU =================
+        let backHtml = buildImgArea(v.img)+'<div class="face-top">📖 Định nghĩa</div>';
+        backHtml += (!hidB('word')?'<div class="big-word" style="margin-bottom:10px;">'+esc(v.word)+'</div>':'');
+        
+        if(orderedSenses.length>=2){ 
+            if(!hidB('def')){ 
+                backHtml+='<div class="back-main">'+orderedSenses.map((s,i)=>{ 
+                    const tl=s.tags.length?s.tags:allTags; 
+                    return '<div class="sense"><div class="sense-line"><span class="sense-num">'+(i+1)+'</span><span class="sense-text">'+esc(s.text)+'</span></div>'+(!hidB('tags')&&tl.length?'<div class="sense-tags">'+esc(tl.join('; '))+'</div>':'')+'</div>'; 
+                }).join('')+'</div>'; 
+            } 
+            const infoLines=[]; 
+            if(!hidB('pos')&&v.pos) infoLines.push('<b>Loại từ:</b> '+esc(v.pos)); 
+            if(!hidB('example')&&v.example) infoLines.push('💡 <b>Ví dụ:</b> '+esc(v.example)); 
+            if(!hidB('synonym')&&v.synonym) infoLines.push('🔄 <b>Đồng nghĩa:</b> '+esc(v.synonym)); 
+            if(infoLines.length) backHtml+='<div class="info-box">'+infoLines.join('<br>')+'</div>'; 
+        } else { 
+            const mainDef=defNoEtym.replace(/\(([^)]*)\)/g,(m,c)=>isSubtopicTag(c)?'':m).replace(new RegExp('^\\s*(?:\\d+[.)]|['+CIRC+'])\\s*'),'').replace(/\s+/g,' ').trim(); 
+            const metaParts=[]; 
+            if(!hidB('pos')&&v.pos) metaParts.push('<span>'+esc(v.pos)+'</span>'); 
+            backHtml+='<div class="back-main">'+(!hidB('def')?'<div class="def">'+esc(mainDef)+'</div>':'')+(metaParts.length?'<div class="back-meta">'+metaParts.join(' <span style="color:#475569;">•</span> ')+'</div>':'')+(!hidB('tags')&&allTags.length?'<div class="tags">'+esc(allTags.join('; '))+'</div>':'')+'</div>'; 
+            
+            const infoLines=[]; 
+            if(!hidB('example')) infoLines.push('💡 <b>Ví dụ:</b> '+esc(v.example||'Chưa có')); 
+            if(!hidB('synonym')) infoLines.push('🔄 <b>Đồng nghĩa:</b> '+esc(v.synonym||'Chưa có')); 
+            if(infoLines.length) backHtml+='<div class="info-box">'+infoLines.join('<br>')+'</div>'; 
+        } 
+        
+        if(!hidB('etym')&&etym) backHtml+='<div class="etym"><b>Etymology:</b><br>'+esc(etym)+'</div>'; 
+        
+        $('back').innerHTML=backHtml; 
+        
+        attachImgTriggers(); 
+        updateCounter(); 
+        setFlipped(false); 
+        highlightList(); 
+    }catch(err){
+        $('front').innerHTML='<div class="face-top">🃏 Từ gốc</div><div class="front-main"><div class="big-word">'+esc(v.word)+'</div></div>';
+        $('back').innerHTML='<div class="face-top">📖 Lỗi render</div><div class="back-main"><div class="def" style="color:#ef4444;">⚠️ '+esc(String(err&&err.message||err))+'</div></div>'; 
+        updateCounter(); 
+        setFlipped(false); 
+        highlightList(); 
+    }
+    setFlipped(false);
+    setTimeout(() => {
+        flip.classList.remove('no-animation');
+    }, 50);
+    if (typeof updateBombBadge === 'function') updateBombBadge();
 }
 
 
