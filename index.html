@@ -6842,11 +6842,14 @@ $('test-body').innerHTML = '<div style="text-align:center; padding:40px; color:#
 
 
 // 5. Hàm bắt đầu ghi âm / nhận diện giọng nói (SẠCH - KHÔNG PATCHING)
+// 5. Hàm bắt đầu ghi âm / nhận diện giọng nói (SẠCH - KHÔNG PATCHING - ĐÃ BỎ AUTO STOP)
 window.startNoiRecord = function(btn, key) {
     const t = TEST;
     if (!t) return;
     if (!t.noiRecords) t.noiRecords = {};
     if (t.noiRecords[key] && t.noiRecords[key].done) return;
+    
+    // Nếu đang ghi âm mà bấm nút -> Dừng ghi âm
     if (t.noiRecords[key] && t.noiRecords[key].recording) {
         window.stopNoiRecord(btn, key);
         return;
@@ -6854,7 +6857,6 @@ window.startNoiRecord = function(btn, key) {
 
     const SR = window.SpeechRecognition || window.webkitSpeechRecognition;
     const noteEl = document.getElementById('noi-note-' + key);
-
     if (!SR) {
         if (noteEl) noteEl.textContent = '⚠️ Trình duyệt không hỗ trợ nhận diện giọng nói';
         return;
@@ -6868,7 +6870,7 @@ window.startNoiRecord = function(btn, key) {
     rec.lang = langCode;
     rec.continuous = true;
     rec.interimResults = true;
-
+    
     rec.onresult = function(e) {
         if (!t.noiRecords[key]) t.noiRecords[key] = {};
         let finalTranscript = '';
@@ -6884,7 +6886,7 @@ window.startNoiRecord = function(btn, key) {
         }
         if (noteEl) noteEl.textContent = '🔴 Đang nghe... ';
     };
-
+    
     rec.onerror = function(e) {
         if (noteEl) noteEl.textContent = '⚠️ Lỗi mic: ' + e.error;
         btn.textContent = '🎤 Nói';
@@ -6893,7 +6895,7 @@ window.startNoiRecord = function(btn, key) {
         btn.style.color = '';
         if (t.noiRecords[key]) t.noiRecords[key].recording = false;
     };
-
+    
     rec.onend = function() {
         if (noteEl && t.noiRecords[key] && !t.noiRecords[key].transcript) {
             noteEl.textContent = '⚠️ Không nhận diện được giọng nói';
@@ -6907,45 +6909,42 @@ window.startNoiRecord = function(btn, key) {
         return;
     }
 
-    // MediaRecorder để lưu audio (bọc try-catch để tránh crash nếu mic bị chiếm dụng)
+    // MediaRecorder để lưu audio
     if (navigator.mediaDevices && navigator.mediaDevices.getUserMedia) {
         navigator.mediaDevices.getUserMedia({ audio: true })
-            .then(function(stream) {
-                const mediaRec = new MediaRecorder(stream);
-                const chunks = [];
-                mediaRec.ondataavailable = function(e) { if (e.data.size > 0) chunks.push(e.data); };
-                mediaRec.onstop = function() {
-                    const blob = new Blob(chunks, { type: 'audio/webm' });
-                    const url = URL.createObjectURL(blob);
-                    if (!t.noiRecords[key]) t.noiRecords[key] = {};
-                    t.noiRecords[key].audioUrl = url;
-                    stream.getTracks().forEach(tr => tr.stop());
-                };
-                mediaRec.start();
+        .then(function(stream) {
+            const mediaRec = new MediaRecorder(stream);
+            const chunks = [];
+            mediaRec.ondataavailable = function(e) { if (e.data.size > 0) chunks.push(e.data); };
+            mediaRec.onstop = function() {
+                const blob = new Blob(chunks, { type: 'audio/webm' });
+                const url = URL.createObjectURL(blob);
                 if (!t.noiRecords[key]) t.noiRecords[key] = {};
-                t.noiRecords[key].mediaRec = mediaRec;
-            })
-            .catch(function(err) {
-                console.warn('Không thể truy cập MediaRecorder (vẫn có thể chấm điểm qua text):', err);
-            });
+                t.noiRecords[key].audioUrl = url;
+                stream.getTracks().forEach(tr => tr.stop());
+            };
+            mediaRec.start();
+            if (!t.noiRecords[key]) t.noiRecords[key] = {};
+            t.noiRecords[key].mediaRec = mediaRec;
+        })
+        .catch(function(err) {
+            console.warn('Không thể truy cập MediaRecorder (vẫn có thể chấm điểm qua text):', err);
+        });
     }
 
     if (!t.noiRecords[key]) t.noiRecords[key] = {};
     t.noiRecords[key].rec = rec;
     t.noiRecords[key].recording = true;
     
+    // Giao diện nút khi đang ghi âm
     btn.textContent = '⏹️ Dừng';
     btn.style.background = '#ef4444';
     btn.style.color = '#fff';
-    if (noteEl) noteEl.textContent = '🔴 Đang ghi âm...';
-
-    // Tự động dừng sau 30s để tránh quên tắt
-    t.noiRecords[key].timeout = setTimeout(function() {
-        if (t.noiRecords[key] && t.noiRecords[key].recording) {
-            window.stopNoiRecord(btn, key);
-        }
-    }, 30000);
-};
+    if (noteEl) noteEl.textContent = '🔴 Đang ghi âm... (Bấm nút để dừng)';
+    
+    // ❌ ĐÃ XÓA: Không còn setTimeout tự động ngắt sau 30s nữa.
+    // Người học sẽ hoàn toàn chủ động bấm nút "⏹️ Dừng" khi họ nói xong.
+};;
 
 // 6. Hàm dừng ghi âm
 window.stopNoiRecord = function(btn, key) {
@@ -8368,23 +8367,6 @@ if (document.readyState === 'loading') {
     <button class="dup-del-ok">OK</button>
   </div>
 </div>
-<div id="dup-del-confirm" class="dup-del-confirm hidden">
-  <div class="dup-del-confirm-text" id="dup-del-confirm-text"></div>
-  <div class="dup-del-confirm-actions">
-    <button class="dup-del-cancel">Huỷ</button>
-    <button class="dup-del-ok">OK</button>
-  </div>
-</div>	
-
-<!-- Popup xác nhận xóa trùng lặp -->
-<div id="dup-del-confirm" class="dup-del-confirm hidden">
-  <div class="dup-del-confirm-text" id="dup-del-confirm-text"></div>
-  <div class="dup-del-confirm-actions">
-    <button class="dup-del-cancel">Huỷ</button>
-    <button class="dup-del-ok">OK</button>
-  </div>
-</div>
-
 
 <script>
 // Cập nhật trạng thái nút "Đã chọn"
