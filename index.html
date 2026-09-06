@@ -784,7 +784,7 @@ touch-action: manipulation;
 }
 
 
-/* Chế độ dịu mắt cho mobile */
+/* Chế độ dịu 👁️ cho mobile */
 @media (max-width: 768px) {
 
 :root {
@@ -952,7 +952,7 @@ padding: 6px 8px;
 }
 
 
-/* Sửa popup Mặt trước/Mặt sau cho gọn gàng (Bỏ qua popup Multiverse & Vũ trụ) */
+/* Trên mobile: Các popup khác vẫn hiện chính giữa, nhưng loại trừ 2 dropdown Multiverse & Vũ trụ */
 .peek-pop:not(#multi-pop):not(#filter-pop) {
 position: fixed !important;
 top: 50% !important;
@@ -966,10 +966,13 @@ overflow-x: hidden !important;
 box-sizing: border-box !important;
 z-index: 9999 !important;
 }
-/* Đảm bảo popup Multiverse và Vũ trụ không bao giờ tràn màn hình */
+
+/* Tối ưu riêng cho 2 dropdown Multiverse và Vũ trụ: Hiện dưới nút, giới hạn chiều rộng/cao cho đẹp */
 #multi-pop, #filter-pop {
-max-width: calc(100vw - 20px) !important;
-min-width: auto !important;
+  max-width: 85vw !important;
+  max-height: 60vh !important;
+  overflow-y: auto !important;
+  z-index: 9999 !important;
 }
 
 .peek-pop-title {
@@ -2095,7 +2098,7 @@ margin-top: 6px;
 <h2 style="color:var(--accent); margin-top:0;">✨ Triệu hồi AI</h2>
 <div class="form-group">
 <label>🔑 Gemini API Key</label>
-<div class="ai-key-row"><input type="password" id="ai-key" placeholder="AIzaSy..."><button type="button" class="ai-key-toggle" onclick="toggleAiKey()">👁️</button></div>
+<div class="ai-key-row"><input type="password" id="ai-key" placeholder="AIzaSy..."><button type="button" class="ai-key-toggle" onclick="toggleAiKey(this)">🙈</button></div>
 <div class="ai-help">💡 Chưa có key? Lấy miễn phí tại <a href="https://aistudio.google.com/app/apikey" target="_blank">aistudio.google.com/app/apikey</a>. Key lưu cục bộ trên máy sếp.</div>
 </div>
 <div class="form-group">
@@ -2302,7 +2305,7 @@ margin-top: 6px;
 <div class="form-group"><label>🎯 Trình độ muốn đạt được</label><select id="profile-level" style="width:100%;"></select></div>
 <div class="form-group"><label>🧭 Mục đích học</label><select id="profile-purpose" style="width:100%;"></select></div>
 <div class="form-group"><label>🔑 Gemini API Key (để AI ra đề & chấm thi)</label>
-<div class="ai-key-row"><input type="password" id="profile-ai-key" placeholder="AIzaSy..." style="flex:1;"><button type="button" class="ai-key-toggle" onclick="toggleProfileKey()">👁️</button></div>
+<div class="ai-key-row"><input type="password" id="profile-ai-key" placeholder="AIzaSy..." style="flex:1;"><button type="button" class="ai-key-toggle" onclick="toggleProfileKey(this)">🙈</button></div>
 <div class="ai-help">💡 Chưa có key? Lấy miễn phí tại <a href="https://aistudio.google.com/app/apikey" target="_blank">aistudio.google.com/app/apikey</a>. Key lưu cục bộ trên máy sếp.</div>
 </div>
 <button id="profile-save-btn" class="btn-primary" onclick="saveProfile()" style="width:100%; padding:14px;">💾 Lưu hồ sơ</button>
@@ -2468,7 +2471,7 @@ return !hasTags || normalFilters.some(tg => String(v.definition||'').includes(tg
 // Logic cũ cho các vũ trụ cụ thể
 return normalFilters.some(tg => String(v.definition||'').includes(tg));
 }
-function calcMastery(){ const pool=vocab.filter(inCurrentFilter); if(!pool.length) return 0; const t=pool.reduce((s,v)=>s+getScore(v),0); return Math.round((t/(pool.length*100))*100); }
+function calcMastery(){ if(!viewList.length) return 0; const t=viewList.reduce((s,idx)=>s+getScore(vocab[idx]),0); return Math.round((t/(viewList.length*100))*100); }
 
 function matchTier(v,q){ if(!q) return 0; const w=cleanInvisible(v.word).toLowerCase(), d=String(v.definition||'').toLowerCase(), ipa=String(v.ipa||'').toLowerCase(); if(w.includes(q)||d.includes(q)||ipa.includes(q)) return 0; const ex=String(v.example||'').toLowerCase(), syn=String(v.synonym||'').toLowerCase(); if(ex.includes(q)||syn.includes(q)) return 1; return 2; }
 
@@ -2502,7 +2505,16 @@ const el=$(id); if(el && !el.dataset.wired){ el.dataset.wired='1'; el.addEventLi
 updateSaveBtn();
 $('profile-modal').classList.add('active');
 }
-function toggleProfileKey(){ const inp=$('profile-ai-key'); inp.type=inp.type==='password'?'text':'password'; }
+function toggleProfileKey(btn){ 
+    const inp = $('profile-ai-key'); 
+    if(inp.type === 'password'){ 
+        inp.type = 'text'; 
+        if(btn) btn.textContent = '👁️'; 
+    } else { 
+        inp.type = 'password'; 
+        if(btn) btn.textContent = '🙈'; 
+    } 
+}
 function closeProfileModal(){
 
 
@@ -2629,8 +2641,11 @@ pop.style.maxWidth = (winWidth - 20) + 'px';
 // 3. Chống tràn dưới (nếu không đủ chỗ thì nảy lên trên nút bấm)
 const rect3 = pop.getBoundingClientRect();
 if (rect3.bottom > winHeight - 10) {
-pop.style.top = 'auto';
-pop.style.bottom = 'calc(100% + 10px)';
+    // Trên mobile, luôn giữ dropdown ở dưới nút bấm, không đẩy lên trên
+    if (window.innerWidth > 768) {
+        pop.style.top = 'auto';
+        pop.style.bottom = 'calc(100% + 10px)';
+    }
 }
 }, 0);
 }
@@ -3761,7 +3776,16 @@ if(typeof Sounds !== 'undefined') Sounds.modalClose();
 
 
 $('ai-modal').classList.remove('active'); }
-function toggleAiKey(){ const inp=$('ai-key'); inp.type=inp.type==='password'?'text':'password'; }
+function toggleAiKey(btn){ 
+    const inp = $('ai-key'); 
+    if(inp.type === 'password'){ 
+        inp.type = 'text'; 
+        if(btn) btn.textContent = '👁️'; // Đang ẩn -> Bấm để hiện -> Đổi thành bịt 👁️
+    } else { 
+        inp.type = 'password'; 
+        if(btn) btn.textContent = '🙈'; // Đang hiện -> Bấm để ẩn -> Đổi thành 👁️ mở
+    } 
+}
 function aiLog(msg,cls){ const log=$('ai-log'); log.style.display='block'; const d=document.createElement('div'); if(cls) d.className=cls; d.textContent=msg; log.appendChild(d); log.scrollTop=log.scrollHeight; }
 function aiSetStatus(msg,cls){ const st=$('ai-status'); st.className='ai-status '+(cls||'info'); st.innerHTML=msg; }
 function clearAiPreview(){ $('ai-body').innerHTML=''; $('ai-preview-wrap').classList.remove('show'); $('ai-log').style.display='none'; $('ai-log').innerHTML=''; aiSetStatus('💤 Đã dọn sạch, sẵn sàng cho lệnh mới.','info'); }
@@ -4801,10 +4825,7 @@ if(!name) return '';
 const arr=getMultiverses();
 if(id){ const m=arr.find(x=>x.id===id); if(m&&m.name===name) return id; }
 const ex=arr.find(x=>x.name===name); if(ex) return ex.id;
-const nid='m_'+Date.now();
-arr.push({id:nid,name:name,front:'',back:''});
-saveMultiverses(arr);
-return nid;
+const nid='m_'+Date.now();arr.push({id:nid,name:name,front:'',back:''});saveMultiverses(arr);return '';
 }
 
 function toggleMultiListForImport(){
@@ -7561,36 +7582,45 @@ $('test-body').innerHTML = html;
 <div style="border: 1px solid var(--border); border-radius: 8px; padding: 12px; margin-bottom: 12px; background: rgba(0,0,0,0.1);">
 <div style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 10px;">
 <label class="chk-row" style="margin: 0; font-weight: bold; color: var(--accent);">
-<input type="checkbox" id="bk-vocab-enable" checked onchange="toggleBkMaster()">
+<input type="checkbox" id="bk-vocab-enable" onchange="toggleBkMaster()">
 <span>1. Chọn từ / Vũ trụ / Multiverse</span>
 </label>
 </div>
 
 <div id="bk-drilldown-container">
-<!-- Step 1: Multiverse -->
-<div id="bk-step1">
-<div style="font-size: 12px; color: #94a3b8; margin-bottom: 6px;">🌌 Chọn Multiverse:</div>
-<div id="bk-multi-list" style="max-height: 120px; overflow-y: auto; padding: 8px; background: var(--card-bg); border-radius: 6px;"></div>
-</div>
+    <!-- Step 1: Multiverse -->
+    <div id="bk-step1">
+        <button type="button" class="btn-primary" style="width:100%; padding:10px 14px; font-size:14px; display:flex; justify-content:space-between; align-items:center; border-radius:8px;" onclick="toggleBkList('multi')">
+            <span>🌌 Chọn Multiverse</span>
+            <span id="bk-multi-summary" style="font-size:12px; opacity:0.8; font-weight:normal;">Chưa chọn</span>
+        </button>
+        <div id="bk-multi-list" style="display:none; margin-top:8px; max-height:150px; overflow-y: auto; padding:8px; background: var(--card-bg); border:1px solid var(--border); border-radius:8px;"></div>
+    </div>
 
-<!-- Step 2: Verse -->
-<div id="bk-step2" style="display: none; margin-top: 10px; border-top: 1px dashed var(--border); padding-top: 10px;">
-<div style="font-size: 12px; color: #94a3b8; margin-bottom: 6px;">☀️ Chọn lọc vũ trụ (trong Multiverse đã chọn):</div>
-<div id="bk-verse-list" style="max-height: 120px; overflow-y: auto; padding: 8px; background: var(--card-bg); border-radius: 6px;"></div>
-</div>
+    <!-- Step 2: Verse -->
+    <div id="bk-step2" style="display: none; margin-top: 10px;">
+        <button type="button" class="btn-primary" style="width:100%; padding:10px 14px; font-size:14px; display:flex; justify-content:space-between; align-items:center; border-radius:8px;" onclick="toggleBkList('verse')">
+            <span>☀️ Chọn lọc vũ trụ</span>
+            <span id="bk-verse-summary" style="font-size:12px; opacity:0.8; font-weight:normal;">Chưa chọn</span>
+        </button>
+        <div id="bk-verse-list" style="display:none; margin-top:8px; max-height:150px; overflow-y: auto; padding:8px; background: var(--card-bg); border:1px solid var(--border); border-radius:8px;"></div>
+    </div>
 
-<!-- Step 3: Words -->
-<div id="bk-step3" style="display: none; margin-top: 10px; border-top: 1px dashed var(--border); padding-top: 10px;">
-<div style="font-size: 12px; color: #94a3b8; margin-bottom: 6px;">🔤 Chọn lọc từ vựng (trong Vũ trụ đã chọn):</div>
-<div id="bk-word-list" style="max-height: 150px; overflow-y: auto; padding: 8px; background: var(--card-bg); border-radius: 6px;"></div>
+    <!-- Step 3: Words -->
+    <div id="bk-step3" style="display: none; margin-top: 10px;">
+        <button type="button" class="btn-primary" style="width:100%; padding:10px 14px; font-size:14px; display:flex; justify-content:space-between; align-items:center; border-radius:8px;" onclick="toggleBkList('word')">
+            <span>🔤 Chọn lọc từ vựng</span>
+            <span id="bk-word-summary" style="font-size:12px; opacity:0.8; font-weight:normal;">Chưa chọn</span>
+        </button>
+        <div id="bk-word-list" style="display:none; margin-top:8px; max-height:180px; overflow-y: auto; padding:8px; background: var(--card-bg); border:1px solid var(--border); border-radius:8px;"></div>
+    </div>
 </div>
 </div>
-</div>
-<label class="chk-row"><input type="checkbox" id="bk-bomb" checked> <span>2. Lịch sử gỡ bom</span></label>
-<label class="chk-row"><input type="checkbox" id="bk-sm2" checked> <span>3. Lịch sử 🎯 (Đánh giá mức độ nhớ / SM-2)</span></label>
-<label class="chk-row"><input type="checkbox" id="bk-test" checked> <span>4. Lịch sử từ đã kiểm tra (Nghe, Nói, Đọc, Viết)</span></label>
-<label class="chk-row"><input type="checkbox" id="bk-profile" checked> <span>5. Hồ sơ người học & Gemini API Key</span></label>
-<label class="chk-row"><input type="checkbox" id="bk-img" checked> <span>6. Các ảnh đã gán vào từ</span></label>
+<label class="chk-row"><input type="checkbox" id="bk-bomb" > <span>2. Lịch sử gỡ bom</span></label>
+<label class="chk-row"><input type="checkbox" id="bk-sm2" > <span>3. Lịch sử 🎯 (Đánh giá mức độ nhớ / SM-2)</span></label>
+<label class="chk-row"><input type="checkbox" id="bk-test" > <span>4. Lịch sử từ đã kiểm tra (Nghe, Nói, Đọc, Viết)</span></label>
+<label class="chk-row"><input type="checkbox" id="bk-profile" > <span>5. Hồ sơ người học & Gemini API Key</span></label>
+<label class="chk-row"><input type="checkbox" id="bk-img" > <span>6. Các ảnh đã gán vào từ</span></label>
 </div>
 <div style="display:flex; gap:10px; margin-top:20px;">
 <button class="btn-primary" onclick="doBackup()" style="flex:1; padding:12px;">💾 Xuất file Backup</button>
@@ -10398,6 +10428,8 @@ words: new Set()
 function openBackupModal() {
 $('backup-modal').classList.add('active');
 initBackupFilter(); // Khởi tạo dữ liệu khi mở modal
+    toggleBkMaster(); // <-- THÊM DÒNG NÀY để làm mờ phần drill-down ngay khi mở
+
 }
 
 function closeBackupModal() {
@@ -10405,211 +10437,205 @@ if(typeof Sounds !== 'undefined') Sounds.modalClose();
 $('backup-modal').classList.remove('active');
 }
 
-function toggleBkMaster() {
-const isEnabled = $('bk-vocab-enable').checked;
-$('bk-drilldown-container').style.opacity = isEnabled ? '1' : '0.4';
-$('bk-drilldown-container').style.pointerEvents = isEnabled ? 'auto' : 'none';
+function toggleBkList(type) {
+    const list = $('bk-' + type + '-list');
+    if (!list) return;
+    if (list.style.display === 'none') {
+        if (type === 'verse') renderBkVerses();
+        else if (type === 'word') renderBkWords();
+        list.style.display = 'block';
+    } else {
+        list.style.display = 'none';
+    }
 }
 
-// Hàm sắp xếp list: Đưa mục đã tích lên đầu, chưa tích xuống cuối, giữ mục "Tất cả" luôn ở trên cùng
+function toggleBkMaster() {
+    const isEnabled = $('bk-vocab-enable').checked;
+    $('bk-drilldown-container').style.opacity = isEnabled ? '1' : '0.4';
+    $('bk-drilldown-container').style.pointerEvents = isEnabled ? 'auto' : 'none';
+}
+
 function sortListByChecked(containerId) {
     const container = document.getElementById(containerId);
     if (!container) return;
-    
     const labels = Array.from(container.querySelectorAll('label.chk-row'));
-    const others = Array.from(container.children).filter(el => el.tagName !== 'LABEL'); // Giữ lại các div thông báo (nếu có)
-    
+    const others = Array.from(container.children).filter(el => el.tagName !== 'LABEL');
     labels.sort((a, b) => {
         const cbA = a.querySelector('input[type="checkbox"]');
         const cbB = b.querySelector('input[type="checkbox"]');
         if (!cbA || !cbB) return 0;
-        
-        // 1. Giữ checkbox "Tất cả" (id kết thúc bằng -all) luôn ở trên cùng
         if (cbA.id && cbA.id.endsWith('-all')) return -1;
         if (cbB.id && cbB.id.endsWith('-all')) return 1;
-        
         const aChecked = cbA.checked;
         const bChecked = cbB.checked;
-        
-        // 2. Nếu cùng trạng thái thì sort theo bảng chữ cái cho đẹp
         if (aChecked === bChecked) {
             return a.textContent.localeCompare(b.textContent, 'vi');
         }
-        // 3. Đưa checked lên trên (-1), unchecked xuống dưới (1)
         return aChecked ? -1 : 1;
     });
-    
-    // Xóa và append lại theo thứ tự mới
     container.innerHTML = '';
     labels.forEach(label => container.appendChild(label));
     others.forEach(el => container.appendChild(el));
 }
 
-
-// 1. Khởi tạo danh sách Multiverse
 function initBackupFilter() {
-bkState.multis.clear();
-bkState.verses.clear();
-bkState.words.clear();
+    bkState.multis.clear();
+    bkState.verses.clear();
+    bkState.words.clear();
+    
+    $('bk-step2').style.display = 'none';
+    $('bk-step3').style.display = 'none';
+    $('bk-multi-summary').textContent = 'Chưa chọn';
+    $('bk-verse-summary').textContent = 'Chưa chọn';
+    $('bk-word-summary').textContent = 'Chưa chọn';
+    $('bk-multi-list').style.display = 'none';
+    $('bk-verse-list').style.display = 'none';
+    $('bk-word-list').style.display = 'none';
 
-const multiList = $('bk-multi-list');
-const multis = getMultiverses();
-
-let mHtml = `<label class="chk-row" style="font-weight:bold; border-bottom:1px dashed var(--border); padding-bottom:6px; margin-bottom:6px;">
-<input type="checkbox" id="bk-multi-all" checked onchange="toggleBkAll('multi')"> <span>🌌 Tất cả Multiverse</span>
-</label>`;
-
-multis.forEach(m => {
-mHtml += `<label class="chk-row"><input type="checkbox" class="bk-multi-item" data-id="${esc(m.id)}" checked onchange="updateBkSelection('multi')"> <span>${esc(m.name)}</span></label>`;
-});
-
-// Thêm mục "Không thuộc Multiverse nào" nếu có từ nào đó không gắn multi
-const hasNoMulti = vocab.some(v => !v.multi);
-if (hasNoMulti) {
-mHtml += `<label class="chk-row"><input type="checkbox" class="bk-multi-item" data-id="__none__" checked onchange="updateBkSelection('multi')"> <span>🌌 Không thuộc Multiverse nào</span></label>`;
+    const multiList = $('bk-multi-list');
+    const multis = getMultiverses();
+    let mHtml = `<label class="chk-row" style="font-weight:bold; border-bottom:1px dashed var(--border); padding-bottom:6px; margin-bottom:6px;">
+    <input type="checkbox" id="bk-multi-all" checked onchange="toggleBkAll('multi')"> <span>🌌 Tất cả Multiverse</span>
+    </label>`;
+    multis.forEach(m => {
+        mHtml += `<label class="chk-row"><input type="checkbox" class="bk-multi-item" data-id="${esc(m.id)}"  onchange="updateBkSelection('multi')"> <span>${esc(m.name)}</span></label>`;
+    });
+    const hasNoMulti = vocab.some(v => !v.multi);
+    if (hasNoMulti) {
+        mHtml += `<label class="chk-row"><input type="checkbox" class="bk-multi-item" data-id="__none__"  onchange="updateBkSelection('multi')"> <span>🌌 Không thuộc Multiverse nào</span></label>`;
+    }
+    multiList.innerHTML = mHtml;
+    
+    updateBkSelection('multi', true);
 }
 
-multiList.innerHTML = mHtml;
-
-// Mặc định chọn tất cả và render các bước tiếp theo
-updateBkSelection('multi', true);
-    sortListByChecked('bk-multi-list'); // <-- THÊM DÒNG NÀY
-
-}
-
-// Hàm xử lý khi bấm "Chọn tất cả" hoặc chọn lẻ
 function toggleBkAll(type) {
-const allCheckbox = $(`bk-${type}-all`);
-const isChecked = allCheckbox.checked;
-const items = document.querySelectorAll(`.bk-${type}-item`);
-items.forEach(item => item.checked = isChecked);
-updateBkSelection(type);
+    const allCheckbox = $('bk-' + type + '-all');
+    const isChecked = allCheckbox.checked;
+    const items = document.querySelectorAll('.bk-' + type + '-item');
+    items.forEach(item => item.checked = isChecked);
+    updateBkSelection(type);
 }
 
 function updateBkSelection(type, isInit = false) {
-const allCheckbox = $(`bk-${type}-all`);
-const items = document.querySelectorAll(`.bk-${type}-item`);
-const checkedItems = document.querySelectorAll(`.bk-${type}-item:checked`);
-
-// Cập nhật trạng thái cho nút "Tất cả" (checkbox, indeterminate)
-if (checkedItems.length === items.length) {
-allCheckbox.checked = true;
-allCheckbox.indeterminate = false;
-} else if (checkedItems.length === 0) {
-allCheckbox.checked = false;
-allCheckbox.indeterminate = false;
-} else {
-allCheckbox.checked = false;
-allCheckbox.indeterminate = true;
-}
-
-// Thu thập ID đã chọn
-const selectedSet = new Set();
-if (allCheckbox.checked) selectedSet.add('__all__');
-else checkedItems.forEach(item => selectedSet.add(item.dataset.id));
-
-bkState[type + 's'] = selectedSet; // Lưu vào bkState.multis, bkState.verses, bkState.words
-
-// Điều hướng hiển thị các bước tiếp theo
-    // Điều hướng hiển thị các bước tiếp theo
-    if (type === 'multi') {
-        const isStep2Visible = selectedSet.size > 0;
-        $('bk-step2').style.display = isStep2Visible ? 'block' : 'none';
-        if (!isStep2Visible) {
-            $('bk-step3').style.display = 'none';
+    const allCheckbox = $('bk-' + type + '-all');
+    const items = document.querySelectorAll('.bk-' + type + '-item');
+    const checkedItems = document.querySelectorAll('.bk-' + type + '-item:checked');
+    
+    if (allCheckbox) {
+        if (checkedItems.length === items.length && items.length > 0) {
+            allCheckbox.checked = true;
+            allCheckbox.indeterminate = false;
+        } else if (checkedItems.length === 0) {
+            allCheckbox.checked = false;
+            allCheckbox.indeterminate = false;
+        } else {
+            allCheckbox.checked = false;
+            allCheckbox.indeterminate = true;
         }
-        renderBkVerses(); 
-        sortListByChecked('bk-multi-list'); // <-- THÊM DÒNG NÀY
-    } else if (type === 'verse') {
-        renderBkWords();
-        sortListByChecked('bk-verse-list'); // <-- THÊM DÒNG NÀY
-        const isStep2Visible = $('bk-step2').style.display !== 'none';
-        $('bk-step3').style.display = (selectedSet.size > 0 && isStep2Visible) ? 'block' : 'none';
-    } else if (type === 'word') {
-        sortListByChecked('bk-word-list'); // <-- THÊM DÒNG NÀY
     }
+
+    let summaryText = 'Chưa chọn';
+    if (checkedItems.length > 0) {
+        if (allCheckbox && allCheckbox.checked) {
+            summaryText = `Tất cả (${items.length})`;
+        } else {
+            summaryText = `${checkedItems.length} mục`;
+        }
+    }
+    const summaryEl = $('bk-' + type + '-summary');
+    if (summaryEl) summaryEl.textContent = summaryText;
+
+    const selectedSet = new Set();
+    if (allCheckbox && allCheckbox.checked) selectedSet.add('__all__');
+    else checkedItems.forEach(item => selectedSet.add(item.dataset.id));
+    bkState[type + 's'] = selectedSet;
+
+    if (type === 'multi') {
+        const hasMulti = checkedItems.length > 0;
+        $('bk-step2').style.display = hasMulti ? 'block' : 'none';
+        if (!hasMulti) {
+            $('bk-step3').style.display = 'none';
+            bkState.verses.clear();
+            bkState.words.clear();
+        }
+        renderBkVerses();
+    } else if (type === 'verse') {
+        const hasVerse = checkedItems.length > 0;
+        $('bk-step3').style.display = hasVerse ? 'block' : 'none';
+        if (!hasVerse) {
+            bkState.words.clear();
+        }
+        renderBkWords();
+    }
+    
+    sortListByChecked('bk-' + type + '-list');
 }
 
-// 2. Render danh sách Vũ trụ (Lọc theo Multiverse đã chọn)
 function renderBkVerses() {
-const verseList = $('bk-verse-list');
-const availableVerses = new Set();
-let hasNoVerse = false;
-
-vocab.forEach(v => {
-let inMulti = false;
-if (bkState.multis.has('__all__')) inMulti = true;
-else if (bkState.multis.has('__none__') && !v.multi) inMulti = true;
-else if (v.multi && bkState.multis.has(v.multi)) inMulti = true;
-
-if (inMulti) {
-const tags = getAllTags(v.definition);
-if (tags.length === 0) hasNoVerse = true;
-else tags.forEach(t => availableVerses.add(t));
-}
-});
-
-let vHtml = `<label class="chk-row" style="font-weight:bold; border-bottom:1px dashed var(--border); padding-bottom:6px; margin-bottom:6px;">
-<input type="checkbox" id="bk-verse-all" checked onchange="toggleBkAll('verse')"> <span>☀️ Tất cả vũ trụ</span>
-</label>`;
-
-const sortedVerses = Array.from(availableVerses).sort();
-if (sortedVerses.length === 0 && !hasNoVerse) {
-vHtml += `<div style="color:#94a3b8; font-size:12px; padding:8px 0;">Không có vũ trụ nào trong các Multiverse đã chọn.</div>`;
-} else {
-sortedVerses.forEach(v => {
-vHtml += `<label class="chk-row"><input type="checkbox" class="bk-verse-item" data-id="${esc(v)}" checked onchange="updateBkSelection('verse')"> <span>${esc(v)}</span></label>`;
-});
-if (hasNoVerse) {
-vHtml += `<label class="chk-row"><input type="checkbox" class="bk-verse-item" data-id="__no_verse__" checked onchange="updateBkSelection('verse')"> <span>☀️ Không gắn vũ trụ nào</span></label>`;
-}
-}
-
-verseList.innerHTML = vHtml;
-updateBkSelection('verse');
+    const verseList = $('bk-verse-list');
+    const availableVerses = new Set();
+    let hasNoVerse = false;
+    vocab.forEach(v => {
+        let inMulti = false;
+        if (bkState.multis.has('__all__')) inMulti = true;
+        else if (bkState.multis.has('__none__') && !v.multi) inMulti = true;
+        else if (v.multi && bkState.multis.has(v.multi)) inMulti = true;
+        if (inMulti) {
+            const tags = getAllTags(v.definition);
+            if (tags.length === 0) hasNoVerse = true;
+            else tags.forEach(t => availableVerses.add(t));
+        }
+    });
+    let vHtml = `<label class="chk-row" style="font-weight:bold; border-bottom:1px dashed var(--border); padding-bottom:6px; margin-bottom:6px;">
+    <input type="checkbox" id="bk-verse-all" checked onchange="toggleBkAll('verse')"> <span>☀️ Tất cả vũ trụ</span>
+    </label>`;
+    const sortedVerses = Array.from(availableVerses).sort();
+    if (sortedVerses.length === 0 && !hasNoVerse) {
+        vHtml += `<div style="color:#94a3b8; font-size:12px; padding:8px 0;">Không có vũ trụ nào trong các Multiverse đã chọn.</div>`;
+    } else {
+        sortedVerses.forEach(v => {
+            vHtml += `<label class="chk-row"><input type="checkbox" class="bk-verse-item" data-id="${esc(v)}"onchange="updateBkSelection('verse')"> <span>${esc(v)}</span></label>`;
+        });
+        if (hasNoVerse) {
+            vHtml += `<label class="chk-row"><input type="checkbox" class="bk-verse-item" data-id="__no_verse__" onchange="updateBkSelection('verse')"> <span>☀️ Không gắn vũ trụ nào</span></label>`;
+        }
+    }
+    verseList.innerHTML = vHtml;
+    updateBkSelection('verse');
 }
 
-// 3. Render danh sách Từ vựng (Lọc theo Vũ trụ đã chọn)
 function renderBkWords() {
-const wordList = $('bk-word-list');
-const availableWords = [];
-
-vocab.forEach((v, idx) => {
-// Kiểm tra điều kiện Vũ trụ
-let inVerse = false;
-if (bkState.verses.has('__all__')) inVerse = true;
-else {
-const tags = getAllTags(v.definition);
-if (tags.length === 0 && bkState.verses.has('__no_verse__')) inVerse = true;
-else inVerse = tags.some(t => bkState.verses.has(t));
-}
-
-// Kiểm tra điều kiện Multiverse (từ bước trước)
-let inMulti = false;
-if (bkState.multis.has('__all__')) inMulti = true;
-else if (bkState.multis.has('__none__') && !v.multi) inMulti = true;
-else if (v.multi && bkState.multis.has(v.multi)) inMulti = true;
-
-if (inVerse && inMulti) {
-availableWords.push({ v, idx });
-}
-});
-
-let wHtml = `<label class="chk-row" style="font-weight:bold; border-bottom:1px dashed var(--border); padding-bottom:6px; margin-bottom:6px;">
-<input type="checkbox" id="bk-word-all" checked onchange="toggleBkAll('word')"> <span>🔤 Tất cả từ vựng (${availableWords.length} từ)</span>
-</label>`;
-
-if (availableWords.length === 0) {
-wHtml += `<div style="color:#94a3b8; font-size:12px; padding:8px 0;">Không có từ vựng nào trong các vũ trụ đã chọn.</div>`;
-} else {
-availableWords.forEach(({v, idx}) => {
-const shortDef = String(v.definition || '').split('\n')[0].replace(/\([^)]*\)/g, '').slice(0, 40);
-wHtml += `<label class="chk-row"><input type="checkbox" class="bk-word-item" data-idx="${idx}" checked onchange="updateBkSelection('word')"> <span style="color:var(--accent); font-weight:bold;">${esc(v.word)}</span> <span style="color:#94a3b8; font-size:11px; margin-left:4px;">- ${esc(shortDef)}</span></label>`;
-});
-}
-
-wordList.innerHTML = wHtml;
-updateBkSelection('word');
+    const wordList = $('bk-word-list');
+    const availableWords = [];
+    vocab.forEach((v, idx) => {
+        let inVerse = false;
+        if (bkState.verses.has('__all__')) inVerse = true;
+        else {
+            const tags = getAllTags(v.definition);
+            if (tags.length === 0 && bkState.verses.has('__no_verse__')) inVerse = true;
+            else inVerse = tags.some(t => bkState.verses.has(t));
+        }
+        let inMulti = false;
+        if (bkState.multis.has('__all__')) inMulti = true;
+        else if (bkState.multis.has('__none__') && !v.multi) inMulti = true;
+        else if (v.multi && bkState.multis.has(v.multi)) inMulti = true;
+        if (inVerse && inMulti) {
+            availableWords.push({ v, idx });
+        }
+    });
+    let wHtml = `<label class="chk-row" style="font-weight:bold; border-bottom:1px dashed var(--border); padding-bottom:6px; margin-bottom:6px;">
+    <input type="checkbox" id="bk-word-all" checked onchange="toggleBkAll('word')"> <span>🔤 Tất cả từ vựng (${availableWords.length} từ)</span>
+    </label>`;
+    if (availableWords.length === 0) {
+        wHtml += `<div style="color:#94a3b8; font-size:12px; padding:8px 0;">Không có từ vựng nào trong các vũ trụ đã chọn.</div>`;
+    } else {
+        availableWords.forEach(({v, idx}) => {
+            wHtml += `<label class="chk-row"><input type="checkbox" class="bk-word-item" data-idx="${idx}"  onchange="updateBkSelection('word')"> <span style="color:var(--accent); font-weight:bold;">${esc(v.word)}</span></label>`;
+        });
+    }
+    wordList.innerHTML = wHtml;
+    updateBkSelection('word');
 }
 
 // 4. Hàm xuất Backup (Đã cập nhật để lọc dữ liệu thông minh)
