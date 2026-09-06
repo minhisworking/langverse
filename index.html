@@ -711,8 +711,9 @@ overflow-y: auto;
 }
 
 /* Word list */
-.word-list { max-height: 200px; }
-.list-item { padding: 8px 10px; }
+    .word-list { max-height: 45vh; } /* Tăng lên 45vh để thoải mái hiển thị */
+    .list-item { padding: 8px 10px; }
+
 
 /* Rate zone */
 .rate-zone { padding: 10px 12px; }
@@ -3566,8 +3567,8 @@ function doDelete(idx){ if(idx==null||idx<0||idx>=vocab.length) return; selected
 
 function deleteSelectedWords(){ if(!selected.size) return; for(let i=vocab.length-1;i>=0;i--) if(selected.has(keyOf(vocab[i]))) vocab.splice(i,1); selected.clear(); localStorage.setItem('langverse_data',JSON.stringify(vocab)); if(typeof Sounds !== 'undefined') Sounds.trash(); init(); }
 
-$('del-ok').addEventListener('click', e=>{ e.stopPropagation(); const m=delConfirmMulti, i=delConfirmTarget; closeDelConfirm(); if(m) deleteSelectedWords(); else doDelete(i); });
-$('del-cancel').addEventListener('click', e=>{ e.stopPropagation(); closeDelConfirm(); });
+$('del-ok').addEventListener('click', e=>{ e.stopPropagation(); const m=delConfirmMulti, i=delConfirmTarget; closeDelConfirm(); closeDotMenu(); if(m) deleteSelectedWords(); else doDelete(i); });
+$('del-cancel').addEventListener('click', e=>{ e.stopPropagation(); closeDelConfirm(); closeDotMenu(); });
 
 
 
@@ -3587,7 +3588,7 @@ $('word-list').addEventListener('scroll', ()=>{ closeDotMenu(); closeDelConfirm(
 
 
 
-document.addEventListener('click', e=>{ const menu=$('dot-menu'); if(!menu.classList.contains('hidden')&&!(e.target.closest('#dot-menu')||e.target.closest('.dot-btn'))) closeDotMenu(); const dc=$('del-confirm'); if(!dc.classList.contains('hidden')&&!e.target.closest('#del-confirm')) closeDelConfirm();
+document.addEventListener('click', e=>{ const menu=$('dot-menu'); if(!menu.classList.contains('hidden')&&!(e.target.closest('#dot-menu')||e.target.closest('.dot-btn'))) closeDotMenu(); const dc=$('del-confirm'); if(!dc.classList.contains('hidden')&&!e.target.closest('#del-confirm')&&!e.target.closest('#dot-menu')) closeDelConfirm();
 
 const mmp=$('move-multi-popup');
 if(mmp&&!mmp.classList.contains('hidden')&&!e.target.closest('#move-multi-popup')&&!e.target.closest('[data-act="move-multi"]')) closeMoveMultiPopup();
@@ -3637,6 +3638,7 @@ if(idx==null && selected.size===0) return;
 openMoveMultiPopup(idx, btn);
 return;
 }
+closeDelConfirm();
 closeDotMenu();
 if(idx==null && selected.size===0) return;
 if(act==='up') moveWord(idx,-1);
@@ -4625,10 +4627,10 @@ const multiTotalWords = vocab.filter(v => wordInMulti(v, curMulti)).length;
 
 if (multiTotalWords === 0 && curMulti !== 'all') {
 wrap.innerHTML = `
-<div style="text-align:center; color:#f59e0b; padding:24px; border:2px dashed #f59e0b; border-radius:12px; background:rgba(245,158,11,0.08); font-size:14px; line-height:1.8; margin-top:10px;">
-<div style="font-size:28px; margin-bottom:8px;">🌌⚠️</div>
-<div style="font-weight:bold; font-size:16px; color:#fbbf24; margin-bottom:6px;">Multiverse này đang trống trơn!</div>
-<div style="color:#fcd34d;">Bạn hãy bấm <b style="color:var(--accent); cursor:pointer;" onclick="openImportModal()">📂 Import</b> hoặc <b style="color:var(--accent); cursor:pointer;" onclick="openAddModal()">➕ Thêm</b> để nạp từ vào vũ trụ nhé!</div>
+<div style="text-align:center; color:#f59e0b; padding:16px 12px; border:2px dashed #f59e0b; border-radius:12px; background:rgba(245,158,11,0.08); font-size:13px; line-height:1.6; margin-top:10px;">
+<div style="font-size:24px; margin-bottom:6px;">🌌⚠️</div>
+<div style="font-weight:bold; font-size:15px; color:#fbbf24; margin-bottom:4px;">Multiverse này đang trống trơn!</div>
+<div style="color:#fcd34d;">Bấm <b style="color:var(--accent); cursor:pointer;" onclick="openImportModal()">📂 Import</b> hoặc <b style="color:var(--accent); cursor:pointer;" onclick="openAddModal()">➕ Thêm</b> để nạp từ nhé!</div>
 </div>
 `;
 } else {
