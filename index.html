@@ -20,6 +20,13 @@
 * { box-sizing:border-box; }
 body { font-family:'Segoe UI',system-ui,sans-serif; background:var(--bg); color:var(--text); margin:0; padding:20px; }
 header { display:flex; gap:10px; margin-bottom:20px; flex-wrap:wrap; align-items:center; }
+.header-title-group {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    flex: 1;
+    min-width: 140px;
+}
 h1 { color:var(--accent); margin:0; flex:1; font-size:22px; min-width:140px; }
 input,select,button,textarea { padding:10px 14px; border-radius:8px; border:1px solid var(--border); background:var(--card-bg); color:var(--text); font-size:14px; }
 textarea { resize:vertical; font-family:inherit; }
@@ -579,11 +586,13 @@ body { overflow-x: hidden; }
 
 
 /* ===== RESPONSIVE MOBILE ===== */
+
 /* ===== MOBILE CỰC NHỎ ===== */
 @media (max-width: 480px) {
 header { flex-wrap: wrap; }
 header > * { flex: 1 1 45%; min-width: 0; }
-h1 { flex: 1 1 100%; text-align: center; margin-bottom: 4px; }
+.header-title-group { flex: 1 1 100% !important; min-width: 100% !important; justify-content: space-between; }
+.header-title-group h1 { flex: 1 1 auto !important; text-align: left !important; margin-bottom: 0 !important; }
 .flip-container {  height: 400px; }
 .face { padding: 16px 18px !important; }
 /* Textarea bài thi viết */
@@ -667,14 +676,22 @@ order: 0;
     padding: 8px; /* Vùng bấm rộng hơn */
   }
   
-  /* Timer né nút close */
-  #exam-timer-container {
-    top: 10px !important;
-    right: 45px !important;
-    padding: 4px 8px !important;
+  @media (max-width: 768px) {
+    /* Timer né nút close + không che tiêu đề */
+    #exam-timer-container {
+        position: relative !important;
+        top: auto !important;
+        right: auto !important;
+        left: auto !important;
+        margin: 0 0 8px 0 !important;
+        padding: 6px 10px !important;
+        display: flex !important;
+        justify-content: center !important;
+        width: 100% !important;
+        box-sizing: border-box !important;
+    }
+    #exam-timer-input { width: 50px !important; font-size: 12px !important; }
   }
-  #exam-timer-input { width: 60px !important; font-size: 13px !important; }
-  
   /* Pretest layout 1 cột */
   @media (max-width: 768px) {
   .pretest-layout { grid-template-columns: 1fr !important; gap: 8px !important; }
@@ -1813,8 +1830,11 @@ body.fullscreen-mode.bomb-active .fullscreen-btn {
 <body>
   <div id="bomb-overlay"></div>
 <header>
-  <h1>LangVerse 🌌</h1>
-  <div class="backup-notice">
+<div class="header-title-group">
+    <h1>LangVerse 🌌</h1>
+    <button id="sound-toggle" class="sound-btn" onclick="toggleSound()" title="Bật/tắt âm thanh">🔊</button>
+</div>
+<div class="backup-notice">
   💡 Hãy ấn nút "📤 Backup" sau mỗi lần học để sao lưu những từ đã thêm nhé - Tránh bị mất dữ liệu !
 </div>
   <button class="btn-ai" onclick="if(typeof Sounds!=='undefined')Sounds.click(); openAiModal()">✨ Hỏi AI</button>
@@ -1823,11 +1843,7 @@ body.fullscreen-mode.bomb-active .fullscreen-btn {
   <button class="btn-primary" onclick="if(typeof Sounds!=='undefined')Sounds.click(); openImportModal()">📂 Import</button>
   
   <button class="btn-warning" onclick="if(typeof Sounds!=='undefined')Sounds.click(); openAddModal()">➕ Thêm</button>
-  <button class="btn-success" onclick="if(typeof Sounds!=='undefined')Sounds.save(); exportData()">📤 Backup</button>
-
-
-<button id="sound-toggle" class="sound-btn" onclick="toggleSound()" title="Bật/tắt âm thanh">🔊 Âm thanh</button>
-
+  <button class="btn-success" onclick="if(typeof Sounds!=='undefined')Sounds.save(); openBackupModal()">📤 Backup</button>
 
 
   <input type="text" id="search" placeholder="🔍 Từ / nghĩa / phiên âm / ví dụ / đồng nghĩa..." oninput="applyView()" style="flex:1; min-width:130px;">
@@ -2432,7 +2448,26 @@ function getScore(v){ return (typeof v.score==='number'&&v.score>=0&&v.score<=10
 function saveManualOrder(){ localStorage.setItem('langverse_manual_order', JSON.stringify(manualOrder)); }
 function syncManualOrder(){ const n=vocab.length; if(!Array.isArray(manualOrder)) manualOrder=[...Array(n).keys()]; const seen=new Set(); manualOrder=manualOrder.filter(i=>(i>=0&&i<n&&!seen.has(i))?(seen.add(i),true):false); for(let i=0;i<n;i++) if(!seen.has(i)) manualOrder.push(i); }
 
-function inCurrentFilter(v){ if(filterSet.size===0) return true; return [...filterSet].some(tg=>String(v.definition||'').includes(tg)); }
+function inCurrentFilter(v){
+    if(filterSet.size===0) return true;
+    
+    // 🆕 Xử lý logic lọc "Không thuộc vũ trụ nào"
+    const hasNoneFilter = filterSet.has('__none__');
+    const normalFilters = [...filterSet].filter(t => t !== '__none__');
+    const tags = getAllTags(v.definition);
+    const hasTags = tags.length > 0;
+
+    // Nếu chỉ chọn mỗi "Không thuộc vũ trụ nào"
+    if (hasNoneFilter && normalFilters.length === 0) return !hasTags;
+    
+    // Nếu chọn cả "Không thuộc vũ trụ nào" VÀ các vũ trụ cụ thể (OR logic)
+    if (hasNoneFilter && normalFilters.length > 0) {
+        return !hasTags || normalFilters.some(tg => String(v.definition||'').includes(tg));
+    }
+    
+    // Logic cũ cho các vũ trụ cụ thể
+    return normalFilters.some(tg => String(v.definition||'').includes(tg));
+}
 function calcMastery(){ const pool=vocab.filter(inCurrentFilter); if(!pool.length) return 0; const t=pool.reduce((s,v)=>s+getScore(v),0); return Math.round((t/(pool.length*100))*100); }
 
 function matchTier(v,q){ if(!q) return 0; const w=cleanInvisible(v.word).toLowerCase(), d=String(v.definition||'').toLowerCase(), ipa=String(v.ipa||'').toLowerCase(); if(w.includes(q)||d.includes(q)||ipa.includes(q)) return 0; const ex=String(v.example||'').toLowerCase(), syn=String(v.synonym||'').toLowerCase(); if(ex.includes(q)||syn.includes(q)) return 1; return 2; }
@@ -2468,7 +2503,12 @@ function openProfileModal(){
   $('profile-modal').classList.add('active');
 }
 function toggleProfileKey(){ const inp=$('profile-ai-key'); inp.type=inp.type==='password'?'text':'password'; }
-function closeProfileModal(){ $('profile-modal').classList.remove('active'); }
+function closeProfileModal(){ 
+
+
+if(typeof Sounds !== 'undefined') Sounds.modalClose();
+
+$('profile-modal').classList.remove('active'); }
 function showProfileToast(msg,ok){
   const t=$('profile-toast'); if(!t) return;
   t.textContent=msg;
@@ -2523,25 +2563,35 @@ function setCurrentMulti(id) {
   updateBombBadge();
 }
 function multiNameById(id){
-  if(id==='all') return 'Tất cả Multiverse';
-  const m = getMultiverses().find(x=>x.id===id);
-  return m ? m.name : 'Multiverse';
+    if(id==='all') return 'Tất cả Multiverse';
+    if(id==='none') return 'Không thuộc Multiverse nào'; // 🆕 Tên hiển thị trên header
+    const m = getMultiverses().find(x=>x.id===id);
+    return m ? m.name : 'Multiverse';
 }
 function baseLang(c){ return (c||'').split('-')[0]; }
+
+
 function wordInMulti(v, mId){
-  if(!mId || mId==='all') return true;
-  if(v.multi) return v.multi===mId;
-  const M = getMultiverses().find(x=>x.id===mId); if(!M) return true;
-  const f = baseLang(detectLang(v.word));
-  const b = baseLang(detectLang(v.definition || v.word));
-  return (f===M.front && b===M.back) || (f===M.back && b===M.front);
+    if(!mId || mId==='all') return true;
+    if(mId === 'none') return !v.multi; // 🆕 Logic lọc từ không có multiverse
+    if(v.multi) return v.multi===mId;
+    const M = getMultiverses().find(x=>x.id===mId); if(!M) return true;
+    const f = baseLang(detectLang(v.word));
+    const b = baseLang(detectLang(v.definition || v.word));
+    return (f===M.front && b===M.back) || (f===M.back && b===M.front);
 }
 function wordsInMulti(mId){ return vocab.filter(v=>wordInMulti(v,mId)); }
 function renderMultiPop(){
     const body=$('multi-pop-body'); if(!body) return;
     const arr=getMultiverses();
     const cur=getCurrentMulti();
+    
     let html='<div class="multi-item '+(cur==='all'?'active':'')+'" onclick="pickMulti(\'all\')"><span>🌌 Tất cả Multiverse</span><span style="color:#94a3b8; font-size:11px;">'+vocab.length+' từ</span></div>';
+    
+    // 🆕 THÊM NÚT "KHÔNG THUỘC MULTIVERSE NÀO"
+    const noneCount = vocab.filter(v => !v.multi).length;
+    html += '<div class="multi-item '+(cur==='none'?'active':'')+'" onclick="pickMulti(\'none\')" style="border-bottom: 1px dashed var(--border); padding-bottom: 8px; margin-bottom: 8px;"><span>🌌 Không thuộc Multiverse nào</span><span style="color:#94a3b8; font-size:11px;">'+noneCount+' từ</span></div>';
+    
     html+='<div class="multi-item multi-add" onclick="openAddMultiModal()">➕ Thêm multiverse</div>';
     arr.forEach(m=>{
         html+='<div class="multi-item '+(cur===m.id?'active':'')+'" style="position:relative; cursor:pointer;" onclick="pickMulti(\''+m.id+'\')"><span>'+esc(m.name)+'</span><button class="multi-dot-btn" data-mid="'+esc(m.id)+'" onclick="event.stopPropagation(); openMultiDotMenu(this, this.dataset.mid)">⋮</button></div>';
@@ -2628,7 +2678,12 @@ function openAddMultiModal(){
   $('multi-name').value = '';
   $('add-multi-modal').classList.add('active');
 }
-function closeAddMultiModal(){ $('add-multi-modal').classList.remove('active'); }
+function closeAddMultiModal(){
+  
+  if(typeof Sounds !== 'undefined') Sounds.modalClose();
+  
+  
+  $('add-multi-modal').classList.remove('active'); }
 /* ===== MULTI DOT MENU ===== */
 let multiDotTarget = null;
 let multiMergeSource = null;
@@ -2809,7 +2864,11 @@ function openPretest(skill){
   $('pretest-modal').classList.add('active');
   renderPretestList();
 }
-function closePretest(){ $('pretest-modal').classList.remove('active'); }
+function closePretest(){ 
+  
+  if(typeof Sounds !== 'undefined') Sounds.modalClose();
+  
+  $('pretest-modal').classList.remove('active'); }
 function switchPretestType(t){
   PRETEST.type = t;
   document.querySelectorAll('.pretest-radio').forEach(r=>r.classList.remove('active'));
@@ -3075,7 +3134,12 @@ function poolForWord(v){ const mId=v.multi||getCurrentMulti(); const arr=wordsIn
 function pickDefs(ex,n){ const src=poolForWord(ex); const mine=shortDef(ex.definition); const seen=new Set([mine]); const out=[]; shuffleCopy(src.filter(v=>v!==ex)).forEach(v=>{ const s=shortDef(v.definition); if(s&&!seen.has(s)){ seen.add(s); out.push(s); } }); return out.slice(0,n); }
 function pickWords(ex,n){ const pool = TEST ? TEST.pool : vocab; return shuffleCopy(pool.filter(v=>v!==ex&&v.word)).slice(0,n).map(v=>v.word); }
 function profileLine(){ const p=getProfile(); return (p.native?('Ngôn ngữ mẹ đẻ: '+p.native+'. '):'')+(p.fluent?('Ngôn ngữ thông thạo: '+p.fluent+'. '):'')+(p.level?('Trình độ muốn đạt được: '+p.level+'. '):'')+(p.purpose?('Mục đích: '+p.purpose+'. '):''); }
-function closeTest(){ $('test-modal').classList.remove('active'); TEST=null; if('speechSynthesis' in window) window.speechSynthesis.cancel(); }
+function closeTest(){ 
+  
+  if(typeof Sounds !== 'undefined') Sounds.modalClose();
+  
+  
+  $('test-modal').classList.remove('active'); TEST=null; if('speechSynthesis' in window) window.speechSynthesis.cancel(); }
 
 
 // (buildQuestion cũ đã thay bằng renderQuestion theo từng phần)
@@ -3157,6 +3221,8 @@ function toggleFlashcardMic() {
         if (flashcardRecognition) { try { flashcardRecognition.stop(); } catch(e){} }
         btn.classList.remove('recording');
         btn.textContent = '🎙️';
+                if(typeof Sounds !== 'undefined') Sounds.micOff(); // 🆕
+
         flashcardTranscriptTimeout = setTimeout(() => {
             display.style.opacity = '0';
             setTimeout(() => { display.textContent = ''; display.style.opacity = '1'; }, 500);
@@ -3166,6 +3232,8 @@ function toggleFlashcardMic() {
         display.style.color = '#ef4444';
         btn.classList.add('recording');
         btn.textContent = '⏹️';
+                if(typeof Sounds !== 'undefined') Sounds.micOn(); // 🆕
+
         flashcardRecognition = new SR();
         let rawLang = (typeof lvGetMultiFrontLang === 'function') ? lvGetMultiFrontLang() : 'auto';
         let langCode = (typeof ttsLang === 'function') ? ttsLang(rawLang, '') : (rawLang || 'en-US');
@@ -3190,7 +3258,9 @@ function toggleFlashcardMic() {
         flashcardRecognition.onend = function() {
             btn.classList.remove('recording');
             btn.textContent = '🎙️';
-            if (!display.textContent || display.textContent === '🔴 Đang nghe...') {
+            if (!display.textContent || display.textContent === '🔴 Đang nghe...')
+                if(typeof Sounds !== 'undefined') Sounds.recStart(); // 🆕
+ {
                 display.textContent = '⚠️ Không nghe thấy gì';
                 display.style.color = '#f59e0b';
             }
@@ -3255,9 +3325,15 @@ $('front').addEventListener('change', e=>{ if(e.target.classList&&e.target.class
 const recallSlider = $('recall-slider');
 function resetRecallSlider(){ recallSlider.value=0; sliderTouched=false; }
 function saveRecallScore(){ if(!viewList.length) return; const v=vocab[viewList[currentPos]]; if(!v) return; const val=parseInt(recallSlider.value,10)||0; v.score=val; v.lastReview=Date.now(); localStorage.setItem('langverse_data',JSON.stringify(vocab)); updateCounter(); }
-recallSlider.addEventListener('input', ()=>{ 
-    sliderTouched=true; 
-    if(typeof Sounds!=='undefined') Sounds.tickSoft(); // 🆕 ASMR khi kéo thanh đánh giá
+let lastTickTime = 0;
+recallSlider.addEventListener('input', ()=>{
+    sliderTouched=true;
+    // 🛡️ CHỐNG CHỒNG ÂM KHI KÉO SLIDER: Chỉ phát âm thanh nếu cách lần trước > 60ms
+    const now = Date.now();
+    if(typeof Sounds!=='undefined' && now - lastTickTime > 60) {
+        Sounds.tickSoft();
+        lastTickTime = now;
+    }
 });
 recallSlider.addEventListener('pointerup', ()=>{ if(sliderTouched){ saveRecallScore(); sliderTouched=false; } });
 recallSlider.addEventListener('change', ()=>{ if(sliderTouched){ saveRecallScore(); sliderTouched=false; } });
@@ -3271,12 +3347,20 @@ function renderFilterPop(){
     const all=collectAllVocabTags();
     getCustomVerses().forEach(t=>{ if(!all.includes(t)) all.push(t); });
     
-    // Sắp xếp: vũ trụ được chọn lên đầu
     const selected = [...all].filter(t => filterSet.has(t));
     const unselected = [...all].filter(t => !filterSet.has(t));
     const sorted = [...selected, ...unselected];
     
     let html='<label class="chk-row"><input type="checkbox" data-f="__all" '+(filterSet.size===0?'checked':'')+'><span>☀️ Tất cả vũ trụ</span></label>';
+    
+    // 🆕 THÊM CHECKBOX "KHÔNG THUỘC VŨ TRỤ NÀO"
+    const noneCount = vocab.filter(v => getAllTags(v.definition).length === 0).length;
+    html += `<label class="chk-row" style="border-bottom: 1px dashed var(--border); padding-bottom: 6px; margin-bottom: 6px;">
+        <input type="checkbox" data-f="__none__" ${filterSet.has('__none__')?'checked':''}>
+        <span>☀️ Không thuộc vũ trụ nào</span>
+        <span style="color:#94a3b8; font-size:11px; margin-left:auto;">${noneCount} từ</span>
+    </label>`;
+    
     html+='<div class="multi-item multi-add" onclick="openAddVerseModal()">➕ Thêm vũ trụ</div>';
     sorted.forEach(t=>{
         html+='<label class="chk-row" style="position:relative;"><input type="checkbox" data-f="'+esc(t)+'" '+(filterSet.has(t)?'checked':'')+'><span>'+esc(t)+'</span><button class="verse-dot-btn" data-vtag="'+esc(t)+'" onclick="event.stopPropagation(); openVerseDotMenu(this, this.dataset.vtag)">⋮</button></label>';
@@ -3284,10 +3368,14 @@ function renderFilterPop(){
     body.innerHTML=html;
 }
 function updateFilterLabel(){
-  const el=$('filter-label');
-  if(filterSet.size===0) el.textContent='Tất cả vũ trụ';
-  else if(filterSet.size===1) el.textContent=[...filterSet][0];
-  else el.textContent='Đang gộp '+filterSet.size+' vũ trụ';
+    const el=$('filter-label');
+    if(filterSet.size===0) el.textContent='Tất cả vũ trụ';
+    else if(filterSet.size===1) {
+        const val = [...filterSet][0];
+        // 🆕 Hiển thị đúng tên nếu chọn mục không có vũ trụ
+        el.textContent = (val === '__none__') ? 'Không thuộc vũ trụ nào' : val; 
+    }
+    else el.textContent='Đang gộp '+filterSet.size+' vũ trụ';
 }
 function toggleFilterPop(){
 const pop=$('filter-pop');
@@ -3304,8 +3392,10 @@ $('filter-pop').addEventListener('change', e=>{ const cb=e.target.closest('input
 
 let peekPinned=null, peekHideTimer=null;
 function togglePeek(){
-  
-  $('peek-bar').classList.toggle('hidden'); peekCloseAll(); }
+    $('peek-bar').classList.toggle('hidden'); 
+    peekCloseAll(); 
+    if(typeof Sounds !== 'undefined') Sounds.peek(); // 🆕
+}
 function peekCloseAll(){ clearTimeout(peekHideTimer); peekPinned=null; document.querySelectorAll('.peek-pop').forEach(p=>{ if(p.id!=='filter-pop') p.classList.remove('show'); }); }
 function peekShow(face){ clearTimeout(peekHideTimer); document.querySelectorAll('.peek-pop').forEach(p=>{ if(p.id!=='filter-pop') p.classList.remove('show'); }); const pop=$('pop-'+face); if(pop) pop.classList.add('show'); }
 function peekHideSoon(face,delay){ clearTimeout(peekHideTimer); peekHideTimer=setTimeout(()=>{ const pop=$('pop-'+face); if(pop) pop.classList.remove('show'); if(peekPinned===face) peekPinned=null; },delay); }
@@ -3323,7 +3413,6 @@ const FRONT_PARTS=[
 ];
 
 const BACK_PARTS=[
-  {key:'word',label:'Từ gốc'},
   {key:'def',label:'Định nghĩa'}, // Vẫn giữ lại phòng khi bạn cần ôn nghĩa
   {key:'pos',label:'Loại từ'},
   {key:'tags',label:'Tag'},
@@ -3339,7 +3428,15 @@ $('pop-front').addEventListener('change', e=>{ const cb=e.target.closest('input[
 $('pop-back').addEventListener('change', e=>{ const cb=e.target.closest('input[data-part]'); if(!cb) return; const k=cb.dataset.part; if(cb.checked){ if(!hideBack.includes(k)) hideBack.push(k); } else hideBack=hideBack.filter(x=>x!==k); localStorage.setItem('langverse_hide_back',JSON.stringify(hideBack)); showCard(); });
 
 function resetShuffleCounts(){ appearCount=new Array(viewList.length).fill(0); shuffleHistory=[]; }
-function toggleShuffle(){ shuffleOn=!shuffleOn; const b=$('shuffle-btn'); if(b) b.classList.toggle('on',shuffleOn); if(shuffleOn&&appearCount.length!==viewList.length) resetShuffleCounts(); if(typeof Sounds !== 'undefined') Sounds.breeze(); showCard(); }
+
+function toggleShuffle(){ 
+    shuffleOn=!shuffleOn; 
+    const b=$('shuffle-btn'); 
+    if(b) b.classList.toggle('on',shuffleOn); 
+    if(shuffleOn&&appearCount.length!==viewList.length) resetShuffleCounts(); 
+    if(typeof Sounds !== 'undefined') Sounds.shuffle(); // 🆕
+    showCard(); 
+}
 
 function isEditMulti(idx){ return idx!=null&&selected.size>0&&selected.has(keyOf(vocab[idx])); }
 function updateDotMenuLabels(idx){ 
@@ -3539,7 +3636,12 @@ if(mmp&&!mmp.classList.contains('hidden')&&!e.target.closest('#move-multi-popup'
 });
 
 function openImgModal(){ imgModalWord=viewList[currentPos]; $('img-modal-title').textContent='🖼️ Thêm ảnh — "'+cleanInvisible(vocab[imgModalWord].word)+'"'; $('img-url').value=''; $('img-file').value=''; $('img-modal').classList.add('active'); searchWebImages(); }
-function closeImgModal(){ $('img-modal').classList.remove('active'); }
+function closeImgModal(){ 
+  
+  if(typeof Sounds !== 'undefined') Sounds.modalClose();
+  
+  
+  $('img-modal').classList.remove('active'); }
 function setWordImg(val){ if(imgModalWord==null||imgModalWord<0||imgModalWord>=vocab.length) return; vocab[imgModalWord].img=val; localStorage.setItem('langverse_data',JSON.stringify(vocab)); closeImgModal(); showCard(); }
 function applyImgUrl(){ const url=cleanInvisible($('img-url').value); if(!url) return; setWordImg(url); }
 function removeImg(){ setWordImg(''); }
@@ -3595,6 +3697,23 @@ const AI_CONSTITUTION = `📜 HIẾN PHÁP HỆ SINH THÁI NGÔN NGỮ (V5.0 —
 3. CẤM bịa câu tương đương: chỉ dùng khi thật sự tồn tại trong ngôn ngữ mặt sau.
 🛡️ CHƯƠNG V: THANH TRỪNG
 Gom mảnh vụn, loại từ rác, lemma nguyên mẫu.
+
+Bonus 1: KHÔNG bịa từ, KHÔNG bịa nghĩa, KHÔNG bịa ví dụ, KHÔNG bịa đồng nghĩa, KHÔNG bịa etymology. KHÔNG bịa tag, KHÔNG bịa downstep, KHÔNG bịa pitch accent. Nếu không biết → để trống ô đó. 
+
+Bonus 2:  Tránh định nghĩa nhạy cảm, tục tĩu, bạo lực, khiêu dâm, NSFW. Nếu không biết → để trống ô đó.
+
+Bonus 3: Trong "definition", nếu không phải tag thì không cho vào ngoặc đơn.
+
+Ví dụ Minh họa: 
+
+"word": "love",
+      "definition": "① Tình yêu, lòng yêu thương (Tình cảm)② Người yêu, tình nhân③ Điểm không (Thể thao)④ Yêu, thương mến⑤ Rất thích, say mê [Bắt nguồn từ tiếng Anh cổ lufu, từ gốc Ấn-Âu *leubh- mang nghĩa chăm sóc, yêu thương hoặc khao khát.]",
+      "ipa": "/lʌv/",
+      "downstep": "",
+      "pos": "danh từ, động từ",
+      "example": "They share a deep love for each other.",
+      "synonym": "affection, adore, passion",
+
 `;
 const AI_CONSTITUTION_JA = `📜 HIẾN PHÁP NIHONGO (V4.0 - 8 CỘT) 📜
 ️ CHƯƠNG I: 8 CỘT — TUYỆT ĐỐI KHÔNG ĐẺ CỘT 9
@@ -3615,10 +3734,33 @@ LUẬT TỊNH KHẨU (NO-YAPPING): khung TSV không comment/ghi chú.
 1. Nếu Cột 1 là tục ngữ / thành ngữ / quán dụng ngữ tiếng Nhật: TRƯỚC TIÊN tìm tục ngữ / thành ngữ của NGÔN NGỮ MẶT SAU có ý nghĩa TƯƠNG ĐỒNG (NẾU CÓ) → đặt ở ĐẦU Cột 2 dạng "≈ [câu tương đương]".
 2. Nếu KHÔNG CÓ → diễn giải ý nghĩa như bình thường.
 3. CẤM bịa câu tương đương: chỉ dùng khi thật sự tồn tại.
-⚙️ THUẬT TOÁN: Output DUY NHẤT một khối TSV 8 cột, không comment, bọc "" chuẩn chỉ.`;
+⚙️ THUẬT TOÁN: Output DUY NHẤT một khối TSV 8 cột, không comment, bọc "" chuẩn chỉ.
+
+Bonus 1: KHÔNG bịa từ, KHÔNG bịa nghĩa, KHÔNG bịa ví dụ, KHÔNG bịa đồng nghĩa, KHÔNG bịa etymology. KHÔNG bịa tag, KHÔNG bịa downstep, KHÔNG bịa pitch accent. Nếu không biết → để trống ô đó. 
+
+Bonus 2:  Tránh định nghĩa nhạy cảm, tục tĩu, bạo lực, khiêu dâm, NSFW. Nếu không biết → để trống ô đó.
+
+Bonus 3: Trong "definition", nếu không phải tag thì không cho vào ngoặc đơn.
+
+Ví dụ minh họa: 
+
+"word": "びっくりする",
+      "definition": "① Giật mình, hoảng hốt (Cảm xúc & nội tâm)② Ngạc nhiên, sửng sốt (Cảm xúc & nội tâm) [[Tim đập thót lại, dựng đứng lên vì bất ngờ -> Giật mình.]]",
+      "ipa": "びっくりする",
+      "downstep": "❸",
+      "pos": "Động từ suru",
+      "example": "突然の大きな音にびっくりした。",
+      "synonym": "同: 驚く"
+
+`;
 
 function openAiModal(){ $('ai-key').value=localStorage.getItem('langverse_ai_key')||''; $('ai-status').className='ai-status info'; $('ai-status').innerHTML='💤 Đang chờ lệnh triệu hồi của sếp...'; $('ai-log').style.display='none'; $('ai-log').innerHTML=''; if(typeof Sounds !== 'undefined') Sounds.pop(); $('ai-modal').classList.add('active'); }
-function closeAiModal(){ $('ai-modal').classList.remove('active'); }
+function closeAiModal(){
+  
+  if(typeof Sounds !== 'undefined') Sounds.modalClose();
+  
+  
+  $('ai-modal').classList.remove('active'); }
 function toggleAiKey(){ const inp=$('ai-key'); inp.type=inp.type==='password'?'text':'password'; }
 function aiLog(msg,cls){ const log=$('ai-log'); log.style.display='block'; const d=document.createElement('div'); if(cls) d.className=cls; d.textContent=msg; log.appendChild(d); log.scrollTop=log.scrollHeight; }
 function aiSetStatus(msg,cls){ const st=$('ai-status'); st.className='ai-status '+(cls||'info'); st.innerHTML=msg; }
@@ -3775,7 +3917,12 @@ if(typeof Sounds!=='undefined') Sounds.aiDone(); // 🆕 Flex phép thuật AI
 btn.disabled=false;
 }
 
-function sendAiToImport(){ const rows=Array.from($('ai-body').querySelectorAll('tr')).map(tr=>Array.from(tr.querySelectorAll('input')).map(inp=>cleanInvisible(inp.value))).filter(r=>r[0]); if(!rows.length){ aiSetStatus('🚨 Preview trống!','error'); return; } closeAiModal(); buildTable(rows.length); const tbody=$('import-body'); rows.forEach((row,r)=>{ const tr=tbody.children[r]; if(!tr) return; const inputs=tr.querySelectorAll('input'); const map=[0,1,2,4,5,6]; row.forEach((val,c)=>{ const ic=map[c]; if(inputs[ic]) inputs[ic].value=val; }); }); assignRowIndexes(); $('import-modal').classList.add('active'); }
+function sendAiToImport(){ const rows=Array.from($('ai-body').querySelectorAll('tr')).map(tr=>Array.from(tr.querySelectorAll('input')).map(inp=>cleanInvisible(inp.value))).filter(r=>r[0]); if(!rows.length){ aiSetStatus('🚨 Preview trống!','error'); return; } closeAiModal(); buildTable(rows.length); const tbody=$('import-body'); rows.forEach((row,r)=>{ const tr=tbody.children[r]; if(!tr) return; const inputs=tr.querySelectorAll('input'); const map=[0,1,2,4,5,6]; row.forEach((val,c)=>{ const ic=map[c]; if(inputs[ic]) inputs[ic].value=val; }); }); assignRowIndexes();
+    if(typeof Sounds !== 'undefined') Sounds.addRow(); // 🆕
+
+
+
+$('import-modal').classList.add('active'); }
 
 const CIRC='\u2460-\u2473\u2474-\u247d\u3251-\u325f\u32b1-\u32bf';
 const SENSE_HEAD='(?:^|\\n)\\s*\\d+[.)]|['+CIRC+']';
@@ -3784,7 +3931,12 @@ function parseSenses(defNoEtym){ const text=String(defNoEtym||'').replace(/\r\n/
 function getCustomVerses(){ try{return JSON.parse(localStorage.getItem('langverse_custom_verses')||'[]');}catch(e){return[];} }
 function saveCustomVerses(a){ localStorage.setItem('langverse_custom_verses', JSON.stringify(a)); }
 function openAddVerseModal(){ $('verse-name').value=''; $('verse-emoji').value=''; $('add-verse-modal').classList.add('active'); }
-function closeAddVerseModal(){ $('add-verse-modal').classList.remove('active'); }
+function closeAddVerseModal(){ 
+  
+  if(typeof Sounds !== 'undefined') Sounds.modalClose();
+  
+  
+  $('add-verse-modal').classList.remove('active'); }
 function saveVerse(){
   const name=cleanInvisible($('verse-name').value);
   let emoji=cleanInvisible($('verse-emoji').value); if(!emoji) emoji='🌌';
@@ -4047,7 +4199,11 @@ if (multiName && multiName !== 'all' && multiName !== 'Tất cả Multiverse') {
 };
 
 
-function closeImportModal(){ $('import-modal').classList.remove('active'); }
+function closeImportModal(){
+  
+  if(typeof Sounds !== 'undefined') Sounds.modalClose();
+  
+  $('import-modal').classList.remove('active'); }
 function makeRow(){ const tr=document.createElement('tr'); for(let c=0;c<8;c++){ const td=document.createElement('td'); const inp=document.createElement('input'); inp.dataset.c=c; td.appendChild(inp); tr.appendChild(td); } return tr; }
 function assignRowIndexes(){ document.querySelectorAll('#import-body tr').forEach((tr,r)=>{ tr.querySelectorAll('input').forEach(inp=>inp.dataset.r=r); }); }
 function buildTable(n){ const tb=$('import-body'); tb.innerHTML=''; for(let i=0;i<n;i++) tb.appendChild(makeRow()); assignRowIndexes(); }
@@ -4203,12 +4359,12 @@ let cardsSinceLastBomb = 0;
         frontHtml += (!hidF('word')?'<div class="big-word">'+esc(v.word)+'</div>':'');
         
         frontHtml += '<div class="ipa-row">';
-        frontHtml += (!hidF('ipa')&&v.ipa?'<span class="ipa-big">'+esc(v.ipa)+'</span>':'');
+        
         frontHtml += (!hidF('tts')?'<button class="tts-btn" title="Nghe phát âm">🔊</button>':'');
         frontHtml += (!hidF('tts')?'<input type="range" class="rate-slider" min="0.1" max="2" step="0.1" value="'+ttsRate+'" title="Tốc độ đọc"><span class="rate-val">'+ttsRate.toFixed(1)+'×</span>':'');
         frontHtml += (!hidF('tts')?'<button class="tts-btn mic-btn" id="flashcard-mic-btn" title="Ghi âm & Nhận diện">🎙️</button><span class="transcript-display" id="flashcard-transcript"></span>':'');
         frontHtml += '</div>';
-        
+        frontHtml += (!hidF('ipa')&&v.ipa?'<span class="ipa-big">'+esc(v.ipa)+'</span>':'');
         frontHtml += (!hidF('pos')&&v.pos?'<div style="color:#94a3b8; margin-top:4px;">'+esc(v.pos)+'</div>':'');
         frontHtml += (!hidF('tags')&&allTags.length?'<div class="tags">'+esc(allTags.join('; '))+'</div>':'');
         frontHtml += '</div>'; // Đóng front-main
@@ -4221,8 +4377,8 @@ let cardsSinceLastBomb = 0;
         $('front').innerHTML = frontHtml;
 
         // ================= MẶT SAU =================
-        let backHtml = buildImgArea(v.img)+'<div class="face-top">📖 Định nghĩa</div>';
-        backHtml += (!hidB('word')?'<div class="big-word" style="margin-bottom:10px;">'+esc(v.word)+'</div>':'');
+let backHtml = buildImgArea(v.img)+'<div class="face-top">📖 Định nghĩa</div>';
+// (Đã bỏ phần hiển thị Từ gốc ở mặt sau theo yêu cầu)
         
         if(orderedSenses.length>=2){ 
             if(!hidB('def')){ 
@@ -4328,12 +4484,6 @@ function nav(d, isManual = false) {
 
 
 function setFlipped(b){ if(isShowingBomb) return; flipped=b; $('flip').classList.toggle('flipped',b); if(typeof Sounds !== 'undefined') Sounds.flip(); }
-
-(b) => {
-    if (isShowingBomb) return; // 🛡️ Chặn lật thẻ khi đang có Bom
-    flipped=b; 
-    $('flip').classList.toggle('flipped',b); 
-}
 function renderList(){
     $('list-title').textContent='📚 Danh sách vũ trụ ('+viewList.length+' từ)';
     const wrap=$('word-list');
@@ -4471,7 +4621,12 @@ const _w=$('add-word-toast'); if(_w) _w.style.display='none';
 if(typeof Sounds !== 'undefined') Sounds.pop();
 $('add-modal').classList.add('active');
 }
-function closeAddModal(){ $('add-modal').classList.remove('active'); $('add-form').reset(); }
+function closeAddModal(){ 
+  
+  if(typeof Sounds !== 'undefined') Sounds.modalClose();
+  
+  
+  $('add-modal').classList.remove('active'); $('add-form').reset(); }
 function saveNewWord(e){
 e.preventDefault();
 const def=buildNewDef();
@@ -5094,7 +5249,7 @@ correct = q.sentence || clozeOf(q.v).audio;
 sc = scoreSent(user, correct);
 ok = (sc >= 70);
 qText = 'Phần ' + (pi + 1) + ' · Câu ' + (qi + 1) + ': 🔊 Nghe hội thoại và chép lại';
-audio = correct || '';d
+audio = correct || ''; // <--- ĐÃ SỬA (bỏ chữ d)
 } else {
 const el = $(id);
 user = el ? el.value : '';
@@ -6495,6 +6650,8 @@ window.lvRetryGemini = function(){
   var eWords = ePart ? (ePart.eWords || []) : [];
   t.gemBusy = true;
   t.gemState = 'loading';
+      if(typeof Sounds !== 'undefined') Sounds.retry(); // 🆕
+
   paint('loading');
   (async function(){
     try{
@@ -7093,6 +7250,8 @@ window.startNoiRecord = function(btn, key) {
     btn.textContent = '⏹️ Dừng';
     btn.style.background = '#ef4444';
     btn.style.color = '#fff';
+        if(typeof Sounds !== 'undefined') Sounds.modeSelect(); // 🆕
+
     if (noteEl) noteEl.textContent = '🔴 Đang ghi âm... (Bấm nút để dừng)';
     
     // ❌ ĐÃ XÓA: Không còn setTimeout tự động ngắt sau 30s nữa.
@@ -7150,6 +7309,8 @@ window.selectNoiMode = async function(btn, mode) {
     btn.style.color = '#fff';
     btn.disabled = false;
     btn.style.opacity = '1';
+        if(typeof Sounds !== 'undefined') Sounds.modeSelect(); // 🆕
+
 
     if (topicBox) topicBox.style.display = 'block';
     if (topicText) topicText.innerHTML = '<i style="color:var(--accent);">⏳ Gemini đang soạn đề...</i>';
@@ -7284,6 +7445,57 @@ const t = TEST;
     $('test-body').innerHTML = html;
 }
 </script>
+
+
+<div class="modal" id="backup-modal" onclick="if(event.target===this)closeBackupModal()">
+  <div class="modal-content" style="max-width: 500px;">
+    <span class="close" onclick="closeBackupModal()">&times;</span>
+    <h2 style="color:var(--accent); margin-top:0;">📤 Sao lưu dữ liệu (Backup)</h2>
+    <p style="color:#94a3b8; font-size:13px; margin-bottom:16px;">Chọn các thành phần bạn muốn sao lưu vào file JSON:</p>
+    <div style="display:flex; flex-direction:column; gap:12px; margin:16px 0;">
+      <div style="border: 1px solid var(--border); border-radius: 8px; padding: 12px; margin-bottom: 12px; background: rgba(0,0,0,0.1);">
+    <div style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 10px;">
+        <label class="chk-row" style="margin: 0; font-weight: bold; color: var(--accent);">
+            <input type="checkbox" id="bk-vocab-enable" checked onchange="toggleBkMaster()"> 
+            <span>1. Chọn từ / Vũ trụ / Multiverse</span>
+        </label>
+    </div>
+
+    <div id="bk-drilldown-container">
+        <!-- Step 1: Multiverse -->
+        <div id="bk-step1">
+            <div style="font-size: 12px; color: #94a3b8; margin-bottom: 6px;">🌌 Chọn Multiverse:</div>
+            <div id="bk-multi-list" style="max-height: 120px; overflow-y: auto; padding: 8px; background: var(--card-bg); border-radius: 6px;"></div>
+        </div>
+
+        <!-- Step 2: Verse -->
+        <div id="bk-step2" style="display: none; margin-top: 10px; border-top: 1px dashed var(--border); padding-top: 10px;">
+            <div style="font-size: 12px; color: #94a3b8; margin-bottom: 6px;">☀️ Chọn lọc vũ trụ (trong Multiverse đã chọn):</div>
+            <div id="bk-verse-list" style="max-height: 120px; overflow-y: auto; padding: 8px; background: var(--card-bg); border-radius: 6px;"></div>
+        </div>
+
+        <!-- Step 3: Words -->
+        <div id="bk-step3" style="display: none; margin-top: 10px; border-top: 1px dashed var(--border); padding-top: 10px;">
+            <div style="font-size: 12px; color: #94a3b8; margin-bottom: 6px;">🔤 Chọn lọc từ vựng (trong Vũ trụ đã chọn):</div>
+            <div id="bk-word-list" style="max-height: 150px; overflow-y: auto; padding: 8px; background: var(--card-bg); border-radius: 6px;"></div>
+        </div>
+    </div>
+</div>
+      <label class="chk-row"><input type="checkbox" id="bk-bomb" checked> <span>2. Lịch sử gỡ bom</span></label>
+      <label class="chk-row"><input type="checkbox" id="bk-sm2" checked> <span>3. Lịch sử 🎯 (Đánh giá mức độ nhớ / SM-2)</span></label>
+      <label class="chk-row"><input type="checkbox" id="bk-test" checked> <span>4. Lịch sử từ đã kiểm tra (Nghe, Nói, Đọc, Viết)</span></label>
+      <label class="chk-row"><input type="checkbox" id="bk-profile" checked> <span>5. Hồ sơ người học & Gemini API Key</span></label>
+      <label class="chk-row"><input type="checkbox" id="bk-img" checked> <span>6. Các ảnh đã gán vào từ</span></label>
+    </div>
+    <div style="display:flex; gap:10px; margin-top:20px;">
+      <button class="btn-primary" onclick="doBackup()" style="flex:1; padding:12px;">💾 Xuất file Backup</button>
+      <button class="btn-danger" onclick="closeBackupModal()" style="padding:12px 20px;">Huỷ</button>
+    </div>
+  </div>
+</div>
+
+
+
 <div id="move-multi-popup" class="hidden">
     <div class="popup-header"> Chọn multiverse mới:</div>
     <div id="move-multi-list" class="popup-list"></div>
@@ -7609,10 +7821,10 @@ window.toggleDocP3 = function(qId, isTrue, btn) {
 // === 4. HÀM CHẤM ĐIỂM ===
 window.gradePaperDoc = async function() {
     const t = TEST;
-    const d = t.data;
+    const d = t.data || {};
     let partScores = { p1: 0, p2: 0, p3: 0, p4: 0 };
-    const review = []; 
-
+    const review = [];
+    
     const checkMCQ = (name, correctIdx, qLabel) => {
         let safeIdx = parseInt(correctIdx, 10);
         if (isNaN(safeIdx) || safeIdx < 0 || safeIdx > 3) safeIdx = 0;
@@ -7626,52 +7838,63 @@ window.gradePaperDoc = async function() {
         return ok ? 100 : 0;
     };
 
-    const p1q1 = checkMCQ('p1q1', d.p1[0].answer, 'Phần 1 · Câu 1: Chọn nghĩa đúng của từ "' + esc(d.p1[0].word) + '"');
-    const p1q2 = checkMCQ('p1q2', d.p1[1].answer, 'Phần 1 · Câu 2: Chọn từ gốc đúng cho định nghĩa "' + esc(d.p1[1].def) + '"');
+    // --- Phần 1 (Anti-crash) ---
+    const p1q1 = checkMCQ('p1q1', d.p1 && d.p1[0] ? d.p1[0].answer : 0, 'Phần 1 · Câu 1: Chọn nghĩa đúng của từ "' + esc(d.p1 && d.p1[0] ? d.p1[0].word : '') + '"');
+    const p1q2 = checkMCQ('p1q2', d.p1 && d.p1[1] ? d.p1[1].answer : 0, 'Phần 1 · Câu 2: Chọn từ gốc đúng cho định nghĩa "' + esc(d.p1 && d.p1[1] ? d.p1[1].def : '') + '"');
     partScores.p1 = Math.round((p1q1 + p1q2) / 2);
 
-    const p2q1 = checkMCQ('p2q1', d.p2[0].answer, 'Phần 2 · Câu 1 (Từ vựng): ' + esc(d.p2[0].sentence));
-    const p2q2 = checkMCQ('p2q2', d.p2[1].answer, 'Phần 2 · Câu 2 (Ngữ pháp): ' + esc(d.p2[1].sentence));
+    // --- Phần 2 (Anti-crash) ---
+    const p2q1 = checkMCQ('p2q1', d.p2 && d.p2[0] ? d.p2[0].answer : 0, 'Phần 2 · Câu 1 (Từ vựng): ' + esc(d.p2 && d.p2[0] ? d.p2[0].sentence : ''));
+    const p2q2 = checkMCQ('p2q2', d.p2 && d.p2[1] ? d.p2[1].answer : 0, 'Phần 2 · Câu 2 (Ngữ pháp): ' + esc(d.p2 && d.p2[1] ? d.p2[1].sentence : ''));
     partScores.p2 = Math.round((p2q1 + p2q2) / 2);
 
+    // --- Phần 4 (Anti-crash) ---
     let p4Total = 0;
-    d.p4.questions.forEach((q, i) => {
-        const sc = checkMCQ('p4q' + i, q.answer, 'Phần 4 · Câu ' + (i + 1) + ': ' + esc(q.question));
-        p4Total += sc;
-    });
-    partScores.p4 = Math.round(p4Total / d.p4.questions.length);
+    if (d.p4 && Array.isArray(d.p4.questions) && d.p4.questions.length > 0) {
+        d.p4.questions.forEach((q, i) => {
+            const sc = checkMCQ('p4q' + i, q.answer, 'Phần 4 · Câu ' + (i + 1) + ': ' + esc(q.question));
+            p4Total += sc;
+        });
+        partScores.p4 = Math.round(p4Total / d.p4.questions.length);
+    }
 
+    // --- Phần 3 (Anti-crash) ---
     let p3Score = 0, p3Feedback = '';
-    const p3q1Ans = t.p3Answers['p3q1'];
-    const p3q2Ans = t.p3Answers['p3q2'];
+    const p3q1Ans = t.p3Answers ? t.p3Answers['p3q1'] : null;
+    const p3q2Ans = t.p3Answers ? t.p3Answers['p3q2'] : null;
+    
     if (p3q1Ans && p3q2Ans) {
-        const text1 = document.getElementById('p3q1-text').value;
-        const text2 = document.getElementById('p3q2-text').value;
+        const text1 = document.getElementById('p3q1-text') ? document.getElementById('p3q1-text').value : '';
+        const text2 = document.getElementById('p3q2-text') ? document.getElementById('p3q2-text').value : '';
+        
         const promptP3 = `Bạn là giám khảo chấm thi Đọc hiểu có tính phản biện cao. Dựa vào Hồ sơ người học để chấm điểm một cách KHÁCH QUAN và CỤ THỂ.
-        📋 ĐỀ BÀI:
-        Câu 1 (Gốc): "${d.p3[0].sentence}" → Người học phán đoán: "${p3q1Ans.isTrue ? 'Đúng' : 'Sai'}" → Bài làm: "${text1}"
-        Câu 2 (Gốc): "${d.p3[1].sentence}" → Người học phán đoán: "${p3q2Ans.isTrue ? 'Đúng' : 'Sai'}" → Bài làm: "${text2}"
-        🎯 YÊU CẦU CHẤM ĐIỂM PHẢN BIỆN:
-        1. ĐÁNH GIÁ PHÁN ĐOÁN ĐÚNG/SAI: Kiểm tra xem phán đoán có khớp với đáp án gốc không. Giải thích TẠI SAO.
-        2. ĐÁNH GIÁ BÀI LÀM: Chỉ ra điểm TỐT và CẦN CẢI THIỆN kèm TRÍCH DẪN CỤ THỂ.
-        3. CHẤM ĐIỂM: Cho điểm 0-100 cho mỗi câu, tính trung bình.
-        📤 TRẢ VỀ JSON: {"score": <điểm>, "feedback": "<div><b>📊 Phán đoán:</b>...<br><b>✅ Điểm tốt:</b>...<br><b>⚠️ Cần cải thiện:</b>...<br><b>💡 Tổng kết:</b>...</div>"}
-        ⚠️ BẮT BUỘC: Mọi nhận xét PHẢI có trích dẫn cụ thể. Chỉ trả về JSON thuần.`;
+📋 ĐỀ BÀI:
+Câu 1 (Gốc): "${d.p3 && d.p3[0] ? d.p3[0].sentence : ''}" → Người học phán đoán: "${p3q1Ans.isTrue ? 'Đúng' : 'Sai'}" → Bài làm: "${text1}"
+Câu 2 (Gốc): "${d.p3 && d.p3[1] ? d.p3[1].sentence : ''}" → Người học phán đoán: "${p3q2Ans.isTrue ? 'Đúng' : 'Sai'}" → Bài làm: "${text2}"
+🎯 YÊU CẦU CHẤM ĐIỂM PHẢN BIỆN:
+1. ĐÁNH GIÁ PHÁN ĐOÁN ĐÚNG/SAI: Kiểm tra xem phán đoán có khớp với đáp án gốc không. Giải thích TẠI SAO.
+2. ĐÁNH GIÁ BÀI LÀM: Chỉ ra điểm TỐT và CẦN CẢI THIỆN kèm TRÍCH DẪN CỤ THỂ.
+3. CHẤM ĐIỂM: Cho điểm 0-100 cho mỗi câu, tính trung bình.
+📤 TRẢ VỀ JSON: {"score": <điểm>, "feedback": "<div><b>📊 Phán đoán:</b>...<br><b>✅ Điểm tốt:</b>...<br><b>⚠️ Cần cải thiện:</b>...<br><b>💡 Tổng kết:</b>...</div>"}
+⚠️ BẮT BUỘC: Mọi nhận xét PHẢI có trích dẫn cụ thể. Chỉ trả về JSON thuần.`;
+        
         try {
             const g = await geminiText(promptP3);
             const j = parseJsonLoose(g);
             p3Score = j ? Math.max(0, Math.min(100, j.score || 0)) : 50;
             p3Feedback = j ? j.feedback : '';
         } catch(e) { p3Score = 50; p3Feedback = 'Lỗi chấm điểm AI.'; }
-        review.push({ q: 'Phần 3 · Câu 1 (Từ vựng): Phán đoán "' + (p3q1Ans.isTrue ? 'Đúng' : 'Sai') + '"', user: text1 || '(không trả lời)', correct: 'Đáp án đúng: ' + (d.p3[0].is_correct ? 'Đúng' : 'Sai'), ok: p3q1Ans.isTrue === d.p3[0].is_correct, showAudio: false });
-        review.push({ q: 'Phần 3 · Câu 2 (Ngữ pháp): Phán đoán "' + (p3q2Ans.isTrue ? 'Đúng' : 'Sai') + '"', user: text2 || '(không trả lời)', correct: 'Đáp án đúng: ' + (d.p3[1].is_correct ? 'Đúng' : 'Sai'), ok: p3q2Ans.isTrue === d.p3[1].is_correct, showAudio: false });
+        
+        review.push({ q: 'Phần 3 · Câu 1 (Từ vựng): Phán đoán "' + (p3q1Ans.isTrue ? 'Đúng' : 'Sai') + '"', user: text1 || '(không trả lời)', correct: 'Đáp án đúng: ' + (d.p3 && d.p3[0] && d.p3[0].is_correct ? 'Đúng' : 'Sai'), ok: p3q1Ans.isTrue === (d.p3 && d.p3[0] ? d.p3[0].is_correct : false), showAudio: false });
+        review.push({ q: 'Phần 3 · Câu 2 (Ngữ pháp): Phán đoán "' + (p3q2Ans.isTrue ? 'Đúng' : 'Sai') + '"', user: text2 || '(không trả lời)', correct: 'Đáp án đúng: ' + (d.p3 && d.p3[1] && d.p3[1].is_correct ? 'Đúng' : 'Sai'), ok: p3q2Ans.isTrue === (d.p3 && d.p3[1] ? d.p3[1].is_correct : false), showAudio: false });
     } else {
         p3Score = 0; p3Feedback = 'Bạn chưa làm xong phần Đúng/Sai.';
     }
     partScores.p3 = p3Score;
 
     const totalScore = Math.round((partScores.p1 + partScores.p2 + partScores.p3 + partScores.p4) / 4);
-if(totalScore >= 80 && typeof Sounds !== 'undefined') Sounds.fanfare();
+    if(totalScore >= 80 && typeof Sounds !== 'undefined') Sounds.fanfare();
+
     let out = `<div style="text-align:center;"><div style="font-size:12px;letter-spacing:2px;color:#64748b;">ĐIỂM TỔNG</div><div class="big-word" style="color:var(--accent);">${totalScore}/100</div></div>`;
     out += `<div style="margin-top:12px;">`;
     out += `<div style="display:flex;justify-content:space-between;gap:10px;padding:8px 2px;border-bottom:1px dashed var(--border);font-size:14px;"><span>Phần 1: Trắc nghiệm từ vựng</span><b style="color:${partScores.p1 >= 70 ? '#10b981' : partScores.p1 >= 40 ? '#f59e0b' : '#ef4444'};">${partScores.p1}/100</b></div>`;
@@ -7687,18 +7910,19 @@ if(totalScore >= 80 && typeof Sounds !== 'undefined') Sounds.fanfare();
         out += `<td style="border:1px solid var(--border);padding:8px;vertical-align:top;width:50%;color:#10b981;"><span style="opacity:.6;">Đáp án:</span> ${esc(rv.correct)}</td></tr>`;
     });
     out += `</table></details>`;
+    
     if (p3Feedback) {
         out += `<details style="margin-top:12px;"><summary style="cursor:pointer;color:var(--accent);font-size:13px;">👀 Xem nhận xét Phần 3 (Gemini)</summary><div style="margin-top:8px;padding:10px;background:var(--card-bg);border-radius:8px;font-size:13px;color:#cbd5e1;line-height:1.6;">${esc(p3Feedback)}</div></details>`;
     }
     out += `<div style="text-align:center;margin-top:16px;"><button class="btn-primary" onclick="closeTest()">Đóng</button></div>`;
+    
     $('test-title').textContent = '🏁 KẾT QUẢ 📖 ĐỌC';
     $('test-body').innerHTML = out;
 
-    // Đánh dấu đã kiểm tra
     if (typeof window.__lvMarkTested === 'function') {
         window.__lvMarkTested(t.pool, 'doc');
     }
-};
+};;
 </script>
 
 <script>
@@ -7857,11 +8081,14 @@ window.updateVietWordCount = function(qIndex) {
 
     // Đổi màu cảnh báo
     if (words >= 700) {
-        wcEl.style.color = '#ef4444'; // Đỏ khi đủ 700 từ
+        if (wcEl.style.color !== '#ef4444') {
+            if(typeof Sounds !== 'undefined') Sounds.warnSoft(); // 🆕 (Chỉ kêu 1 lần khi chạm ngưỡng đỏ)
+        }
+        wcEl.style.color = '#ef4444'; 
     } else if (words >= 650) {
-        wcEl.style.color = '#f59e0b'; // Vàng khi còn 50 từ nữa
+        wcEl.style.color = '#f59e0b'; 
     } else {
-        wcEl.style.color = '#64748b'; // Xám mặc định
+        wcEl.style.color = '#64748b'; 
     }
 }
 
@@ -7886,6 +8113,8 @@ window.updateVietWordCount = function(qIndex) {
                 b.style.color = '#fff';
                 b.disabled = false;
                 b.style.opacity = '1';
+                    if(typeof Sounds !== 'undefined') Sounds.modeSelect(); // 🆕
+
             }
         });
 
@@ -8219,6 +8448,8 @@ function toggleExamTimer(){
         clearInterval(examTimerInterval);
         examTimerRunning = false;
         btn.textContent = '▶️';
+                if(typeof Sounds !== 'undefined') Sounds.timerOff(); // 🆕
+
         timerEls.forEach(el => { if(el) el.readOnly = false; });
     } else {
         // Bắt đầu timer
@@ -8235,6 +8466,8 @@ function toggleExamTimer(){
         examTimerRemaining = totalSeconds;
         examTimerRunning = true;
         btn.textContent = '⏹️';
+                if(typeof Sounds !== 'undefined') Sounds.timerOn(); // 🆕
+
         timerEls.forEach(el => { if(el) el.readOnly = true; }); // Khóa cả 3 ô khi đang chạy
         
         examTimerInterval = setInterval(() => {
@@ -8416,6 +8649,9 @@ function openDupModal() {
 }
 
 function closeDupModal() {
+
+if(typeof Sounds !== 'undefined') Sounds.modalClose();
+
   document.getElementById('dup-modal').classList.remove('active');
 }
 
@@ -8688,6 +8924,10 @@ function syncFullscreenState() {
 let bombModeEnabled = false;
 let bombTools = [];
 let bombStats = { defused: 0, exploded: 0 };
+try {
+  const savedBombStats = localStorage.getItem('langverse_bomb_stats');
+  if (savedBombStats) bombStats = JSON.parse(savedBombStats);
+} catch(e) {}
 let bombAutoNavTimeout = null;
 
 
@@ -8721,7 +8961,8 @@ function toggleBombPopup() {
   const navRow = document.querySelector('.nav-row'); // ← Thêm dòng này
   
   popup.classList.toggle('hidden');
-  
+      if(typeof Sounds !== 'undefined') Sounds.switchToggle(); // 🆕
+
   // Thêm/bớt class để đẩy nút mũi tên sang trái khi popup mở
   if (!popup.classList.contains('hidden')) {
     navRow.classList.add('bomb-popup-open');
@@ -8750,6 +8991,8 @@ function updateBombToggleButtons() {
 function setBombMode(enabled) {
   bombModeEnabled = enabled;
   updateBombToggleButtons();
+      if(typeof Sounds !== 'undefined') Sounds.switchToggle(); // 🆕
+
 
 // 🛡️ THÊM ĐOẠN NÀY: Nếu tắt mode mà đang có bom -> Giải phóng bom ngay
     if (!enabled && isShowingBomb) {
@@ -8828,6 +9071,8 @@ function toggleBombTool(btn) {
     btn.classList.add('active');
   }
   localStorage.setItem('bomb_tools', JSON.stringify(bombTools));
+      if(typeof Sounds !== 'undefined') Sounds.toolSelect(); // 🆕
+
 }
 
 // Bắt đầu mode nguy hiểm
@@ -9271,6 +9516,11 @@ arrow.style.display = 'none';
 
 
 function closeEditModal() {
+
+
+if(typeof Sounds !== 'undefined') Sounds.modalClose();
+
+
     // 1. Ẩn modal chỉnh sửa
     const modal = $('edit-modal');
     if (modal) {
@@ -9674,13 +9924,15 @@ document.body.classList.remove('bomb-active');
         // 5. Bắn thông báo
         if (q >= 3) {
             bombStats.defused++;
-            showToast(`✅ Gỡ bom thành công!, q=${q}(≥3)`);
+localStorage.setItem('langverse_bomb_stats', JSON.stringify(bombStats));
+showToast(`✅ Gỡ bom thành công!, q=${q}(≥3)`);
 
           if(typeof Sounds !== 'undefined') Sounds.defuse();
 
         } else {
             bombStats.exploded++;
-            showToast(`❌ Gỡ bom thất bại!, q=${q}(<3)`);
+localStorage.setItem('langverse_bomb_stats', JSON.stringify(bombStats));
+showToast('❌ Gỡ bom thất bại!, q=0(<3)');
             if(typeof Sounds !== 'undefined') Sounds.bomb();
         }
 
@@ -9730,6 +9982,7 @@ document.body.classList.remove('bomb-active');
     updateSM2(targetIdx, 0);
   }
   bombStats.exploded++;
+  localStorage.setItem('langverse_bomb_stats', JSON.stringify(bombStats));
   showToast('❌ Gỡ bom thất bại!, q=0(<3)');
   if(typeof Sounds !== 'undefined') Sounds.bomb();
 
@@ -9890,96 +10143,131 @@ function calculateBombQ(userInput, word, selectedModes) {
 // ===== HỆ THỐNG ÂM THANH (BULLETPROOF - FIX LỖI TẮC TIẾNG LẦN ĐẦU) =====
 let soundEnabled = localStorage.getItem('langverse_sound') !== 'false';
 let audioCtx = null;
+let masterGain = null; // 🛡️ Node tổng để chống vỡ tiếng khi nhiều âm thanh phát cùng lúc
 function getCtx() {
-if (!audioCtx) {
-try {
-audioCtx = new (window.AudioContext || window.webkitAudioContext)();
-} catch (e) { return null; }
+    if (!audioCtx) {
+        try {
+            audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+            masterGain = audioCtx.createGain();
+            masterGain.gain.value = 0.6; // Giới hạn âm lượng tối đa (tránh bị chói/vỡ tiếng)
+            masterGain.connect(audioCtx.destination);
+        } catch (e) { return null; }
+    }
+    return audioCtx;
 }
-return audioCtx;
-}
+let lastSoundKey = '';
+let lastSoundTime = 0;
+
 function safePlay(freq, delay, duration, type, volume) {
-if (!soundEnabled) return;
-const ctx = getCtx();
-if (!ctx) return;
-const playFn = () => {
-try {
-const t = ctx.currentTime;
-const osc = ctx.createOscillator();
-const g = ctx.createGain();
-osc.type = type || 'sine';
-osc.frequency.setValueAtTime(freq, t + delay);
-g.gain.setValueAtTime(0, t + delay);
-g.gain.linearRampToValueAtTime(volume, t + delay + 0.005);
-g.gain.linearRampToValueAtTime(0.001, t + delay + duration);
-osc.connect(g);
-g.connect(ctx.destination);
-osc.start(t + delay);
-osc.stop(t + delay + duration + 0.01);
-} catch (e) { console.warn('Audio play error:', e); }
-};
-if (ctx.state === 'suspended') {
-ctx.resume().then(playFn).catch(() => {});
-} else {
-playFn();
-}
+    if (!soundEnabled) return;
+    const ctx = getCtx();
+    if (!ctx || !masterGain) return;
+
+    // 🛡️ CHỐNG CHỒNG ÂM / LẶP TIẾNG (ANTI-OVERLAP)
+    const currentKey = `${freq}_${type}`;
+    const now = ctx.currentTime;
+    if (currentKey === lastSoundKey && (now - lastSoundTime) < 0.05) {
+        return; // Chặn không cho phát lại nếu âm thanh giống hệt vừa mới phát trong 50ms
+    }
+    lastSoundKey = currentKey;
+    lastSoundTime = now;
+
+    const playFn = () => {
+        try {
+            const t = ctx.currentTime;
+            const osc = ctx.createOscillator();
+            const g = ctx.createGain();
+            osc.type = type || 'sine';
+            osc.frequency.setValueAtTime(freq, t + delay);
+            g.gain.setValueAtTime(0, t + delay);
+            g.gain.linearRampToValueAtTime(volume, t + delay + 0.005);
+            g.gain.linearRampToValueAtTime(0.001, t + delay + duration);
+            osc.connect(g);
+            g.connect(masterGain); // 🛡️ Kết nối qua node tổng thay vì destination trực tiếp
+            osc.start(t + delay);
+            osc.stop(t + delay + duration + 0.01);
+        } catch (e) { console.warn('Audio play error:', e); }
+    };
+    if (ctx.state === 'suspended') {
+        ctx.resume().then(playFn).catch(() => {});
+    } else {
+        playFn();
+    }
 }
 const Sounds = {
-  click: () => { safePlay(600, 0.01, 0.06, 'sine', 0.1); safePlay(800, 0.04, 0.06, 'sine', 0.1); },
-  save: () => { safePlay(523, 0.01, 0.08, 'sine', 0.1); safePlay(659, 0.08, 0.1, 'sine', 0.1); },
-  flip: () => { safePlay(400, 0.01, 0.06, 'sine', 0.08); safePlay(500, 0.04, 0.06, 'sine', 0.08); },
-  next: () => { safePlay(350, 0.01, 0.08, 'sine', 0.08); safePlay(440, 0.05, 0.08, 'sine', 0.08); },
-  prev: () => { safePlay(440, 0.01, 0.08, 'sine', 0.08); safePlay(350, 0.05, 0.08, 'sine', 0.08); },
-  success: () => { safePlay(523, 0.01, 0.1, 'sine', 0.1); safePlay(659, 0.08, 0.1, 'sine', 0.1); safePlay(784, 0.16, 0.12, 'sine', 0.1); },
-  error: () => { safePlay(200, 0.01, 0.15, 'sine', 0.08); },
-  bomb: () => { safePlay(300, 0.01, 0.12, 'sine', 0.1); safePlay(400, 0.1, 0.12, 'sine', 0.1); safePlay(300, 0.2, 0.12, 'sine', 0.1); },
-  defuse: () => { safePlay(523, 0.01, 0.08, 'sine', 0.1); safePlay(659, 0.06, 0.08, 'sine', 0.1); safePlay(784, 0.12, 0.1, 'sine', 0.1); },
-  pop: () => { safePlay(500, 0, 0.04, 'sine', 0.08); safePlay(600, 0.02, 0.04, 'sine', 0.06); },
-  trash: () => { safePlay(300, 0, 0.04, 'sine', 0.06); safePlay(200, 0.03, 0.06, 'sine', 0.06); },
-  alarm: () => { safePlay(400, 0, 0.08, 'sine', 0.1); safePlay(350, 0.08, 0.08, 'sine', 0.1); safePlay(400, 0.16, 0.08, 'sine', 0.1); },
-  fanfare: () => { safePlay(523, 0, 0.12, 'sine', 0.1); safePlay(659, 0.12, 0.12, 'sine', 0.1); safePlay(784, 0.24, 0.12, 'sine', 0.1); safePlay(1047, 0.36, 0.2, 'sine', 0.1); },
-  zen: () => { safePlay(200, 0, 0.3, 'sine', 0.03); safePlay(300, 0.15, 0.3, 'sine', 0.02); },
-  timeUp: () => { safePlay(200, 0, 0.15, 'sine', 0.1); safePlay(150, 0.15, 0.3, 'sine', 0.1); },
-  aiDone: () => { safePlay(523, 0, 0.06, 'sine', 0.08); safePlay(659, 0.06, 0.06, 'sine', 0.08); safePlay(784, 0.12, 0.1, 'sine', 0.08); },
-  // 🆕 Sound mới nhẹ nhàng
-  tickSoft: () => { safePlay(600, 0, 0.03, 'sine', 0.04); },
-  chime: () => { safePlay(523, 0, 0.08, 'sine', 0.06); safePlay(659, 0.08, 0.08, 'sine', 0.06); safePlay(784, 0.16, 0.12, 'sine', 0.06); },
-  bubble: () => { safePlay(400, 0, 0.04, 'sine', 0.05); safePlay(500, 0.02, 0.04, 'sine', 0.05); },
-  breeze: () => { safePlay(300, 0, 0.1, 'sine', 0.04); safePlay(350, 0.05, 0.1, 'sine', 0.04); },
+    click: () => { safePlay(600, 0.01, 0.06, 'sine', 0.1); safePlay(800, 0.04, 0.06, 'sine', 0.1); },
+    save: () => { safePlay(523, 0.01, 0.08, 'sine', 0.1); safePlay(659, 0.08, 0.1, 'sine', 0.1); },
+    flip: () => { safePlay(400, 0.01, 0.06, 'sine', 0.08); safePlay(500, 0.04, 0.06, 'sine', 0.08); },
+    next: () => { safePlay(350, 0.01, 0.08, 'sine', 0.08); safePlay(440, 0.05, 0.08, 'sine', 0.08); },
+    prev: () => { safePlay(440, 0.01, 0.08, 'sine', 0.08); safePlay(350, 0.05, 0.08, 'sine', 0.08); },
+    success: () => { safePlay(523, 0.01, 0.1, 'sine', 0.1); safePlay(659, 0.08, 0.1, 'sine', 0.1); safePlay(784, 0.16, 0.12, 'sine', 0.1); },
+    error: () => { safePlay(200, 0.01, 0.15, 'sine', 0.08); },
+    bomb: () => { safePlay(300, 0.01, 0.12, 'sine', 0.1); safePlay(400, 0.1, 0.12, 'sine', 0.1); safePlay(300, 0.2, 0.12, 'sine', 0.1); },
+    defuse: () => { safePlay(523, 0.01, 0.08, 'sine', 0.1); safePlay(659, 0.06, 0.08, 'sine', 0.1); safePlay(784, 0.12, 0.1, 'sine', 0.1); },
+    pop: () => { safePlay(500, 0, 0.04, 'sine', 0.08); safePlay(600, 0.02, 0.04, 'sine', 0.06); },
+    trash: () => { safePlay(300, 0, 0.04, 'sine', 0.06); safePlay(200, 0.03, 0.06, 'sine', 0.06); },
+    alarm: () => { safePlay(400, 0, 0.08, 'sine', 0.1); safePlay(350, 0.08, 0.08, 'sine', 0.1); safePlay(400, 0.16, 0.08, 'sine', 0.1); },
+    fanfare: () => { safePlay(523, 0, 0.12, 'sine', 0.1); safePlay(659, 0.12, 0.12, 'sine', 0.1); safePlay(784, 0.24, 0.12, 'sine', 0.1); safePlay(1047, 0.36, 0.2, 'sine', 0.1); },
+    zen: () => { safePlay(200, 0, 0.3, 'sine', 0.03); safePlay(300, 0.15, 0.3, 'sine', 0.02); },
+    timeUp: () => { safePlay(200, 0, 0.15, 'sine', 0.1); safePlay(150, 0.15, 0.3, 'sine', 0.1); },
+    aiDone: () => { safePlay(523, 0, 0.06, 'sine', 0.08); safePlay(659, 0.06, 0.06, 'sine', 0.08); safePlay(784, 0.12, 0.1, 'sine', 0.08); },
+    tickSoft: () => { safePlay(800, 0, 0.02, 'sine', 0.06); },
+    chime: () => { safePlay(523, 0, 0.08, 'sine', 0.06); safePlay(659, 0.08, 0.08, 'sine', 0.06); safePlay(784, 0.16, 0.12, 'sine', 0.06); },
+    bubble: () => { safePlay(400, 0, 0.04, 'sine', 0.05); safePlay(500, 0.02, 0.04, 'sine', 0.05); },
+    breeze: () => { safePlay(300, 0, 0.1, 'sine', 0.04); safePlay(350, 0.05, 0.1, 'sine', 0.04); },
+    whisper: () => { safePlay(250, 0, 0.15, 'sine', 0.03); safePlay(300, 0.05, 0.15, 'sine', 0.02); },
+    twirl: () => { safePlay(400, 0, 0.05, 'sine', 0.04); safePlay(500, 0.03, 0.05, 'sine', 0.04); safePlay(600, 0.06, 0.05, 'sine', 0.04); },
+    softPop: () => { safePlay(350, 0, 0.04, 'sine', 0.05); safePlay(450, 0.02, 0.04, 'sine', 0.04); },
+    wipe: () => { safePlay(200, 0, 0.1, 'sine', 0.03); safePlay(250, 0.05, 0.1, 'sine', 0.02); },
+    ding: () => { safePlay(800, 0, 0.08, 'sine', 0.05); safePlay(1000, 0.04, 0.08, 'sine', 0.04); },
 
-// ... (các sound cũ như click, save, breeze...)
-breeze: () => { safePlay(300, 0, 0.1, 'sine', 0.04); safePlay(350, 0.05, 0.1, 'sine', 0.04); },
-
-// 🆕 5 SFX SIÊU NHẸ NHÀNG (CHỮA LÀNH)
-whisper: () => { safePlay(250, 0, 0.15, 'sine', 0.03); safePlay(300, 0.05, 0.15, 'sine', 0.02); }, // Tiếng gió rì rào
-twirl: () => { safePlay(400, 0, 0.05, 'sine', 0.04); safePlay(500, 0.03, 0.05, 'sine', 0.04); safePlay(600, 0.06, 0.05, 'sine', 0.04); }, // Tiếng xoay nhẹ
-softPop: () => { safePlay(350, 0, 0.04, 'sine', 0.05); safePlay(450, 0.02, 0.04, 'sine', 0.04); }, // Tiếng bốp mềm
-wipe: () => { safePlay(200, 0, 0.1, 'sine', 0.03); safePlay(250, 0.05, 0.1, 'sine', 0.02); }, // Tiếng lau nhẹ
-ding: () => { safePlay(800, 0, 0.08, 'sine', 0.05); safePlay(1000, 0.04, 0.08, 'sine', 0.04); } // Tiếng chuông nhỏ
+    // 🌟 NEW GENTLE SFX (Nhẹ nhàng, thư giãn, không eerie)
+    shuffle: () => { safePlay(600, 0, 0.04, 'triangle', 0.05); safePlay(800, 0.03, 0.04, 'triangle', 0.05); safePlay(1000, 0.06, 0.06, 'triangle', 0.04); }, // Tiếng xáo trộn nhẹ nhàng
+    peek: () => { safePlay(300, 0, 0.06, 'sine', 0.03); safePlay(450, 0.04, 0.06, 'sine', 0.03); }, // Tiếng mở/đóng peek mềm mại
+    modalOpen: () => { safePlay(523, 0, 0.05, 'sine', 0.06); safePlay(659, 0.04, 0.06, 'sine', 0.05); }, // Tiếng mở modal welcoming
+    modalClose: () => { safePlay(440, 0, 0.05, 'sine', 0.04); safePlay(330, 0.04, 0.07, 'sine', 0.03); }, // Tiếng đóng modal trầm ấm
+    micOn: () => { safePlay(880, 0, 0.04, 'sine', 0.04); safePlay(1100, 0.03, 0.05, 'sine', 0.03); }, // Tiếng bật mic cao nhẹ
+    micOff: () => { safePlay(600, 0, 0.04, 'sine', 0.03); safePlay(400, 0.03, 0.05, 'sine', 0.02); }, // Tiếng tắt mic hạ âm
+    recStart: () => { safePlay(440, 0, 0.06, 'triangle', 0.05); safePlay(550, 0.05, 0.06, 'triangle', 0.04); }, // Tiếng bắt đầu thu âm
+    recStop: () => { safePlay(550, 0, 0.04, 'triangle', 0.03); safePlay(440, 0.03, 0.05, 'triangle', 0.02); }, // Tiếng dừng thu âm
+    timerOn: () => { safePlay(700, 0, 0.03, 'sine', 0.04); safePlay(900, 0.02, 0.04, 'sine', 0.03); }, // Tiếng bật timer
+    timerOff: () => { safePlay(500, 0, 0.05, 'sine', 0.03); }, // Tiếng tắt timer
+    retry: () => { safePlay(600, 0, 0.05, 'sine', 0.05); safePlay(800, 0.04, 0.07, 'sine', 0.06); }, // Tiếng retry Gemini hopeful
+    modeSelect: () => { safePlay(500, 0, 0.03, 'triangle', 0.04); safePlay(700, 0.02, 0.04, 'triangle', 0.04); }, // Tiếng chọn mode (gõ gỗ nhẹ)
+    warnSoft: () => { safePlay(250, 0, 0.08, 'sine', 0.03); safePlay(200, 0.06, 0.1, 'sine', 0.02); }, // Tiếng cảnh báo mềm (không giật mình)
+    switchToggle: () => { safePlay(400, 0, 0.02, 'sine', 0.04); safePlay(600, 0.02, 0.02, 'sine', 0.04); }, // Tiếng gạt công tắc Bomb
+    toolSelect: () => { safePlay(800, 0, 0.02, 'triangle', 0.03); }, // Tiếng tick chọn dụng cụ gỡ bom
+    addRow: () => { safePlay(600, 0, 0.02, 'sine', 0.04); safePlay(800, 0.02, 0.03, 'sine', 0.03); } // Tiếng thêm dòng
 };
 
 function toggleSound() {
-soundEnabled = !soundEnabled;
-localStorage.setItem('langverse_sound', soundEnabled);
-const btn = document.getElementById('sound-toggle');
-if (btn) {
-btn.textContent = soundEnabled ? '🔊 Âm thanh' : '🔇 Tắt tiếng';
-btn.classList.toggle('muted', !soundEnabled);
+    soundEnabled = !soundEnabled;
+    localStorage.setItem('langverse_sound', soundEnabled);
+
+    const btn = document.getElementById('sound-toggle');
+    if (btn) {
+        btn.textContent = soundEnabled ? '🔊' : '🔇';
+        btn.classList.toggle('muted', !soundEnabled);
+    }
+
+    if (soundEnabled) {
+        const ctx = getCtx();
+        if (ctx && ctx.state === 'suspended') {
+            ctx.resume();
+        }
+        setTimeout(() => Sounds.click(), 100);
+    }
 }
-if (soundEnabled) {
-const ctx = getCtx();
-if (ctx && ctx.state === 'suspended') ctx.resume();
-setTimeout(() => Sounds.click(), 100);
-}
-}
+
 document.addEventListener('DOMContentLoaded', () => {
-const btn = document.getElementById('sound-toggle');
-if (btn) {
-btn.textContent = soundEnabled ? '🔊 Âm thanh' : '🔇 Tắt tiếng';
-btn.classList.toggle('muted', !soundEnabled);
-}
+    const btn = document.getElementById('sound-toggle');
+    if (btn) {
+        btn.textContent = soundEnabled ? '🔊' : '🔇';
+        btn.classList.toggle('muted', !soundEnabled);
+    }
 });
 </script>
+
 <script>
 // 🛡️ KEEP-ALIVE CHROME TTS: Chữa lành lỗi Chrome bị đứng tiếng sau 15s
 (function keepTTSAlive() {
@@ -9989,7 +10277,293 @@ btn.classList.toggle('muted', !soundEnabled);
             window.speechSynthesis.resume();
         }
     }, 10000); // Reset nhịp thở mỗi 10 giây
-})();
-</script>  
-</body>
-</html>
+  })();
+  </script>
+
+
+
+<script>
+// ===== BACKUP MODAL LOGIC (DRILL-DOWN VERSION) =====
+let bkState = {
+    multis: new Set(),
+    verses: new Set(),
+    words: new Set()
+};
+
+function openBackupModal() {
+    $('backup-modal').classList.add('active');
+    initBackupFilter(); // Khởi tạo dữ liệu khi mở modal
+}
+
+function closeBackupModal() {
+    if(typeof Sounds !== 'undefined') Sounds.modalClose();
+    $('backup-modal').classList.remove('active');
+}
+
+function toggleBkMaster() {
+    const isEnabled = $('bk-vocab-enable').checked;
+    $('bk-drilldown-container').style.opacity = isEnabled ? '1' : '0.4';
+    $('bk-drilldown-container').style.pointerEvents = isEnabled ? 'auto' : 'none';
+}
+
+// 1. Khởi tạo danh sách Multiverse
+function initBackupFilter() {
+    bkState.multis.clear();
+    bkState.verses.clear();
+    bkState.words.clear();
+
+    const multiList = $('bk-multi-list');
+    const multis = getMultiverses();
+    
+    let mHtml = `<label class="chk-row" style="font-weight:bold; border-bottom:1px dashed var(--border); padding-bottom:6px; margin-bottom:6px;">
+        <input type="checkbox" id="bk-multi-all" checked onchange="toggleBkAll('multi')"> <span>🌌 Tất cả Multiverse</span>
+    </label>`;
+    
+    multis.forEach(m => {
+        mHtml += `<label class="chk-row"><input type="checkbox" class="bk-multi-item" data-id="${esc(m.id)}" checked onchange="updateBkSelection('multi')"> <span>${esc(m.name)}</span></label>`;
+    });
+    
+    // Thêm mục "Không thuộc Multiverse nào" nếu có từ nào đó không gắn multi
+    const hasNoMulti = vocab.some(v => !v.multi);
+    if (hasNoMulti) {
+        mHtml += `<label class="chk-row"><input type="checkbox" class="bk-multi-item" data-id="__none__" checked onchange="updateBkSelection('multi')"> <span>🌌 Không thuộc Multiverse nào</span></label>`;
+    }
+    
+    multiList.innerHTML = mHtml;
+    
+    // Mặc định chọn tất cả và render các bước tiếp theo
+    updateBkSelection('multi', true);
+}
+
+// Hàm xử lý khi bấm "Chọn tất cả" hoặc chọn lẻ
+function toggleBkAll(type) {
+    const allCheckbox = $(`bk-${type}-all`);
+    const isChecked = allCheckbox.checked;
+    const items = document.querySelectorAll(`.bk-${type}-item`);
+    items.forEach(item => item.checked = isChecked);
+    updateBkSelection(type);
+}
+
+function updateBkSelection(type, isInit = false) {
+    const allCheckbox = $(`bk-${type}-all`);
+    const items = document.querySelectorAll(`.bk-${type}-item`);
+    const checkedItems = document.querySelectorAll(`.bk-${type}-item:checked`);
+
+    // Cập nhật trạng thái cho nút "Tất cả" (checkbox, indeterminate)
+    if (checkedItems.length === items.length) {
+        allCheckbox.checked = true;
+        allCheckbox.indeterminate = false;
+    } else if (checkedItems.length === 0) {
+        allCheckbox.checked = false;
+        allCheckbox.indeterminate = false;
+    } else {
+        allCheckbox.checked = false;
+        allCheckbox.indeterminate = true;
+    }
+
+    // Thu thập ID đã chọn
+    const selectedSet = new Set();
+    if (allCheckbox.checked) selectedSet.add('__all__');
+    else checkedItems.forEach(item => selectedSet.add(item.dataset.id));
+
+    bkState[type + 's'] = selectedSet; // Lưu vào bkState.multis, bkState.verses, bkState.words
+
+            // Điều hướng hiển thị các bước tiếp theo
+    if (type === 'multi') {
+        const isStep2Visible = selectedSet.size > 0;
+        $('bk-step2').style.display = isStep2Visible ? 'block' : 'none';
+        // Nếu Step 2 bị ẩn (do không chọn Multiverse nào), bắt buộc ẩn luôn Step 3
+        if (!isStep2Visible) {
+            $('bk-step3').style.display = 'none';
+        }
+        renderBkVerses(); // Gọi sau khi đã set display cho step2 để updateBkSelection('verse') nhận diện đúng
+    } else if (type === 'verse') {
+        renderBkWords();
+        const isStep2Visible = $('bk-step2').style.display !== 'none';
+        // Chỉ hiện Step 3 nếu có Vũ trụ được chọn VÀ Step 2 đang hiện hữu
+        $('bk-step3').style.display = (selectedSet.size > 0 && isStep2Visible) ? 'block' : 'none';
+    }
+}
+
+// 2. Render danh sách Vũ trụ (Lọc theo Multiverse đã chọn)
+function renderBkVerses() {
+    const verseList = $('bk-verse-list');
+    const availableVerses = new Set();
+    let hasNoVerse = false;
+
+    vocab.forEach(v => {
+        let inMulti = false;
+        if (bkState.multis.has('__all__')) inMulti = true;
+        else if (bkState.multis.has('__none__') && !v.multi) inMulti = true;
+        else if (v.multi && bkState.multis.has(v.multi)) inMulti = true;
+
+        if (inMulti) {
+            const tags = getAllTags(v.definition);
+            if (tags.length === 0) hasNoVerse = true;
+            else tags.forEach(t => availableVerses.add(t));
+        }
+    });
+
+    let vHtml = `<label class="chk-row" style="font-weight:bold; border-bottom:1px dashed var(--border); padding-bottom:6px; margin-bottom:6px;">
+        <input type="checkbox" id="bk-verse-all" checked onchange="toggleBkAll('verse')"> <span>☀️ Tất cả vũ trụ</span>
+    </label>`;
+
+    const sortedVerses = Array.from(availableVerses).sort();
+    if (sortedVerses.length === 0 && !hasNoVerse) {
+        vHtml += `<div style="color:#94a3b8; font-size:12px; padding:8px 0;">Không có vũ trụ nào trong các Multiverse đã chọn.</div>`;
+    } else {
+        sortedVerses.forEach(v => {
+            vHtml += `<label class="chk-row"><input type="checkbox" class="bk-verse-item" data-id="${esc(v)}" checked onchange="updateBkSelection('verse')"> <span>${esc(v)}</span></label>`;
+        });
+        if (hasNoVerse) {
+            vHtml += `<label class="chk-row"><input type="checkbox" class="bk-verse-item" data-id="__no_verse__" checked onchange="updateBkSelection('verse')"> <span>☀️ Không gắn vũ trụ nào</span></label>`;
+        }
+    }
+    
+    verseList.innerHTML = vHtml;
+    updateBkSelection('verse');
+}
+
+// 3. Render danh sách Từ vựng (Lọc theo Vũ trụ đã chọn)
+function renderBkWords() {
+    const wordList = $('bk-word-list');
+    const availableWords = [];
+
+    vocab.forEach((v, idx) => {
+        // Kiểm tra điều kiện Vũ trụ
+        let inVerse = false;
+        if (bkState.verses.has('__all__')) inVerse = true;
+        else {
+            const tags = getAllTags(v.definition);
+            if (tags.length === 0 && bkState.verses.has('__no_verse__')) inVerse = true;
+            else inVerse = tags.some(t => bkState.verses.has(t));
+        }
+
+        // Kiểm tra điều kiện Multiverse (từ bước trước)
+        let inMulti = false;
+        if (bkState.multis.has('__all__')) inMulti = true;
+        else if (bkState.multis.has('__none__') && !v.multi) inMulti = true;
+        else if (v.multi && bkState.multis.has(v.multi)) inMulti = true;
+
+        if (inVerse && inMulti) {
+            availableWords.push({ v, idx });
+        }
+    });
+
+    let wHtml = `<label class="chk-row" style="font-weight:bold; border-bottom:1px dashed var(--border); padding-bottom:6px; margin-bottom:6px;">
+        <input type="checkbox" id="bk-word-all" checked onchange="toggleBkAll('word')"> <span>🔤 Tất cả từ vựng (${availableWords.length} từ)</span>
+    </label>`;
+
+    if (availableWords.length === 0) {
+        wHtml += `<div style="color:#94a3b8; font-size:12px; padding:8px 0;">Không có từ vựng nào trong các vũ trụ đã chọn.</div>`;
+    } else {
+        availableWords.forEach(({v, idx}) => {
+            const shortDef = String(v.definition || '').split('\n')[0].replace(/\([^)]*\)/g, '').slice(0, 40);
+            wHtml += `<label class="chk-row"><input type="checkbox" class="bk-word-item" data-idx="${idx}" checked onchange="updateBkSelection('word')"> <span style="color:var(--accent); font-weight:bold;">${esc(v.word)}</span> <span style="color:#94a3b8; font-size:11px; margin-left:4px;">- ${esc(shortDef)}</span></label>`;
+        });
+    }
+    
+    wordList.innerHTML = wHtml;
+    updateBkSelection('word');
+}
+
+// 4. Hàm xuất Backup (Đã cập nhật để lọc dữ liệu thông minh)
+function doBackup() {
+    const backupData = { _langverse_backup: true, exportDate: new Date().toISOString() };
+    const now = new Date();
+
+    // 1. Xử lý Từ vựng / Vũ trụ / Multiverse (Dựa vào trạng thái đã chọn ở UI)
+    if ($('bk-vocab-enable').checked) {
+        const finalWords = [];
+        const finalVerses = new Set();
+        const finalMultis = new Set();
+
+        // Duyệt qua toàn bộ từ vựng để lấy những từ được tick chọn ở Step 3
+        vocab.forEach((v, idx) => {
+            let wordSelected = false;
+            if ($('bk-word-all') && $('bk-word-all').checked) {
+                wordSelected = true;
+            } else {
+                const wordCheckbox = document.querySelector(`.bk-word-item[data-idx="${idx}"]`);
+                if (wordCheckbox && wordCheckbox.checked) wordSelected = true;
+            }
+
+            if (wordSelected) {
+                finalWords.push(v);
+                // Thu thập lại các Verse và Multi của những từ được chọn để backup kèm theo
+                getAllTags(v.definition).forEach(t => finalVerses.add(t));
+                if (v.multi) finalMultis.add(v.multi);
+            }
+        });
+
+        backupData.vocab = finalWords;
+        backupData.customVerses = getCustomVerses().filter(v => finalVerses.has(v));
+        backupData.multiverses = getMultiverses().filter(m => finalMultis.has(m.id));
+    }
+
+    // 2. Lịch sử gỡ bom
+    if ($('bk-bomb').checked) {
+        let savedBombStats = localStorage.getItem('langverse_bomb_stats');
+        backupData.bombStats = savedBombStats ? JSON.parse(savedBombStats) : bombStats;
+    }
+
+    // 3. Lịch sử 🎯 (SM-2)
+    if ($('bk-sm2').checked) {
+        backupData.sm2History = vocab.map(v => ({
+            word: v.word,
+            definition: v.definition,
+            score: v.score,
+            interval: v.interval,
+            ef: v.ef,
+            n: v.n,
+            nextReview: v.nextReview,
+            lastReview: v.lastReview
+        })).filter(v => v.interval !== undefined || v.score !== undefined);
+    }
+
+    // 4. Lịch sử kiểm tra
+    if ($('bk-test').checked) {
+        backupData.testedWords = JSON.parse(localStorage.getItem('langverse_tested_words_by_skill_v1') || '{}');
+    }
+
+    // 5. Hồ sơ & API Key
+    if ($('bk-profile').checked) {
+        backupData.profile = JSON.parse(localStorage.getItem('langverse_profile') || '{}');
+        backupData.aiKey = localStorage.getItem('langverse_ai_key') || '';
+    }
+
+    // 6. Ảnh đã gán
+    if ($('bk-img').checked) {
+        backupData.images = vocab.filter(v => v.img).map(v => ({
+            word: v.word,
+            definition: v.definition,
+            img: v.img
+        }));
+    }
+
+    // Export to JSON
+    const dataStr = "data:text/json;charset=utf-8," + encodeURIComponent(JSON.stringify(backupData, null, 2));
+    const a = document.createElement('a');
+    a.setAttribute("href", dataStr);
+    const fileName = `LangVerse_Backup_${String(now.getDate()).padStart(2,'0')}-${String(now.getMonth()+1).padStart(2,'0')}-${now.getFullYear()}_${String(now.getHours()).padStart(2,'0')}h${String(now.getMinutes()).padStart(2,'0')}m.json`;
+    a.setAttribute("download", fileName);
+    document.body.appendChild(a);
+    a.click();
+    a.remove();
+
+    closeBackupModal();
+    if(typeof Sounds !== 'undefined') Sounds.success();
+    
+    // Show toast thông báo
+    const toast = document.createElement('div');
+    toast.textContent = '✅ Đã xuất file backup thành công!';
+    toast.style.cssText = `position: fixed; top: 20px; left: 50%; transform: translateX(-50%); background: #10b981; color: #fff; padding: 12px 24px; border-radius: 8px; font-size: 14px; font-weight: bold; z-index: 999999; box-shadow: 0 4px 12px rgba(0,0,0,0.3); transition: opacity 0.3s; pointer-events: none;`;
+    document.body.appendChild(toast);
+    setTimeout(() => { toast.style.opacity = '0'; setTimeout(() => toast.remove(), 300); }, 2500);
+}
+</script>
+
+
+
+  </body>
+  </html>
