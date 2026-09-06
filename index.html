@@ -10411,6 +10411,41 @@ $('bk-drilldown-container').style.opacity = isEnabled ? '1' : '0.4';
 $('bk-drilldown-container').style.pointerEvents = isEnabled ? 'auto' : 'none';
 }
 
+// Hàm sắp xếp list: Đưa mục đã tích lên đầu, chưa tích xuống cuối, giữ mục "Tất cả" luôn ở trên cùng
+function sortListByChecked(containerId) {
+    const container = document.getElementById(containerId);
+    if (!container) return;
+    
+    const labels = Array.from(container.querySelectorAll('label.chk-row'));
+    const others = Array.from(container.children).filter(el => el.tagName !== 'LABEL'); // Giữ lại các div thông báo (nếu có)
+    
+    labels.sort((a, b) => {
+        const cbA = a.querySelector('input[type="checkbox"]');
+        const cbB = b.querySelector('input[type="checkbox"]');
+        if (!cbA || !cbB) return 0;
+        
+        // 1. Giữ checkbox "Tất cả" (id kết thúc bằng -all) luôn ở trên cùng
+        if (cbA.id && cbA.id.endsWith('-all')) return -1;
+        if (cbB.id && cbB.id.endsWith('-all')) return 1;
+        
+        const aChecked = cbA.checked;
+        const bChecked = cbB.checked;
+        
+        // 2. Nếu cùng trạng thái thì sort theo bảng chữ cái cho đẹp
+        if (aChecked === bChecked) {
+            return a.textContent.localeCompare(b.textContent, 'vi');
+        }
+        // 3. Đưa checked lên trên (-1), unchecked xuống dưới (1)
+        return aChecked ? -1 : 1;
+    });
+    
+    // Xóa và append lại theo thứ tự mới
+    container.innerHTML = '';
+    labels.forEach(label => container.appendChild(label));
+    others.forEach(el => container.appendChild(el));
+}
+
+
 // 1. Khởi tạo danh sách Multiverse
 function initBackupFilter() {
 bkState.multis.clear();
@@ -10438,6 +10473,8 @@ multiList.innerHTML = mHtml;
 
 // Mặc định chọn tất cả và render các bước tiếp theo
 updateBkSelection('multi', true);
+    sortListByChecked('bk-multi-list'); // <-- THÊM DÒNG NÀY
+
 }
 
 // Hàm xử lý khi bấm "Chọn tất cả" hoặc chọn lẻ
@@ -10450,57 +10487,46 @@ updateBkSelection(type);
 }
 
 function updateBkSelection(type, isInit = false) {
-    const allCheckbox = $(`bk-${type}-all`);
-    const items = document.querySelectorAll(`.bk-${type}-item`);
-    const checkedItems = document.querySelectorAll(`.bk-${type}-item:checked`);
+const allCheckbox = $(`bk-${type}-all`);
+const items = document.querySelectorAll(`.bk-${type}-item`);
+const checkedItems = document.querySelectorAll(`.bk-${type}-item:checked`);
 
-    // Cập nhật trạng thái cho nút "Tất cả" (checkbox, indeterminate)
-    if (checkedItems.length === items.length) {
-        allCheckbox.checked = true;
-        allCheckbox.indeterminate = false;
-    } else if (checkedItems.length === 0) {
-        allCheckbox.checked = false;
-        allCheckbox.indeterminate = false;
-    } else {
-        allCheckbox.checked = false;
-        allCheckbox.indeterminate = true;
-    }
+// Cập nhật trạng thái cho nút "Tất cả" (checkbox, indeterminate)
+if (checkedItems.length === items.length) {
+allCheckbox.checked = true;
+allCheckbox.indeterminate = false;
+} else if (checkedItems.length === 0) {
+allCheckbox.checked = false;
+allCheckbox.indeterminate = false;
+} else {
+allCheckbox.checked = false;
+allCheckbox.indeterminate = true;
+}
 
-    // Thu thập ID đã chọn (Fix bug: dùng dataset.id || dataset.idx để lấy đúng index của từ)
-    const selectedSet = new Set();
-    if (allCheckbox.checked) selectedSet.add('__all__');
-    else checkedItems.forEach(item => selectedSet.add(item.dataset.id || item.dataset.idx));
-    bkState[type + 's'] = selectedSet; 
+// Thu thập ID đã chọn
+const selectedSet = new Set();
+if (allCheckbox.checked) selectedSet.add('__all__');
+else checkedItems.forEach(item => selectedSet.add(item.dataset.id));
 
+bkState[type + 's'] = selectedSet; // Lưu vào bkState.multis, bkState.verses, bkState.words
+
+// Điều hướng hiển thị các bước tiếp theo
     // Điều hướng hiển thị các bước tiếp theo
     if (type === 'multi') {
         const isStep2Visible = selectedSet.size > 0;
         $('bk-step2').style.display = isStep2Visible ? 'block' : 'none';
-        if (!isStep2Visible) $('bk-step3').style.display = 'none';
+        if (!isStep2Visible) {
+            $('bk-step3').style.display = 'none';
+        }
         renderBkVerses(); 
+        sortListByChecked('bk-multi-list'); // <-- THÊM DÒNG NÀY
     } else if (type === 'verse') {
         renderBkWords();
+        sortListByChecked('bk-verse-list'); // <-- THÊM DÒNG NÀY
         const isStep2Visible = $('bk-step2').style.display !== 'none';
         $('bk-step3').style.display = (selectedSet.size > 0 && isStep2Visible) ? 'block' : 'none';
     } else if (type === 'word') {
-        // 🌟 Sắp xếp lại DOM: đưa các từ đã tick lên đầu list
-        const wordList = $('bk-word-list');
-        if (wordList) {
-            const labels = Array.from(wordList.querySelectorAll('label.chk-row'));
-            const allLabel = labels.shift(); // Giữ lại ô "Tất cả" ở trên cùng
-            
-            labels.sort((a, b) => {
-                const aChecked = a.querySelector('input').checked;
-                const bChecked = b.querySelector('input').checked;
-                if (aChecked === bChecked) return 0; // Giữ nguyên thứ tự nếu cùng trạng thái
-                return aChecked ? -1 : 1; // Đưa thằng được tick lên trước
-            });
-            
-            // Render lại DOM đã sắp xếp
-            wordList.innerHTML = '';
-            if (allLabel) wordList.appendChild(allLabel);
-            labels.forEach(label => wordList.appendChild(label));
-        }
+        sortListByChecked('bk-word-list'); // <-- THÊM DÒNG NÀY
     }
 }
 
@@ -10544,7 +10570,47 @@ updateBkSelection('verse');
 }
 
 // 3. Render danh sách Từ vựng (Lọc theo Vũ trụ đã chọn)
-function renderBkWords() {}
+function renderBkWords() {
+const wordList = $('bk-word-list');
+const availableWords = [];
+
+vocab.forEach((v, idx) => {
+// Kiểm tra điều kiện Vũ trụ
+let inVerse = false;
+if (bkState.verses.has('__all__')) inVerse = true;
+else {
+const tags = getAllTags(v.definition);
+if (tags.length === 0 && bkState.verses.has('__no_verse__')) inVerse = true;
+else inVerse = tags.some(t => bkState.verses.has(t));
+}
+
+// Kiểm tra điều kiện Multiverse (từ bước trước)
+let inMulti = false;
+if (bkState.multis.has('__all__')) inMulti = true;
+else if (bkState.multis.has('__none__') && !v.multi) inMulti = true;
+else if (v.multi && bkState.multis.has(v.multi)) inMulti = true;
+
+if (inVerse && inMulti) {
+availableWords.push({ v, idx });
+}
+});
+
+let wHtml = `<label class="chk-row" style="font-weight:bold; border-bottom:1px dashed var(--border); padding-bottom:6px; margin-bottom:6px;">
+<input type="checkbox" id="bk-word-all" checked onchange="toggleBkAll('word')"> <span>🔤 Tất cả từ vựng (${availableWords.length} từ)</span>
+</label>`;
+
+if (availableWords.length === 0) {
+wHtml += `<div style="color:#94a3b8; font-size:12px; padding:8px 0;">Không có từ vựng nào trong các vũ trụ đã chọn.</div>`;
+} else {
+availableWords.forEach(({v, idx}) => {
+const shortDef = String(v.definition || '').split('\n')[0].replace(/\([^)]*\)/g, '').slice(0, 40);
+wHtml += `<label class="chk-row"><input type="checkbox" class="bk-word-item" data-idx="${idx}" checked onchange="updateBkSelection('word')"> <span style="color:var(--accent); font-weight:bold;">${esc(v.word)}</span> <span style="color:#94a3b8; font-size:11px; margin-left:4px;">- ${esc(shortDef)}</span></label>`;
+});
+}
+
+wordList.innerHTML = wHtml;
+updateBkSelection('word');
+}
 
 // 4. Hàm xuất Backup (Đã cập nhật để lọc dữ liệu thông minh)
 function doBackup() {
